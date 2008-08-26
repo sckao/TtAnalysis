@@ -34,6 +34,8 @@
 //
 typedef std::pair<double, LorentzVector> mtpair ;
 static bool dmIncreasing(const mtpair t1, const mtpair t2) { return ( t1.first < t2.first ); }
+typedef std::pair<double, int> thePair ;
+static bool theIncreasing(const thePair t1, const thePair t2) { return ( t1.first < t2.first ); }
 
 // constructors and destructor
 using namespace edm;
@@ -42,6 +44,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
+  needTree          = iConfig.getUntrackedParameter<bool>   ("needTree");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   leptonFlavour     = iConfig.getParameter<std::string>   ("leptonFlavour");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
@@ -59,8 +62,10 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   MCMatching  = new TtMCMatching();
   ttMuon      = new TtMuon();
   ttEle       = new TtElectron();
+  ttGam       = new TtPhoton();
   ttMET       = new TtMET( iConfig );
   ttJet       = new TtJet( iConfig );
+  ttEff       = new TtEfficiency();
 
   evtIt = 0;
   // Create the root file
@@ -95,7 +100,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   h_WJet  = new HTOP8("WJets_");
   h_Top   = new HTOP9("Tops_");
 
-  t_Jet  = new NJet();
+  if (needTree) t_Jet  = new NJet();
 }
 
 
@@ -110,11 +115,10 @@ TtAnalysis::~TtAnalysis()
    delete MCMatching;
    delete ttMuon;
    delete ttEle;
+   delete ttGam;
    delete ttMET;
    delete ttJet;
-
-   //theFile->cd();
-   t_Jet->Write();
+   delete ttEff; 
 
    theFile->cd();
    theFile->cd("Jets");
@@ -163,7 +167,11 @@ TtAnalysis::~TtAnalysis()
    delete h_WJet;
    delete h_Top;
   
-   delete t_Jet;
+   if (needTree) {
+      theFile->cd();
+      t_Jet->Write();
+      delete t_Jet;
+   }
 
    //Close the Root file
    theFile->Close();
@@ -220,52 +228,67 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    HTOP7 *histo7 = 0;
    HTOP8 *histo8 = 0;
    HTOP9 *histo9 = 0;
-   NJet  *jtree = 0;
 
    cout<<" ***** new Event start ***** "<<endl;
+
+   evtIt++;
+   int eventId = evtIt + (iEvent.id().run()*100000) ;
+   // The Tree Feeder 
+   if ( needTree ) {
+      NJet *jtree = 0;
+      jtree = t_Jet;
+      MCMatching->MCTreeFeeder( genParticles, jtree, eventId);
+      ttMuon->MuonTreeFeeder(muons, jtree, eventId);
+      ttEle->ElectronTreeFeeder(electrons, jtree, eventId);
+      ttGam->PhotonTreeFeeder( photons, jtree, eventId);
+      ttJet->JetTreeFeeder(jets,jtree,eventId);
+      ttMET->MetTreeFeeder(mets,jtree,eventId);
+   }
 
    // 0. select the semi-lep events and objects
    bool pass = evtSelected->eventSelection(muons, electrons, jets);
    int  topo = evtSelected->MCEvtSelection(genParticles);
+   /// calculate the selection efficiency
+   histo9 = h_Top;
+   ttEff->EventEfficiency( topo, pass, histo9 );
 
-   jtree = t_Jet;
-   evtIt++;
-   int eventId = evtIt + (iEvent.id().run()*100000) ;
-
-   //2. Isolation Leptons 
+   //1. Isolation Leptons Selections
    histo3 = h_Muon;
-   ttMuon->muonAnalysis(muons, histo3, jtree, eventId);
+   ttMuon->muonAnalysis( muons, histo3 );
    std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection(muons, histo3);
    histo4 = h_Ele;
+   ttEle->ElectronAnalysis(electrons, histo4);
    std::vector<const reco::Candidate*> isoEle = ttEle->IsoEleSelection(electrons, histo4);
-   std::vector<pat::Jet> selectedWJets = evtSelected->bJetSelection(jets);
-   std::vector<pat::Jet> selectedbJets = evtSelected->WJetSelection(jets);
+   //2. W and b jets selections
+   std::vector<pat::Jet> selectedWJets = evtSelected->WJetSelection(jets);
+   std::vector<pat::Jet> selectedbJets = evtSelected->bJetSelection(jets);
+   
+   //3. reconstruct semi-leptonic Tt events 
    std::vector<LorentzVector> semiTt;
    if ( pass ) {
       semiTt = recoSemiLeptonicTtEvent(-1, selectedWJets, selectedbJets, isoMuons, isoEle, mets);
+      ttEff->EventShape(topo, isoMuons.size(), isoEle.size(), selectedbJets.size(), selectedWJets.size(), histo9);
    }
+   //4. gen-reco matching selection for leptons and jets 
+   std::vector<const reco::Candidate*> mcMuons     = MCMatching->matchMuon(genParticles, muons);  
+   std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, electrons);  
+   std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets);
+   std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets);
 
-   // 1. Jet Sector
-   histo1 = h_Jet;
-   ttJet->jetAnalysis(jets, iEvent, histo1, jtree, eventId);
-
-   /// 1b) gen-reco matching 
-   histo6 = h_MJet;
-   histo7 = h_BJet;
-   std::vector<const reco::Candidate*>  mcMuons     = MCMatching->matchMuon(genParticles, muons);  
-   std::vector<const reco::Candidate*>  mcElectrons = MCMatching->matchElectron(genParticles, electrons);  
-   std::vector<jmatch> mcwjets    = MCMatching->matchWJets(genParticles, jets);
-   std::vector<jmatch> mcbjets    = MCMatching->matchbJets(genParticles, jets);
-
+   //5. reconstruct semi-leptonic Tt events
    std::vector<pat::Jet> theWJets ; 
    for (size_t i =0; i< mcwjets.size(); i++ ){
-       theWJets.push_back( mcwjets[i].trueJet ) ;
+       if ( mcwjets[i].hasMatched ) theWJets.push_back( mcwjets[i].trueJet ) ;
+       //theWJets.push_back( mcwjets[i].trueJet ) ;
    }  
    std::vector<pat::Jet> thebJets ; 
    for (size_t i =0; i< mcbjets.size(); i++ ){
-       thebJets.push_back( mcbjets[i].trueJet ) ;
-   }  
-   std::vector<LorentzVector> semiMCTt = recoSemiLeptonicTtEvent(topo, theWJets, thebJets, mcMuons, mcElectrons, mets);
+       if ( mcbjets[i].hasMatched ) thebJets.push_back( mcbjets[i].trueJet ) ;
+       //thebJets.push_back( mcbjets[i].trueJet ) ;
+   }
+   std::vector<LorentzVector> semiMCTt = recoSemiLeptonicTtEvent( topo, theWJets, thebJets, mcMuons, mcElectrons, mets);
+
+   //6. look at top mass distribution 
    histo9 = h_Top;
    for(size_t i=0; i< semiMCTt.size(); i++ ){
       double tMass = getInvMass( semiMCTt[i] ); 
@@ -276,52 +299,74 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
       histo9->Fill9a(tMass);
    }
 
-   ttJet->matchedWJetsAnalysis( mcwjets, isoMuons , histo6);
-   ttJet->matchedbJetsAnalysis( mcbjets, mcwjets , isoMuons , histo7);
-   cout<<" ======== test another matching ======= "<<endl;
-   ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true);
+   //7. W studies 
+   /// From Reco
+   if ( pass && topo == 1) {
+      bool isMuon     = ( isoMuons.size() ==1 && isoEle.size() ==0 ) ? true : false ;
+      bool isElectron = ( isoMuons.size() ==0 && isoEle.size() ==1 ) ? true : false ;
+      std::vector<const reco::Candidate*> leptons = ( isMuon && !isElectron  ) ? isoMuons : isoEle ;
+      std::vector<LorentzVector> LepWs;
+      bool leptonic = recoW( leptons, mets ,LepWs );
+      if (leptonic) dmSortRecoObjects( LepWs, 80.403 );
+      for (size_t i =0; i< LepWs.size(); i++) {
+          histo9->Fill9c( getInvMass( LepWs[i]) ); 
+      }
+      std::vector<LorentzVector> HadWs;
+      bool hadronic = recoW( selectedWJets , HadWs );
+      if (hadronic) dmSortRecoObjects( HadWs, 80.403 );
+      for (size_t i =0; i<HadWs.size(); i++) {
+          histo9->Fill9e( getInvMass( HadWs[i]) ); 
+      }
+   }
+   ///  From MC 
+   if ( pass && topo == 1 ) {
+      bool isMuon     = ( mcMuons.size() ==1 && mcElectrons.size() ==0 ) ? true : false ;
+      bool isElectron = ( mcMuons.size() ==0 && mcElectrons.size() ==1 ) ? true : false ;
+      std::vector<const reco::Candidate*> mclepton = ( isMuon && !isElectron  ) ? mcMuons : mcElectrons ;
+      std::vector<LorentzVector> mcLepWs;
+      bool leptonic = recoW( mclepton, mets ,mcLepWs );
+      if (leptonic) dmSortRecoObjects( mcLepWs, 80.403 );
+      for (size_t i =0; i<mcLepWs.size(); i++) {
+          histo9->Fill9b( getInvMass( mcLepWs[i]) ); 
+      }
+      std::vector<LorentzVector> mcHadWs;
+      bool hadronic = recoW( theWJets, mcHadWs );
+      if (hadronic) dmSortRecoObjects( mcHadWs, 80.403 );
+      for (size_t i =0; i<mcHadWs.size(); i++) {
+          histo9->Fill9d( getInvMass( mcHadWs[i])  ); 
+      }
+   }
+ 
+   // 8. Jet Studies
+   histo1 = h_Jet;
+   ttJet->jetAnalysis(jets, iEvent, histo1);
 
-   //  1c) jets selection
-   ttJet->bTagAnalysis(jets, histo7);
+   histo6 = h_MJet;
+   histo7 = h_BJet;
    histo8 = h_WJet;
+   ttJet->matchedWJetsAnalysis( mcwjets, isoMuons , histo8);
+   ttJet->matchedbJetsAnalysis( mcbjets, mcwjets , isoMuons , histo7);
+   ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true);
+   ttJet->bTagAnalysis(jets, histo7);
+
    if ( pass && topo == 1) {
       ttJet->selectedWJetsAnalysis(jets,histo8);
    }
 
-   // look at the W for qq 
-   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       if ( abs((*it).pdgId()) != 24) continue;
-       bool WfromT = false;
-       for (size_t q=0; q< (*it).numberOfMothers(); q++) {
-           const reco::Candidate *mom = (*it).mother(q) ;
-           if ( abs(mom->pdgId()) != 6 ) continue;
-           WfromT = true ;
-       }
-       if ( !WfromT ) continue;
-
-       std::vector<LorentzVector> qm ;
-       for (size_t q=0; q< (*it).numberOfDaughters(); ++q) {
-           const reco::Candidate *dau = (*it).daughter(q) ;
-           if( abs(dau->pdgId()) > 6 ) continue;
-           qm.push_back( dau->p4() );
-	   jtree->FillBgen( eventId, dau->pdgId(), dau->eta(), dau->phi(), dau->energy(), dau->pt() );
-           //cout<<"quarks:"<<dau->pdgId() <<" h: "<<dau->eta()<<" f:"<<dau->phi()<<" It:"<<eventId;
-           //cout<<" E:"<<dau->energy()<< endl;
-       }
-       if ( qm.size() == 2 ) {
-          LorentzVector pW = ttJet->findW( qm[0], qm[1]);
-	  double momW = sqrt( pW.Px()*pW.Px() + pW.Py()*pW.Py() + pW.Pz()*pW.Pz() );
-	  double massW = sqrt ( pW.E()*pW.E() - pW.Px()*pW.Px() - pW.Py()*pW.Py() - pW.Pz()*pW.Pz() );
-	  histo1->Fill1g( massW, momW );
-       }
-   }
-   //cout<<" "<<endl;
-   //cout<<"  ^^^^^^^ end of w reco ^^^^^^^^ "<<endl;
-
-   // MET from PAT
+   //9. MET from PAT
    histo2 = h_MET;
-   ttMET->metAnalysis(mets, iEvent, histo2, jtree, eventId);
-   ttMuon->muonAnalysis(muons, histo3, jtree, eventId);
+   ttMET->metAnalysis(mets, iEvent, histo2);
+   histo5 = h_Gam;
+   ttGam->PhotonAnalysis(photons, histo5);
+
+   //10. Electron Studies
+   ttEle->matchedElectronAnalysis( mcElectrons, histo4 );
+
+   // Tt objects selection efficiency
+   ttEff->JetEfficiency( selectedbJets, thebJets, histo9 );
+   ttEff->JetEfficiency( selectedWJets, theWJets, histo9 );
+   ttEff->IsoLeptonEfficiency( isoMuons, mcMuons, histo9 );
+   ttEff->IsoLeptonEfficiency( isoEle, mcElectrons, histo9 );
 
 }
 
@@ -392,30 +437,6 @@ hfPos TtAnalysis::findDaughter(int dauId, int momId, double mom_eta, double mom_
 } 
 
 
-LorentzVector TtAnalysis::findTop(LorentzVector qm1, LorentzVector qm2 ) {
-     
-     //cout<<" ------------------ reco Top ------------------- "<<endl;
-     double p1 = qm1.P();
-     double p2 = qm2.P();
-     //double p1p2 = qm1.Px()*qm2.Px() + qm1.Py()*qm2.Py() + qm1.Pz()*qm2.Pz() ;
-     //double m1 = sqrt( (qm1.E()*qm1.E()) - (qm1.P()*qm1.P()) ) ;
-     //double m2 = sqrt( (qm2.E()*qm2.E()) - (qm2.P()*qm2.P()) ) ;
-     //double massT = sqrt( (m1*m1) + (m2*m2) + (2.0*p1*p2) - (2.0*p1p2) ) ;
-     //double angleqq = acos( p1p2/(p1*p2) ) ;
-     //cout<<" q1("<<p1<<") q2("<<p2<<") dP= "<< fabs(p1-p2) <<",open angle of Wb = "<< angleqq << endl;
-     //cout<<" mass of Top = "<< massT <<endl;
-
-     double xT = qm1.Px() + qm2.Px() ;
-     double yT = qm1.Py() + qm2.Py() ;
-     double zT = qm1.Pz() + qm2.Pz() ;
-     double ET = p1 + p2 ;   
-     LorentzVector mT = LorentzVector(xT,yT,zT,ET) ;
-     //cout<<" pT: "<<xT<<","<<yT<<","<<zT<<","<<ET<<endl;
-     //cout<<" mT: "<<mT.Px()<<","<<mT.Py()<<","<<mT.Pz()<<","<<mT.E()<<endl;
-
-     return mT;
-}
-
 // hadronic channel 
 bool TtAnalysis::recoW( std::vector<pat::Jet> wjets, std::vector<LorentzVector>& wCandidate ) {
 
@@ -435,6 +456,7 @@ bool TtAnalysis::recoW( std::vector<pat::Jet> wjets, std::vector<LorentzVector>&
            findW = true;
        }
     }
+    dmSortRecoObjects( wCandidate, 80.4 );
     return findW;
 }
 
@@ -450,73 +472,153 @@ bool TtAnalysis::recoW( std::vector<const reco::Candidate*> lepton, Handle<std::
     bool findW = false ; 
     if ( lepton.size() != 1 || met.size() != 1) return findW ;
 
+    // use w mass constrain to solve 4 momentum of W
     double xW = lepton[0]->p4().Px() + met[0].p4().Px() ;
     double yW = lepton[0]->p4().Py() + met[0].p4().Py() ;
-    double zW = lepton[0]->p4().Pz() + met[0].p4().Pz() ;
-    double EW = lepton[0]->p4().E()  + met[0].p4().E() ;
-    double massTest =  (EW*EW) - (xW*xW) - (yW*yW) - (zW*zW) ;
-    if (massTest > 0. ) { 
-       LorentzVector mW = LorentzVector(xW,yW,zW,EW) ;
-       wCandidate.push_back( mW );
-       findW = true;
+    double nuPt2 = (met[0].p4().Px()*met[0].p4().Px()) + (met[0].p4().Py()*met[0].p4().Py()); 
+ 
+    double zl = lepton[0]->p4().Pz() ;
+    double El = lepton[0]->p4().E()  ;
+
+    double D = (80.4*80.4) - (El*El) - nuPt2 + (xW*xW) + (yW*yW) + (zl*zl) ;
+
+    double A = 4.*( (zl*zl) - (El*El) ) ;
+    double B = 4.*D*zl ;
+    double C = (D*D) - (4.*El*El*nuPt2) ;
+
+    if ( (B*B) < (4.*A*C) ) return findW ;
+
+    double nz1 = (-1.*B + sqrt(B*B - 4.*A*C )) / (2.*A) ;
+    double nz2 = (-1.*B - sqrt(B*B - 4.*A*C )) / (2.*A) ;
+
+    for (int i=1; i<3; i++ ) {
+       double nz = 0.0;  
+       if (i==1) nz =nz1;
+       if (i==2) nz =nz2;
+       double ENu2 = (met[0].p4().Px()*met[0].p4().Px()) + (met[0].p4().Py()*met[0].p4().Py()) + (nz*nz);
+       double zW = lepton[0]->p4().Pz() + nz ;
+       double EW = lepton[0]->p4().E() + sqrt(ENu2) ;
+       double massTest =  (EW*EW) - (xW*xW) - (yW*yW) - (zW*zW) ;
+
+       if (massTest > 0. ) { 
+          LorentzVector mW = LorentzVector(xW,yW,zW,EW) ;
+          wCandidate.push_back( mW );
+          findW = true;
+       }
     }
+    
+    dmSortRecoObjects( wCandidate, 80.4 );
     return findW;
 }
 
 bool TtAnalysis::recoTop( std::vector<LorentzVector> wCandidate, std::vector<pat::Jet> bjets, std::vector<LorentzVector>& tCandidates ) {
 
   bool findt = false ;
-  for(std::vector<LorentzVector>::const_iterator i1 = wCandidate.begin(); i1 != wCandidate.end(); i1++ ){ 
+  if ( wCandidate.size() < 2 || bjets.size() < 2 ) return findt;
+
+  int widx = 0;
+  std::vector<thePair> bW1;
+  std::vector<thePair> bW2;
+
+  for(std::vector<LorentzVector>::const_iterator i1 = wCandidate.begin(); i1 != wCandidate.end(); i1++ ){
+     widx++;
+     std::vector<thePair> bWpairList;  
+     int bj = -1;
      for (std::vector<pat::Jet>::const_iterator i2 = bjets.begin(); i2 != bjets.end(); i2++ ){
+         bj++;    
          double xT = i1->Px() + (i2->p4()).Px() ;   
          double yT = i1->Py() + (i2->p4()).Py() ;
          double zT = i1->Pz() + (i2->p4()).Pz() ;
          double ET = i1->E()  + (i2->p4()).E()  ;
+	 LorentzVector mT = LorentzVector(xT,yT,zT,ET);
          double massTest =  (ET*ET) - (xT*xT) - (yT*yT) - (zT*zT) ;
-         if (massTest > 0. ) {
-            LorentzVector mT = LorentzVector(xT,yT,zT,ET);
-            tCandidates.push_back( mT );
-            findt = true;        
-         }
+
+	 if ( massTest <= 0. ) continue;
+	 thePair bWpair( fabs(massTest - 174.) , bj );
+	 bWpairList.push_back( bWpair );
+	 findt = true;    
      }
+     sort(bWpairList.begin(), bWpairList.end(), theIncreasing );
+     if (widx == 1) bW1 = bWpairList;
+     if (widx == 2) bW2 = bWpairList;
   }
+
+  for (size_t i=0; i<bW1.size(); i++ ) {
+
+      double x1 = wCandidate[0].Px() + bjets[ bW1[i].second ].p4().Px();
+      double y1 = wCandidate[0].Py() + bjets[ bW1[i].second ].p4().Py();
+      double z1 = wCandidate[0].Pz() + bjets[ bW1[i].second ].p4().Pz();
+      double E1 = wCandidate[0].E()  + bjets[ bW1[i].second ].p4().E();
+      LorentzVector T1 = LorentzVector(x1,y1,z1,E1);
+
+      double x2 = wCandidate[1].Px() + bjets[ bW2[i].second ].p4().Px();
+      double y2 = wCandidate[1].Py() + bjets[ bW2[i].second ].p4().Py();
+      double z2 = wCandidate[1].Pz() + bjets[ bW2[i].second ].p4().Pz();
+      double E2 = wCandidate[1].E()  + bjets[ bW2[i].second ].p4().E();
+      LorentzVector T2 = LorentzVector(x2,y2,z2,E2);
+
+      if ( bW1[i].second == bW2[i].second  ) {
+         double dm1 = fabs(174. - getInvMass(T1));
+         double dm2 = fabs(174. - getInvMass(T2));
+         if ( dm1 < dm2 ) {
+            x2 = wCandidate[1].Px() + bjets[ bW2[i+1].second ].p4().Px();
+	    y2 = wCandidate[1].Py() + bjets[ bW2[i+1].second ].p4().Py();
+	    z2 = wCandidate[1].Pz() + bjets[ bW2[i+1].second ].p4().Pz();
+	    E2 = wCandidate[1].E()  + bjets[ bW2[i+1].second ].p4().E();
+	    T2 = LorentzVector(x2,y2,z2,E2);
+         }
+         if ( dm1 > dm2 ) {
+            x1 = wCandidate[0].Px() + bjets[ bW1[i+1].second ].p4().Px();
+	    y1 = wCandidate[0].Py() + bjets[ bW1[i+1].second ].p4().Py();
+	    z1 = wCandidate[0].Pz() + bjets[ bW1[i+1].second ].p4().Pz();
+	    E1 = wCandidate[0].E()  + bjets[ bW1[i+1].second ].p4().E();
+	    T1 = LorentzVector(x1,y1,z1,E1);
+         }
+
+      } 
+      tCandidates.push_back(T1);
+      tCandidates.push_back(T2);    
+
+      break ;
+  }
+
   return findt;
 }
  
 std::vector<LorentzVector> TtAnalysis::recoSemiLeptonicTtEvent(int topo, std::vector<pat::Jet> theWJets,
-                            std::vector<pat::Jet> thebJets, std::vector<const reco::Candidate*> mcMuons, 
-                            std::vector<const reco::Candidate*> mcElectrons, 
+                            std::vector<pat::Jet> thebJets, std::vector<const reco::Candidate*> theMuons, 
+                            std::vector<const reco::Candidate*> theElectrons, 
                             Handle<std::vector<pat::MET> >  mets ) {
 
    std::vector<LorentzVector> TtCollection;
    if (topo != 1 && topo != -1) return TtCollection;
 
-   std::vector<LorentzVector> wCadidates;
-   bool isMuon     = ( mcMuons.size() > 0 && mcElectrons.size() ==0 ) ? true : false ;
-   bool isElectron = ( mcMuons.size() ==0 && mcElectrons.size() > 0 ) ? true : false ;
-   std::vector<const reco::Candidate*> mclepton = ( isMuon && !isElectron  ) ? mcMuons : mcElectrons ;
-   bool hadronic = recoW( theWJets, wCadidates );
-   bool leptonic = leptonic = recoW( mclepton, mets ,wCadidates );
+   // get the leptons 
+   bool isMuon     = ( theMuons.size() ==1 && theElectrons.size() ==0 ) ? true : false ;
+   bool isElectron = ( theMuons.size() ==0 && theElectrons.size() ==1 ) ? true : false ;
+   std::vector<const reco::Candidate*> mclepton = ( isMuon && !isElectron  ) ? theMuons : theElectrons ;
+   
+   // reco hadronic W 
+   std::vector<LorentzVector> hadWs;
+   bool hadronic = recoW( theWJets, hadWs );
+   // reco leptonic W
+   std::vector<LorentzVector> lepWs;
+   bool leptonic = recoW( mclepton, mets, lepWs );
+
    bool findtops = false ;
-   if (hadronic && leptonic ) {
-      findtops = recoTop( wCadidates,thebJets, TtCollection );
+   if ( hadronic && leptonic ) {
+      std::vector<LorentzVector> wCandidates;
+      for (size_t i=0; i< lepWs.size(); i++) {
+         for (size_t j=0; j< hadWs.size(); j++) {
+            wCandidates.push_back(lepWs[i]);
+            wCandidates.push_back(hadWs[j]);
+            findtops = recoTop( wCandidates ,thebJets, TtCollection );
+            wCandidates.clear();
+        } 
+      }
    }
 
-   std::vector<mtpair> tlist;
-   for (size_t i=0; i<TtCollection.size(); i++) {
-
-       double tmass = getInvMass(TtCollection[i]) ;  
-       double dm = fabs(tmass - 174.) ;
-       mtpair tpair(dm , TtCollection[i]);  
-       tlist.push_back( tpair );
-   }
-   sort(tlist.begin(), tlist.end(), dmIncreasing );
-    
-   TtCollection.clear();
-   for(size_t i=0; i<tlist.size() ; i++) {
-      if (i > 2) continue;
-      TtCollection.push_back(tlist[i].second); 
-   }
+   dmSortRecoObjects( TtCollection, 174. );
    return TtCollection ;
 
 }
@@ -531,5 +633,26 @@ double TtAnalysis::getInvMass( LorentzVector lv ) {
      return mass;
 
 }
+
+void TtAnalysis::dmSortRecoObjects( std::vector<LorentzVector>& lv, double objMass  ) {
+
+   std::vector<mtpair> theList;
+   for (size_t i=0; i<lv.size(); i++) {
+
+       double mass = getInvMass( lv[i]) ;  
+       double dm = fabs( mass - objMass ) ;
+       mtpair mpair(dm , lv[i]);  
+       theList.push_back( mpair );
+   }
+   sort(theList.begin(), theList.end(), dmIncreasing );
+    
+   lv.clear();
+   for(size_t i=0; i<theList.size() ; i++) {
+      if (i > 2) continue;
+      lv.push_back(theList[i].second); 
+   }
+
+}
+
 //define this as a plug-in
 DEFINE_FWK_MODULE(TtAnalysis);
