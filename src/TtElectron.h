@@ -75,10 +75,13 @@ class TtElectron {
     ~TtElectron();
 
     /// Perform the real analysis
-    void ElectronAnalysis(edm::Handle<std::vector<pat::Electron> > patMu, HTOP4* histo4, NJet* jtree, int eventId );
+    void ElectronTreeFeeder(edm::Handle<std::vector<pat::Electron> > patMu, NJet* jtree, int eventId );
+    void ElectronAnalysis(edm::Handle<std::vector<pat::Electron> > patMu, HTOP4* histo4 );
+    void matchedElectronAnalysis( std::vector<const reco::Candidate*> patMu, HTOP4* histo4 );
 
-    //std::vector<pat::Electron> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patMu, HTOP4* histo4 );
     std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patMu, HTOP4* histo4 );
+
+    
 
    private:
 
