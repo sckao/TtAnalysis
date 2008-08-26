@@ -74,7 +74,8 @@ class TtMuon {
     ~TtMuon();
 
     /// Perform the real analysis
-    void muonAnalysis(edm::Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3, NJet* jtree, int eventId );
+    void muonAnalysis(edm::Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 );
+    void MuonTreeFeeder(edm::Handle<std::vector<pat::Muon> > patMu, NJet* jtree, int eventId );
 
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 );
 

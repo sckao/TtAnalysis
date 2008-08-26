@@ -1,11 +1,11 @@
-#ifndef TtMET_H
-#define TtMET_H
+#ifndef TtPhoton_H
+#define TtPhoton_H
 // -*- C++ -*-
 //
-// Package:    TtMET
-// Class:      TtMET
+// Package:    TtPhoton
+// Class:      TtPhoton
 // 
-/**\class TtMET TtMET.cc PhysicsTools/TtAnalysis/src/TtMET.cc
+/**\class TtPhoton TtPhoton.cc PhysicsTools/TtAnalysis/src/TtPhoton.cc
 
  Description: <one line class summary>
 
@@ -40,7 +40,7 @@
 #include "DataFormats/PatCandidates/interface/Lepton.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
-#include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 
@@ -54,7 +54,6 @@
 
 #include "TtAnalysisHisto.h"
 #include "TtAnalysisNtuple.h"
-#include "TtMuon.h"
 
 #include "TFile.h"
 #include <vector>
@@ -67,31 +66,19 @@
 // class decleration
 //
 typedef math::XYZTLorentzVector LorentzVector;
-class TtMuon;
 
-class TtMET {
+class TtPhoton {
    public:
     /// Constructor
-    explicit TtMET(const edm::ParameterSet&);
+    explicit TtPhoton();
     /// Destructor
-    ~TtMET();
+    ~TtPhoton();
 
     /// Perform the real analysis
-    void MetTreeFeeder(edm::Handle<std::vector<pat::MET> > patMet, NJet* jtree, int eventId ); 
-
-    void metAnalysis(edm::Handle<std::vector<pat::MET> > patMet, const edm::Event & iEvent, HTOP2* histo2);
-
-    LorentzVector findNeutrino(edm::Handle<std::vector<reco::GenParticle> > genParticles );
-    std::vector<double> CaloMET( edm::Handle<CaloTowerCollection> calotowers );
-
+    void PhotonTreeFeeder(edm::Handle<std::vector<pat::Photon> > patMu, NJet* jtree, int eventId );
+    void PhotonAnalysis(edm::Handle<std::vector<pat::Photon> > patMu, HTOP5* histo5 );
 
    private:
-
-    TtMuon*   fromTtMuon;
-    edm::InputTag caloSrc;
-    edm::InputTag muonSrc;
-    edm::InputTag genSrc;
-
 
 };
 

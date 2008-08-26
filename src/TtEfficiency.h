@@ -1,11 +1,11 @@
-#ifndef TtMET_H
-#define TtMET_H
+#ifndef TtEfficiency_H
+#define TtEfficiency_H
 // -*- C++ -*-
 //
-// Package:    TtMET
-// Class:      TtMET
+// Package:    TtEfficiency
+// Class:      TtEfficiency
 // 
-/**\class TtMET TtMET.cc PhysicsTools/TtAnalysis/src/TtMET.cc
+/**\class TtEfficiency TtEfficiency.cc PhysicsTools/TtAnalysis/src/TtEfficiency.cc
 
  Description: <one line class summary>
 
@@ -52,46 +52,34 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
-#include "TtAnalysisHisto.h"
-#include "TtAnalysisNtuple.h"
-#include "TtMuon.h"
-
 #include "TFile.h"
 #include <vector>
 #include <map>
 #include <string>
 #include <utility>
 
+#include "TtAnalysisHisto.h"
+#include "TtAnalysisNtuple.h"
 
 //
 // class decleration
 //
 typedef math::XYZTLorentzVector LorentzVector;
-class TtMuon;
 
-class TtMET {
+class TtEfficiency {
    public:
     /// Constructor
-    explicit TtMET(const edm::ParameterSet&);
+    explicit TtEfficiency();
     /// Destructor
-    ~TtMET();
+    ~TtEfficiency();
 
     /// Perform the real analysis
-    void MetTreeFeeder(edm::Handle<std::vector<pat::MET> > patMet, NJet* jtree, int eventId ); 
-
-    void metAnalysis(edm::Handle<std::vector<pat::MET> > patMet, const edm::Event & iEvent, HTOP2* histo2);
-
-    LorentzVector findNeutrino(edm::Handle<std::vector<reco::GenParticle> > genParticles );
-    std::vector<double> CaloMET( edm::Handle<CaloTowerCollection> calotowers );
-
+    void EventEfficiency(int topo, bool pass, HTOP9* histo9 );
+    void EventShape(int topo, size_t isoMu, size_t isoE , size_t nBJ, size_t wJ, HTOP9* histo9 );
+    void JetEfficiency(std::vector<pat::Jet> recojets, std::vector<pat::Jet> mcjets, HTOP9* histo9 );
+    void IsoLeptonEfficiency(std::vector<const reco::Candidate*> isolep, std::vector<const reco::Candidate*> mclep, HTOP9* histo9 );
 
    private:
-
-    TtMuon*   fromTtMuon;
-    edm::InputTag caloSrc;
-    edm::InputTag muonSrc;
-    edm::InputTag genSrc;
-
 
 };
 

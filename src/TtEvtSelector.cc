@@ -85,7 +85,7 @@ bool TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<s
 
  int nMu = 0;
  for (std::vector<pat::Muon>::const_iterator it = rMu->begin(); it != rMu->end(); it++ ) {
-     if ( (*it).pt() > 15.0 )  nMu++ ; 
+     if ( (*it).pt() > 30.0 )  nMu++ ; 
  }
   
  int nE = 0;
@@ -93,14 +93,19 @@ bool TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<s
      if ( (*it).pt() > 15.0 )  nE++ ; 
  }
   
- int nJet = 0;
+ bool jetPreSelect = false;
+ std::vector<pat::Jet> jet_temp ;
  for (std::vector<pat::Jet>::const_iterator it = rJet->begin(); it != rJet->end(); it++ ) {
-     if ( (*it).et() > 20.0 )  nJet++ ;
+     if ( (*it).pt()  < 45. ) continue;
+     jet_temp.push_back( *it );
  }
- 
+ if ( jet_temp.size() > 0) { 
+    sort(jet_temp.begin(), jet_temp.end(), PtDecreasing );
+    if ( jet_temp[0].pt() > 65. && jet_temp.size() > 3  ) jetPreSelect = true ; 
+ }
  int nLep = nMu + nE ;
 
- if ( nLep > 0 && nJet > 3 ) pass = true;
+ if ( nLep > 0 && jetPreSelect ) pass = true;
 
  return pass;
 
@@ -160,10 +165,12 @@ std::vector<pat::Jet> TtEvtSelector::WJetSelection( Handle<std::vector<pat::Jet>
    {
        edm::RefVector<reco::TrackCollection>  assTk = (*j1).associatedTracks() ;
        if (assTk.size() == 0) continue;
-       if ((*j1).pt() < 20. ) continue;
+       if ((*j1).pt() < 30. ) continue;
 
        double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
-       if (bDis_TkCount < 2.  ) continue;
+       if (bDis_TkCount > 1.  ) continue;
+
+       if ( j1->towersArea() < 0.03 ) continue;
        
        //double EovH1 = EoverH(*j1) ;
        //if ((*j1).nConstituents() < 5 || EovH1 > 20 || EovH1 < 0.01) continue;
@@ -188,7 +195,7 @@ std::vector<pat::Jet> TtEvtSelector::bJetSelection( Handle<std::vector<pat::Jet>
    {
        edm::RefVector<reco::TrackCollection>  assTk = (*j1).associatedTracks() ;
        if (assTk.size() == 0) continue;
-       if ((*j1).pt() < 20. ) continue;
+       if ((*j1).pt() < 30. ) continue;
        double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
        if (bDis_TkCount < 2.  ) continue;
 
@@ -215,6 +222,7 @@ std::vector<pat::Muon> TtEvtSelector::MuonSelection( Handle<std::vector<pat::Muo
    {
        if( ! u1->isIsolationValid()  ) continue;
        if( ! u1->isTrackerMuon() ) continue;
+       if( ! u1->isGlobalMuon() ) continue;
    
        uCollection.push_back( *u1 );
        //cout<<" collected muons  "<< uCollection.size()<<endl;

@@ -78,8 +78,20 @@ TtJet::~TtJet()
 //typedef std::pair<double, pat::Jet> ptjet ;
 
 // ------------ method called to for each event  ------------
-void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, const edm::Event& iEvent, 
-                        HTOP1* histo1, NJet* jtree, int eventId ) {
+
+void TtJet::JetTreeFeeder(Handle<std::vector<pat::Jet> > patJet, NJet* jtree, int eventId ) {
+
+   for (std::vector<pat::Jet>::const_iterator j1 = patJet->begin(); j1 != patJet->end(); j1++)
+   {
+       float emE0 = (*j1).emEnergyInEB()  + (*j1).emEnergyInEE()  + (*j1).emEnergyInHF() ;
+       float hdE0 = (*j1).hadEnergyInHB() + (*j1).hadEnergyInHE() + (*j1).hadEnergyInHF()+ 
+                    (*j1).hadEnergyInHO();
+
+       jtree->FillBpatJ( eventId, j1->eta(), j1->phi(), emE0, hdE0, j1->p(), j1->pt() );
+
+   }
+}
+void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, const edm::Event& iEvent, HTOP1* histo1){
 
    /// 1) overall jet information
    int nJets = patJet->size();
@@ -111,7 +123,6 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, const edm::Event&
 
        if ( (*j1).pt() > 20.0  &&  assTk.size() > 0) {
           histo1->Fill1h( EovH, (*j1).eta(), (*j1).towersArea(), nCon, assTk.size() ,rCon, (*j1).n60()/nCon );
-	  jtree->FillBpatJ( eventId, j1->eta(), j1->phi(), emE0, hdE0, j1->p(), j1->pt() );
        }
 
        if ( (*j1).pt() > 20. && fabs((*j1).eta()) < 2.0) nj[0]++;
@@ -150,7 +161,7 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, const edm::Event&
 }
 
 void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<const reco::Candidate*> isoMuons ,
-                                  HTOP6* histo6 ) {
+                                  HTOP8* histo8 ) {
 
   // look at matched jet properties
   for (std::vector<jmatch>::const_iterator j1 = mcwjets.begin(); j1 != mcwjets.end(); j1++) {
@@ -159,25 +170,29 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
       reco::Particle jmom = j1->mom;
 
       int    nCon = truth.nConstituents();
-      if (nCon == 0) continue; 
+      //if (nCon == 0) continue; 
       double EovH = EoverH( truth  );
       double rCon = NofJetConstituents( truth ) ;
+      double res_Pt  = (truth.pt() - jmom.pt()) / jmom.pt() ;
+      double res_Eta = (truth.eta() - jmom.eta()) / jmom.eta();
+
       edm::RefVector<reco::TrackCollection>  assTk = truth.associatedTracks() ;
-      histo6->Fill6a( truth.pt(), truth.eta(), EovH, nCon, truth.n60()/nCon, truth.n90()/nCon, rCon , truth.towersArea(), assTk.size(), truth.emEnergyFraction() );
+      histo8->Fill8c( truth.pt(), truth.eta(), EovH, nCon, truth.n60()/nCon, truth.n90()/nCon, rCon , truth.towersArea(), assTk.size(), truth.emEnergyFraction(), res_Pt, res_Eta );
 
      // dR(closest isoMu, matched bjet )
      double dR_WjMu = 999.;
      for (std::vector<const reco::Candidate*>::const_iterator m1= isoMuons.begin(); m1 != isoMuons.end(); m1++) {
          double dh = truth.eta() - (*m1)->eta();
 	 double df = truth.phi() - (*m1)->phi();
-	 double dR = sqrt( dh*dh + df*df );
+	 double dR = sqrt( (dh*dh) + (df*df) );
 	 if (dR < dR_WjMu ) {  dR_WjMu = dR; }
      }
-     histo6->Fill6d( jmom.pt(), jmom.eta(), (*j1).res_P, dR_WjMu );
+     histo8->Fill8d( dR_WjMu );
 
   }
 
   // access the 4 momentum of parton 
+  /* 
   LorentzVector qm[4] ;
   std::vector<pat::Jet> Wjj1;
   std::vector<pat::Jet> Wjj2;
@@ -236,7 +251,7 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
 
      histo6->Fill6b( massW, momW, dRWjj, Res_dR );
   }
- 
+  */
 }
 
 void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcbjets, std::vector<jmatch> mcwjets,

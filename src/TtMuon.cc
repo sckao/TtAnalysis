@@ -78,16 +78,22 @@ TtMuon::~TtMuon()
 //typedef std::pair<double, pat::Jet> ptjet ;
 
 // ------------ method called to for each event  ------------
-void TtMuon::muonAnalysis(Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3, NJet* jtree, int eventId ) {
+void TtMuon::muonAnalysis(Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 ) {
+
+ for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
+     histo3->Fill3a( it->pt(), it->eta() );
+ }
+
+}
+
+void TtMuon::MuonTreeFeeder(Handle<std::vector<pat::Muon> > patMu, NJet* jtree, int eventId ) {
 
  for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
 
-     const reco::IsoDeposit* caloE = it->ecalIsoDeposit(); 
-     const reco::IsoDeposit* caloH = it->hcalIsoDeposit(); 
-     double emE = caloE->candEnergy() ;
-     double hdE = caloH->candEnergy() ;
+     double emE = (it->calEnergy()).em ;
+     double hdE = (it->calEnergy()).had ;
+
      jtree->FillBpatMu( eventId, it->eta(), it->phi(), emE, hdE, it->p(), it->pt() );
-     histo3->Fill3a( it->pt(), it->eta() );
  }
 
 }
@@ -126,7 +132,7 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
   
      // Isolation Cut
      //if ( sumPtR3 > 3. || sumEtR3 > 5. ) continue; 
-     if (IsoValue < 0.92 ) continue;
+     if (IsoValue < 0.9 ) continue;
      //if ( tkR3.second   > 1 ) continue;
      //if ( it->ecalIso() > 3 ) continue;
      //if ( it->hcalIso() > 1 ) continue;

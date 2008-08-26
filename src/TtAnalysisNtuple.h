@@ -57,6 +57,7 @@ public:
       patE.pt    = pt;
       BpatE->Fill();
  }
+  
  void FillBpatGa(int eventId, double eta, double phi, double caloE, double caloH, double p,double pt ) 
  {
       patGa.eventId = eventId;
@@ -68,6 +69,7 @@ public:
       patGa.pt    = pt;
       BpatGa->Fill();
  }
+ 
  void FillBpatNu(int eventId, double eta, double phi, double caloE, double caloH, double p,double pt ) 
  {
       patNu.eventId = eventId;
@@ -124,7 +126,7 @@ private:
         double caloH;
         double p;
         double pt;
- } patJ,patMu,patE,patGa,patNu;
+ } patJ,patMu,patE,patNu,patGa;
 
  struct TreeMC {
         int eventId;

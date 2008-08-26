@@ -74,6 +74,28 @@ TtMCMatching::~TtMCMatching()
 //
 // member functions
 //
+void TtMCMatching::MCTreeFeeder(Handle<std::vector<reco::GenParticle> > genParticles , NJet* jtree, int eventId ){
+
+   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
+       if ( abs((*it).pdgId()) != 24) continue;
+       bool WfromT = false;
+       for (size_t q=0; q< (*it).numberOfMothers(); q++) {
+           const reco::Candidate *mom = (*it).mother(q) ;
+           if ( abs(mom->pdgId()) != 6 ) continue;
+           WfromT = true ;
+       }
+       if ( !WfromT ) continue;
+
+       std::vector<LorentzVector> qm ;
+       for (size_t q=0; q< (*it).numberOfDaughters(); ++q) {
+           const reco::Candidate *dau = (*it).daughter(q) ;
+           if( abs(dau->pdgId()) > 6 ) continue;
+           qm.push_back( dau->p4() );
+           jtree->FillBgen( eventId, dau->pdgId(), dau->eta(), dau->phi(), dau->energy(), dau->pt() );
+       }
+   } 
+
+} 
 
 std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenParticle> > genParticles,
                                Handle<std::vector<pat::Jet> > jets ) {
@@ -98,7 +120,7 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
        // looking for the jet daughter of W 
        for (size_t q=0; q< (*it).numberOfDaughters(); ++q) {
            const reco::Candidate *dau = (*it).daughter(q) ;
-	   if( abs(dau->pdgId()) > 6 ) continue;
+	   if( abs(dau->pdgId()) > 4 ) continue;
 	   jetMom.push_back( *dau );
        }
    }
@@ -171,6 +193,7 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
 
        pat::Jet leader ;
        pat::Jet truth ;
+       bool hasMatched = false;
        for (size_t i=0; i< qq.size(); i++) {
 
            pat::Jet jt = jv[ qq[i] ];
@@ -185,9 +208,10 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
               jetERatio += ERatio ;
               bestJet.push_back( jt ) ;
               sumP4 += jt.p4() ;
-              if ( dR < dR1 && abs(jt.partonFlavour()) < 5 ){
+              if ( dR < dR1 && jt.partonFlavour() == it->pdgId() ){
                  dR1 = dR ;
                  truth = jt;
+                 hasMatched = true;
               }
               if (theP > biggestP ) {
                  biggestP = theP;
@@ -207,6 +231,7 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
        wjets.MomIdx = jm1;
        wjets.res_P = 1. - jetERatio ;
        wjets.sumP4 = sumP4 ;
+       wjets.hasMatched = hasMatched ;
       
        matchedJets.push_back(wjets);
    }
@@ -288,6 +313,7 @@ std::vector<jmatch> TtMCMatching::matchbJets( Handle<std::vector<reco::GenPartic
 
        pat::Jet leader ;
        pat::Jet truth ;
+       bool hasMatched = false;
        for (size_t i=0; i< qq.size(); i++) {
 
            pat::Jet jt = jv[ qq[i] ];
@@ -305,6 +331,7 @@ std::vector<jmatch> TtMCMatching::matchbJets( Handle<std::vector<reco::GenPartic
               if ( dR < dR1 && abs(jt.partonFlavour()) == 5 ){
                  dR1 = dR ;
                  truth = jt;
+                 hasMatched = true;
               }
               if (theP > biggestP ) {
                  biggestP = theP;
@@ -323,6 +350,7 @@ std::vector<jmatch> TtMCMatching::matchbJets( Handle<std::vector<reco::GenPartic
        bjets.MomIdx = jm1;
        bjets.res_P = 1. - jetERatio ;
        bjets.sumP4 = sumP4 ;
+       bjets.hasMatched = hasMatched ;
       
        matchedJets.push_back(bjets);
    }

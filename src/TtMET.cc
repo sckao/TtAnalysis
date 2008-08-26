@@ -80,8 +80,19 @@ TtMET::~TtMET()
 //typedef std::pair<double, pat::Jet> ptjet ;
 
 // ------------ method called to for each event  ------------
-void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event& iEvent, 
-                        HTOP2* histo2, NJet* jtree, int eventId ) {
+
+void TtMET::MetTreeFeeder(Handle<std::vector<pat::MET> > patMet, NJet* jtree, int eventId ) {
+
+  for (std::vector<pat::MET>::const_iterator m1 = patMet->begin(); m1 != patMet->end(); m1++)
+  {
+     float emMET = (*m1).emEtInEB()  + (*m1).emEtInEE()  + (*m1).emEtInHF() ;
+     float hdMET = (*m1).hadEtInHB() + (*m1).hadEtInHE() + (*m1).hadEtInHF() + (*m1).hadEtInHO() ;
+
+     jtree->FillBpatNu( eventId, m1->eta(), m1->phi(), emMET, hdMET, m1->p(), m1->pt() );
+  }
+}
+
+void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event& iEvent, HTOP2* histo2) {
 
  Handle<std::vector<pat::Muon> > muons;
  iEvent.getByLabel(muonSrc, muons);
@@ -101,7 +112,6 @@ void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event&
 
      float emf = (*m1).emEtFraction() ;
      //float hdf = (*m1).etFractionHadronic() ;
-     jtree->FillBpatNu( eventId, m1->eta(), m1->phi(), emMET, hdMET, m1->p(), m1->pt() );
      histo2->Fill2a( (*m1).et(), emf, emfCalo, (*m1).sumEt() );
 
      // calculate the MET from Calo

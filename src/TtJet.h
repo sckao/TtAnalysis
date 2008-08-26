@@ -101,10 +101,11 @@ class TtJet {
     ~TtJet();
 
     /// Perform the real analysis
-    void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, const edm::Event & iEvent,
-                     HTOP1* histo1, NJet* jtree, int eventId );
+    void JetTreeFeeder(edm::Handle<std::vector<pat::Jet> > patJet, NJet* jtree, int eventId );
 
-    void matchedWJetsAnalysis(std::vector<jmatch> mcwjets, std::vector<const reco::Candidate*> isoMuons, HTOP6* histo6);
+    void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, const edm::Event& iEvent, HTOP1* histo1);
+
+    void matchedWJetsAnalysis(std::vector<jmatch> mcwjets, std::vector<const reco::Candidate*> isoMuons, HTOP8* histo8);
 
     void matchedbJetsAnalysis(std::vector<jmatch> mcbjets, std::vector<jmatch> mcwjets, 
                               std::vector<const reco::Candidate*> isoMuons, HTOP7* histo7);

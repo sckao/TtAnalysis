@@ -52,6 +52,8 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
+#include "TtAnalysisNtuple.h"
+
 #include "TFile.h"
 #include <vector>
 #include <map>
@@ -72,6 +74,7 @@ struct jmatch {
        pat::Jet leadingJet ;
        pat::Jet trueJet ;
        reco::Particle mom ;
+       bool hasMatched; 
 };
 
 class TtMCMatching {
@@ -82,6 +85,8 @@ class TtMCMatching {
     ~TtMCMatching();
 
     /// Perform the real analysis
+    void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, NJet* jtree, int eventId);
+
     std::vector<jmatch> matchWJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                    edm::Handle<std::vector<pat::Jet> > jets );
     std::vector<jmatch> matchbJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,

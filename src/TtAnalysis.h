@@ -68,8 +68,10 @@
 #include "TtMCMatching.h"
 #include "TtMuon.h"
 #include "TtElectron.h"
+#include "TtPhoton.h"
 #include "TtMET.h"
 #include "TtJet.h"
+#include "TtEfficiency.h"
 
 #include "TFile.h"
 #include "TVector3.h"
@@ -86,8 +88,10 @@ class TtEvtSelector;
 class TtMCMatching;
 class TtMuon;
 class TtElectron;
+class TtPhoton;
 class TtMET;
 class TtJet;
+class TtEfficiency; 
 
 // hfPos[0]:eta, hfPos[1]:phi, hfPos[2]:pt 
 typedef std::vector<double> hfPos ;
@@ -110,8 +114,6 @@ class TtAnalysis : public edm::EDAnalyzer {
                                  edm::Handle<std::vector<reco::GenParticle> > genParticles);
     hfPos findDaughter(int dauId, int momId, double eta, double phi,
                                  edm::Handle<std::vector<reco::GenParticle> > genParticles);
-    //return Top 4-momentum
-    LorentzVector findTop(LorentzVector qm1, LorentzVector qm2);
  
     bool recoW( std::vector<pat::Jet> wjets, std::vector<LorentzVector>& wCandidate );
     bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
@@ -124,6 +126,8 @@ class TtAnalysis : public edm::EDAnalyzer {
  
     double getInvMass( LorentzVector lv );
 
+    void dmSortRecoObjects( std::vector<LorentzVector>& lv, double objMass );
+
 
    private:
       // ----------member data ---------------------------
@@ -132,8 +136,10 @@ class TtAnalysis : public edm::EDAnalyzer {
     TtMCMatching*  MCMatching;
     TtMuon*        ttMuon;
     TtElectron*    ttEle;
+    TtPhoton*      ttGam;
     TtMET*         ttMET;
     TtJet*         ttJet;
+    TtEfficiency*  ttEff;
 
     // Histograms
     HTOP1 *h_Jet;
@@ -154,6 +160,7 @@ class TtAnalysis : public edm::EDAnalyzer {
 
     // Switch for debug output
     bool debug;
+    bool needTree; 
     int evtIt;
 
     std::string rootFileName;
