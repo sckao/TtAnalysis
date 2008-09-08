@@ -36,17 +36,18 @@ process.MessageLogger = cms.Service("MessageLogger")
 process.ttAna = cms.EDFilter("TtAnalysis",
     TrackAssociatorParameterBlock,
     TrackAssociatorParameters,
+    debug    = cms.untracked.bool(False),
+    needTree = cms.untracked.bool(False),
     rootFileName = cms.untracked.string('tt_test_fast210.root'),
-    metSource = cms.InputTag("selectedLayer1METs"),
+    metSource  = cms.InputTag("selectedLayer1METs"),
     muonSource = cms.InputTag("selectedLayer1Muons"),
-    jetSource = cms.InputTag("selectedLayer1Jets"),
+    jetSource  = cms.InputTag("selectedLayer1Jets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
-    photonSource = cms.InputTag("selectedLayer1Photons"),
+    photonSource   = cms.InputTag("selectedLayer1Photons"),
     leptonFlavour = cms.string('muon'),
-    recoMuons = cms.untracked.string('paramMuons'),
-    debug = cms.untracked.bool(False),
+    recoMuons    = cms.untracked.string('paramMuons'),
     genParticles = cms.InputTag("genParticles"),
-    caloSource = cms.InputTag("towerMaker")
+    caloSource   = cms.InputTag("towerMaker")
 )
 
 process.p = cms.Path(process.ttAna)
