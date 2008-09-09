@@ -78,7 +78,7 @@ class TtEvtSelector {
     std::vector<pat::Jet> WJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
     std::vector<pat::Jet> bJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
 
-    std::vector<pat::Muon> MuonSelection( edm::Handle<std::vector<pat::Muon> >  Muons );
+    //std::vector<pat::Muon> MuonSelection( edm::Handle<std::vector<pat::Muon> >  Muons );
    private:
 
 };

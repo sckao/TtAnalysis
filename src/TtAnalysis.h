@@ -98,6 +98,13 @@ typedef std::vector<double> hfPos ;
 /// Lorentz vector
 typedef math::XYZTLorentzVector LorentzVector;
 
+//
+struct iReco{
+    LorentzVector p4;
+    std::pair<int,int> from;
+    double dm;
+};
+
 class TtAnalysis : public edm::EDAnalyzer {
    public:
     /// Constructor
@@ -115,18 +122,18 @@ class TtAnalysis : public edm::EDAnalyzer {
     hfPos findDaughter(int dauId, int momId, double eta, double phi,
                                  edm::Handle<std::vector<reco::GenParticle> > genParticles);
  
-    bool recoW( std::vector<pat::Jet> wjets, std::vector<LorentzVector>& wCandidate );
+    bool recoW( std::vector<pat::Jet> wjets, std::vector<iReco>& wCandidate );
     bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
-                std::vector<LorentzVector>& wCandidate );
-    bool recoTop( std::vector<LorentzVector> wCandidate, std::vector<pat::Jet> bjets, std::vector<LorentzVector>& tCandidate );
+                std::vector<iReco>& wCandidate );
+    bool recoTop( std::vector<iReco> wCandidate, std::vector<pat::Jet> bjets, std::vector<iReco>& tCandidate );
 
-    std::vector<LorentzVector> recoSemiLeptonicTtEvent(int topo, std::vector<pat::Jet> theWJets,
+    std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<pat::Jet> theWJets,
                   std::vector<pat::Jet> thebJets, std::vector<const reco::Candidate*> mcMuons,
                   std::vector<const reco::Candidate*> mcElectrons, edm::Handle<std::vector<pat::MET> > met );
  
     double getInvMass( LorentzVector lv );
 
-    void dmSortRecoObjects( std::vector<LorentzVector>& lv, double objMass );
+    void dmSortRecoObjects( std::vector<iReco>& objCand );
 
 
    private:

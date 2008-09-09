@@ -168,7 +168,8 @@ std::vector<pat::Jet> TtEvtSelector::WJetSelection( Handle<std::vector<pat::Jet>
        if ((*j1).pt() < 30. ) continue;
 
        double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
-       if (bDis_TkCount > 1.  ) continue;
+       double jProb        = j1->bDiscriminator("jetProbabilityBJetTags") ;
+       if (bDis_TkCount >=  2. && jProb >=0.2  ) continue;
 
        if ( j1->towersArea() < 0.03 ) continue;
        
@@ -197,7 +198,8 @@ std::vector<pat::Jet> TtEvtSelector::bJetSelection( Handle<std::vector<pat::Jet>
        if (assTk.size() == 0) continue;
        if ((*j1).pt() < 30. ) continue;
        double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
-       if (bDis_TkCount < 2.  ) continue;
+       double jProb        = j1->bDiscriminator("jetProbabilityBJetTags") ;
+       if (bDis_TkCount < 2. || jProb < 0.2 ) continue;
 
        //double EovH1 = EoverH(*j1) ;
        //if ((*j1).nConstituents() < 5 || EovH1 > 20 || EovH1 < 0.01) continue;
@@ -212,23 +214,6 @@ std::vector<pat::Jet> TtEvtSelector::bJetSelection( Handle<std::vector<pat::Jet>
    return jCollection;
 }
 
-
-
-std::vector<pat::Muon> TtEvtSelector::MuonSelection( Handle<std::vector<pat::Muon> >  Muons ) {
-
-   std::vector<pat::Muon> uCollection;
-   uCollection.clear();
-   for (std::vector<pat::Muon>::const_iterator u1 = Muons->begin(); u1 != Muons->end(); u1++)
-   {
-       if( ! u1->isIsolationValid()  ) continue;
-       if( ! u1->isTrackerMuon() ) continue;
-       if( ! u1->isGlobalMuon() ) continue;
-   
-       uCollection.push_back( *u1 );
-       //cout<<" collected muons  "<< uCollection.size()<<endl;
-   }
-   return uCollection;
-}
 
 
 //define this as a plug-in

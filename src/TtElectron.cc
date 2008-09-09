@@ -96,8 +96,8 @@ void TtElectron::matchedElectronAnalysis( std::vector<const reco::Candidate*>  m
      
      double caloE = it1->caloEnergy() ;
      double HovE = it1->hadronicOverEm() ;
-     double emE   = caloE / ( 1. + HovE ) ;
-     double hdE   = emE * HovE  ;
+     //double emE   = caloE / ( 1. + HovE ) ;
+     //double hdE   = emE * HovE  ;
      double EovP = caloE / (*it)->p() ;
  
      double IsoValue = emR.first / (*it)->p() ;
@@ -141,7 +141,7 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
      // Isolation Cut
      if ( tkR.second   > 3 ) continue;
      if ( it->trackIso() > 3 ) continue;
-     if ( IsoValue > 0.12 && fabs(it->eta()) < 1.5 ) continue;
+     //if ( IsoValue > 0.12 && fabs(it->eta()) < 1.5 ) continue;
      if ( it->ecalIso()  > 3 && fabs(it->eta()) >= 1.5 ) continue;
      //if ( it->ecalIso()  > 0.5 && fabs(it->eta()) <= 1.4 ) continue;
      //if ( it->ecalIso()  > 5   && fabs(it->eta())  > 1.4 ) continue;

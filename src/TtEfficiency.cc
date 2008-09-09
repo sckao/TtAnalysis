@@ -120,8 +120,6 @@ void TtEfficiency::IsoLeptonEfficiency(std::vector<const reco::Candidate*> isole
     }
  } 
 
-
-
 }
 
 

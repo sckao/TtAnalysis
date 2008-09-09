@@ -169,15 +169,33 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
       pat::Jet truth =  (*j1).trueJet ;
       reco::Particle jmom = j1->mom;
 
-      int    nCon = truth.nConstituents();
-      //if (nCon == 0) continue; 
-      double EovH = EoverH( truth  );
-      double rCon = NofJetConstituents( truth ) ;
+      int nCon = truth.nConstituents();
+
+      double towerArea = 0.;
+      double EovH = -1;
+      double emEF = -1;
+      int nTracks = -1;
+      int n60 = -1;
+      int n90 = -1;
+      if ( truth.isCaloJet() ) {
+         EovH = EoverH( truth  );
+         emEF = truth.emEnergyFraction() ;
+         towerArea = truth.towersArea();
+         edm::RefVector<reco::TrackCollection>  assTk = truth.associatedTracks() ;
+         nTracks= assTk.size();
+         n60 = truth.n60();
+         n90 = truth.n90();
+      }
       double res_Pt  = (truth.pt() - jmom.pt()) / jmom.pt() ;
       double res_Eta = (truth.eta() - jmom.eta()) / jmom.eta();
 
-      edm::RefVector<reco::TrackCollection>  assTk = truth.associatedTracks() ;
-      histo8->Fill8c( truth.pt(), truth.eta(), EovH, nCon, truth.n60()/nCon, truth.n90()/nCon, rCon , truth.towersArea(), assTk.size(), truth.emEnergyFraction(), res_Pt, res_Eta );
+      double jProb   = truth.bDiscriminator("jetProbabilityBJetTags") ;
+      double tkCount = truth.bDiscriminator("trackCountingHighEffBJetTags") ;
+
+      histo8->Fill8c( truth.pt(), truth.eta(), EovH, nCon, n60, n90, towerArea, nTracks, emEF, res_Pt, res_Eta, jProb, tkCount );
+      if ( !truth.isCaloJet() ) {
+         histo8->Fill8e(truth.pt(), truth.eta(),res_Pt);
+      }
 
      // dR(closest isoMu, matched bjet )
      double dR_WjMu = 999.;
@@ -187,7 +205,7 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
 	 double dR = sqrt( (dh*dh) + (df*df) );
 	 if (dR < dR_WjMu ) {  dR_WjMu = dR; }
      }
-     histo8->Fill8d( dR_WjMu );
+     if (dR_WjMu != 999. ) histo8->Fill8d( dR_WjMu );
 
   }
 
@@ -263,11 +281,33 @@ void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcbjets, std::vector<jmatc
       pat::Jet truth =  j1->trueJet ;
       reco::Particle jmom = j1->mom;
       
+      int nCon = truth.nConstituents();
+
+      double towerArea = 0.;
+      double EovH = -1.;
+      double emEF = -1.;
+      int nTracks = -1;
+      int n60 = -1;
+      int n90 = -1;
+      if ( truth.isCaloJet() ) {
+         EovH = EoverH( truth  );
+         emEF = truth.emEnergyFraction();
+         towerArea = truth.towersArea();
+         edm::RefVector<reco::TrackCollection>  assTk = truth.associatedTracks() ;
+         nTracks= assTk.size();
+         n60 = truth.n60();
+         n90 = truth.n90();
+      }
+
       double Res_Pt = (truth.pt() - jmom.pt()) / jmom.pt() ; 
-      double fk1 = truth.bDiscriminator("jetProbabilityBJetTags") ;
-      double fk2 = truth.bDiscriminator("trackCountingHighEffBJetTags") ;
-      histo7->Fill7a( Res_Pt, fk1 , fk2 );
-      //histo7->Fill7a( Res_Pt, truth.bDiscriminator("trackCountingJetTags") );
+      double jProb   = truth.bDiscriminator("jetProbabilityBJetTags") ;
+      double tkCount = truth.bDiscriminator("trackCountingHighEffBJetTags") ;
+
+      histo7->Fill7a( truth.pt(), truth.eta(), EovH, nCon, n60, n90, towerArea, nTracks, emEF, Res_Pt, jProb , tkCount );
+      if ( !truth.isCaloJet() ) {
+         histo7->Fill7e(truth.pt(), truth.eta(),Res_Pt);
+      }
+
 
       // dR(closest isoMu, matched bjet )
       double dR_bmu = 999.;
