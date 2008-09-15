@@ -103,7 +103,11 @@ class TtJet {
     /// Perform the real analysis
     void JetTreeFeeder(edm::Handle<std::vector<pat::Jet> > patJet, NJet* jtree, int eventId );
 
-    void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, const edm::Event& iEvent, HTOP1* histo1);
+    void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
+
+    void genJetInfo(edm::Handle<std::vector<reco::GenJet> > genJet,
+                    edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                    HTOP1* histo1, HTOP7* histo7, HTOP8* histo8 );
 
     void matchedWJetsAnalysis(std::vector<jmatch> mcwjets, std::vector<const reco::Candidate*> isoMuons, HTOP8* histo8);
 
@@ -128,6 +132,7 @@ class TtJet {
     double getEta(double vx, double vy, double vz );
 
     void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, HTOP7* histo7 );
+
 
    private:
 

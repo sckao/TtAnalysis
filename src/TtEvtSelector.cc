@@ -96,12 +96,12 @@ bool TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<s
  bool jetPreSelect = false;
  std::vector<pat::Jet> jet_temp ;
  for (std::vector<pat::Jet>::const_iterator it = rJet->begin(); it != rJet->end(); it++ ) {
-     if ( (*it).pt()  < 45. ) continue;
+     if ( (*it).pt()  < 40. ) continue;
      jet_temp.push_back( *it );
  }
  if ( jet_temp.size() > 0) { 
     sort(jet_temp.begin(), jet_temp.end(), PtDecreasing );
-    if ( jet_temp[0].pt() > 65. && jet_temp.size() > 3  ) jetPreSelect = true ; 
+    if ( jet_temp[0].pt() > 60. && jet_temp.size() > 3  ) jetPreSelect = true ; 
  }
  int nLep = nMu + nE ;
 

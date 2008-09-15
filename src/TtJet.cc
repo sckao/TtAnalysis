@@ -91,7 +91,7 @@ void TtJet::JetTreeFeeder(Handle<std::vector<pat::Jet> > patJet, NJet* jtree, in
 
    }
 }
-void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, const edm::Event& iEvent, HTOP1* histo1){
+void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1){
 
    /// 1) overall jet information
    int nJets = patJet->size();
@@ -125,20 +125,9 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, const edm::Event&
           histo1->Fill1h( EovH, (*j1).eta(), (*j1).towersArea(), nCon, assTk.size() ,rCon, (*j1).n60()/nCon );
        }
 
-       if ( (*j1).pt() > 20. && fabs((*j1).eta()) < 2.0) nj[0]++;
-       if ( (*j1).pt() > 30. && fabs((*j1).eta()) < 2.0) nj[1]++;
-       if ( (*j1).pt() > 40. && fabs((*j1).eta()) < 2.0) nj[2]++;
-
-       /*
-       cout <<"   NoCorr= "<<j1->correctionFactor( pat::Jet::NoCorrection ) <<endl;
-       cout <<"  defCorr= "<<j1->correctionFactor( pat::Jet::DefaultCorrection ) <<endl;
-       cout <<"  udsCorr= "<<j1->correctionFactor( pat::Jet::udsCorrection ) <<endl;
-       cout <<"    bCorr= "<<j1->correctionFactor( pat::Jet::bCorrection ) <<endl;
-       cout <<"    cCorr= "<<j1->correctionFactor( pat::Jet::cCorrection ) <<endl;
-       cout <<"    gCorr= "<<j1->correctionFactor( pat::Jet::gCorrection ) <<endl;
-       cout <<"   NrCorr= "<<j1->correctionFactor( pat::Jet::NrOfCorrections ) <<endl;
-       cout <<" "<<endl;
-       */
+       if ( (*j1).pt() > 20. ) nj[0]++;
+       if ( (*j1).pt() > 40. ) nj[1]++;
+       if (  fabs((*j1).eta()) < 3.5 ) nj[2]++;
 
        // crapy jet scope
        if ((*j1).towersArea()/(*j1).pt() > 0.005 ) {
@@ -158,6 +147,73 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, const edm::Event&
    }
    histo1->Fill1f( nJets, nj[0], nj[1], nj[2] );
 
+}
+
+void TtJet::genJetInfo(Handle<std::vector<reco::GenJet> > genJet, 
+                       Handle<std::vector<reco::GenParticle> > genParticles, 
+                       HTOP1* histo1, HTOP7* histo7,  HTOP8* histo8){
+
+   std::vector<iTt> ttobjs = JetMatching->TtObjects(genParticles);
+   // matching for bjets & wjets
+   std::vector<int> bjets; 
+   std::vector<int> wjets; 
+   for ( size_t i=0; i<ttobjs.size(); i++ ) {
+       if ( ttobjs[i].pdgId == 5 ) {
+          double dR0 = 99.;
+          double ptRes0 =99.;
+          int bj = -1;
+          for (size_t j=0; j < genJet->size(); j++) {
+              bool matched = JetMatching->matchingGeneral( (*genJet)[j].p4(), ttobjs[i], dR0, ptRes0);
+              if ( matched ) bj = static_cast<int>(j) ;
+          }
+          if ( bj != -1  ) bjets.push_back( bj );
+       }
+       if ( ttobjs[i].pdgId == -5 ) {
+          double dR0 = 99.;
+          double ptRes0 =99.;
+          int bj = -1;
+          for (size_t j=0; j < genJet->size(); j++) {
+              bool matched = JetMatching->matchingGeneral( (*genJet)[j].p4(), ttobjs[i], dR0, ptRes0);
+              if ( matched ) bj = static_cast<int>(j) ;
+          }
+          if ( bj != -1  ) bjets.push_back( bj );
+       }
+       if ( abs(ttobjs[i].pdgId) < 5 ) {
+          double dR0 = 99.;
+          double ptRes0 =99.;
+          int wj = -1;
+          for (size_t j=0; j < genJet->size(); j++) {
+              bool matched = JetMatching->matchingGeneral( (*genJet)[j].p4(), ttobjs[i], dR0, ptRes0);
+              if ( matched ) wj = static_cast<int>(j) ;
+          }
+          if ( wj != -1  ) wjets.push_back( wj );
+       }
+   }
+   for (std::vector<int>::iterator i= bjets.begin(); i!= bjets.end(); i++ ) {
+       double EovH = -1. ;
+       if ( (*genJet)[*i].hadEnergy() != 0 ) EovH = (*genJet)[*i].emEnergy()/(*genJet)[*i].hadEnergy() ;
+       histo7->Fill7f( (*genJet)[*i].pt(), (*genJet)[*i].eta(), EovH ) ; 
+   }
+   for (std::vector<int>::iterator i= wjets.begin(); i!= wjets.end(); i++ ) {
+       double EovH = -1. ;
+       if ( (*genJet)[*i].hadEnergy() != 0 ) EovH = (*genJet)[*i].emEnergy()/(*genJet)[*i].hadEnergy() ;
+       histo8->Fill8f( (*genJet)[*i].pt(), (*genJet)[*i].eta(), EovH ) ; 
+   }
+   int nj[4] = {0};
+   for (size_t j=0; j < genJet->size(); j++) {
+       nj[0]++;
+       if ( (*genJet)[j].nConstituents() ==0 ) continue;
+       if ( (*genJet)[j].pt()  > 20. ) nj[1]++;
+       if ( (*genJet)[j].pt()  > 40. ) nj[2]++;
+       if (fabs( (*genJet)[j].eta() ) < 3.5 ) nj[3]++;
+
+       double EovH = -1. ;
+       if ( (*genJet)[j].hadEnergy() != 0 ) EovH = (*genJet)[j].emEnergy() / (*genJet)[j].hadEnergy() ;
+
+       histo1->Fill1j( (*genJet)[j].eta(), (*genJet)[j].pt(), EovH );
+
+   }
+   histo1->Fill1k( nj[0], nj[1], nj[2], nj[3] ) ;
 }
 
 void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<const reco::Candidate*> isoMuons ,
@@ -209,67 +265,6 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
 
   }
 
-  // access the 4 momentum of parton 
-  /* 
-  LorentzVector qm[4] ;
-  std::vector<pat::Jet> Wjj1;
-  std::vector<pat::Jet> Wjj2;
-  std::vector<reco::Particle> Wqq1;
-  std::vector<reco::Particle> Wqq2;
-  for (std::vector<jmatch>::const_iterator j1 = mcwjets.begin(); j1 != mcwjets.end(); j1++) {
-
-      if ( (*j1).MomIdx == 1 ) {
-         qm[0] = (*j1).sumP4 ;
-         Wjj1.push_back(j1->trueJet);
-         Wqq1.push_back(j1->mom);
-       }
-      if ( (*j1).MomIdx == 2 ) {
-         qm[1] = (*j1).sumP4 ;
-         Wjj1.push_back(j1->trueJet);
-         Wqq1.push_back(j1->mom);
-      }
-      if ( (*j1).MomIdx == 3 ) {
-         qm[2] = (*j1).sumP4 ;
-         Wjj2.push_back(j1->trueJet);
-         Wqq2.push_back(j1->mom);
-      }
-      if ( (*j1).MomIdx == 4 ) { 
-         qm[3] = (*j1).sumP4 ;
-         Wjj2.push_back(j1->trueJet);
-         Wqq2.push_back(j1->mom);
-      }
-  }
-
-  // look at the W mass from matching jets 
-  if (qm[0].E() != 0 && qm[1].E() != 0 ) {
-     LorentzVector pW = findW( qm[0], qm[1]);
-     double momW = sqrt( pW.Px()*pW.Px() + pW.Py()*pW.Py() + pW.Pz()*pW.Pz() );
-     double massW = sqrt ( pW.E()*pW.E() - pW.Px()*pW.Px() - pW.Py()*pW.Py() - pW.Pz()*pW.Pz() );
-     double dh = Wjj1[0].eta() - Wjj1[1].eta() ;
-     double df = Wjj1[0].phi() - Wjj1[1].phi() ;
-     double dhq = Wqq1[0].eta() - Wqq1[1].eta() ;
-     double dfq = Wqq1[0].phi() - Wqq1[1].phi() ;
-     double dRWjj = sqrt( pow(dh,2) + pow(df,2) );
-     double dRWqq = sqrt( pow(dhq,2) + pow(dfq,2) );
-     double Res_dR = (dRWjj - dRWqq) / dRWqq ;
-
-     histo6->Fill6b( massW, momW, dRWjj, Res_dR );
-  }
-  if (qm[2].E() != 0 && qm[3].E() != 0 ) {
-     LorentzVector pW = findW( qm[2], qm[3]);
-     double momW = sqrt( pW.Px()*pW.Px() + pW.Py()*pW.Py() + pW.Pz()*pW.Pz() );
-     double massW = sqrt ( pW.E()*pW.E() - pW.Px()*pW.Px() - pW.Py()*pW.Py() - pW.Pz()*pW.Pz() );
-     double dh = Wjj2[0].eta() - Wjj2[1].eta() ;
-     double df = Wjj2[0].phi() - Wjj2[1].phi() ;
-     double dhq = Wqq2[0].eta() - Wqq2[1].eta() ;
-     double dfq = Wqq2[0].phi() - Wqq2[1].phi() ;
-     double dRWjj = sqrt( pow(dh,2) + pow(df,2) );
-     double dRWqq = sqrt( pow(dhq,2) + pow(dfq,2) );
-     double Res_dR = (dRWjj - dRWqq) / dRWqq ;
-
-     histo6->Fill6b( massW, momW, dRWjj, Res_dR );
-  }
-  */
 }
 
 void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcbjets, std::vector<jmatch> mcwjets,
@@ -454,11 +449,8 @@ double TtJet::EoverH( pat::Jet theJet ) {
 
        float emE = theJet.emEnergyFraction() ;
        float hdE = theJet.energyFractionHadronic() ;
-       double EovH = -2.0 ;
-       if (hdE == 0.0 || (emE/hdE) >= 100.0 ) {
-          EovH = 100.0;
-       }
-       else {
+       double EovH = -1.0 ;
+       if ( hdE != 0.0 ) {
           EovH = emE/hdE ;
        }
        return EovH;
@@ -469,30 +461,6 @@ LorentzVector TtJet::findW(LorentzVector qm1, LorentzVector qm2 ) {
      //exclude = false;
      double m1 = qm1.P();
      double m2 = qm2.P();
-     /*
-     double m1m2 = qm1.Px()*qm2.Px() + qm1.Py()*qm2.Py() + qm1.Pz()*qm2.Pz() ;
-     double massW = sqrt( (2.0*m1*m2) - (2.0*m1m2) ) ;
-     double angleqq = acos( m1m2/(m1*m2) ) ;
-     cout<<" q1("<<m1<<") q2("<<m2<<") dP= "<< fabs(m1-m2) <<",open angle of qq = "<< angleqq << endl;
-     cout<<" mass of W = "<< massW <<endl;
-     if ( angleqq > 2.2 && (m1+m2)> 100. ) {
-        cout<<" Candidate 1 !!! "<<endl;
-     }
-     else if ( angleqq < 1.7 && (m1-m2)< 20. && (m1+m2) > 100.) {
-        cout<<" Candidate 2 !!! "<<endl;
-     }
-     else if ( (m1+m2) > 100. && (m1+m2)< 1200. ) {
-        cout<<" Candidate 3 !!! "<<endl;
-     }
-     else {
-        exclude = true;
-        if (  massW < 100. && massW > 60. ) {
-          cout<<" NO GOOD @$#%@ " <<endl;
-        } else {
-          cout<<" *** exclude **** "<<endl;
-        }
-     }
-     */
      double xW = qm1.Px() + qm2.Px() ;
      double yW = qm1.Py() + qm2.Py() ;
      double zW = qm1.Pz() + qm2.Pz() ;

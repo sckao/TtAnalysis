@@ -53,6 +53,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TtAnalysisNtuple.h"
+#include "TtAnalysisHisto.h"
 
 #include "TFile.h"
 #include <vector>
@@ -77,6 +78,14 @@ struct jmatch {
        bool hasMatched; 
 };
 
+struct iTt {
+    int pdgId;
+    int momId;
+    LorentzVector p4;
+    GlobalVector  gv; 
+    double pt;
+};
+
 class TtMCMatching {
    public:
     /// Constructor
@@ -88,13 +97,27 @@ class TtMCMatching {
     void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, NJet* jtree, int eventId);
 
     std::vector<jmatch> matchWJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                   edm::Handle<std::vector<pat::Jet> > jets );
+                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<pat::Jet> selectedWJets,
+                                   HTOP8* histo8, bool fillhisto );
     std::vector<jmatch> matchbJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                   edm::Handle<std::vector<pat::Jet> > jets );
+                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<pat::Jet> selectedbJets,
+                                   HTOP7* histo7, bool fillhisto );
     std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                     edm::Handle<std::vector<pat::Muon> > muons );
+                                        edm::Handle<std::vector<pat::Muon> > muons, 
+                                        std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3, bool fillhisto);
+
     std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                             edm::Handle<std::vector<pat::Electron> > electrons );
+                                        edm::Handle<std::vector<pat::Electron> > electrons,
+                                        std::vector<const reco::Candidate*> isoEle, HTOP4* histo4, bool fillhisto);
+
+    bool matchingGeneral( LorentzVector p4_1, iTt ttObject, double& dR0, double& ptRes0 );
+
+    bool matchingGeneral( LorentzVector aP4, LorentzVector bP4, double& dR0, double& ptRes0 );
+
+    std::vector<iTt> TtObjects( edm::Handle<std::vector<reco::GenParticle> > genParticles ); 
+
+    std::vector<reco::Particle> ttPartons( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
+
 
    private:
 

@@ -32,8 +32,6 @@
 //
 // static data member definitions
 //
-static bool dmIncrease(const iReco t1, const iReco t2) { return ( t1.dm < t2.dm ); }
-
 // constructors and destructor
 using namespace edm;
 using namespace std;
@@ -49,6 +47,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   photonSrc         = iConfig.getParameter<edm::InputTag> ("photonSource");
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
+  genJetSrc         = iConfig.getParameter<edm::InputTag> ("genJetSource");
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
   recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
   caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
@@ -63,6 +62,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   ttMET       = new TtMET( iConfig );
   ttJet       = new TtJet( iConfig );
   ttEff       = new TtEfficiency();
+  semiSol     = new TtSemiEventSolution( iConfig );
 
   evtIt = 0;
   // Create the root file
@@ -116,6 +116,7 @@ TtAnalysis::~TtAnalysis()
    delete ttMET;
    delete ttJet;
    delete ttEff; 
+   delete semiSol;
 
    theFile->cd();
    theFile->cd("Jets");
@@ -212,6 +213,9 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    Handle<std::vector<reco::GenParticle> > genParticles;
    iEvent.getByLabel(genSrc, genParticles);
 
+   Handle<std::vector<reco::GenJet> > genJets;
+   iEvent.getByLabel(genJetSrc, genJets);
+
    Handle<CaloTowerCollection>  caloTowers;
    iEvent.getByLabel(caloSrc, caloTowers);
 
@@ -245,124 +249,50 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    // 0. select the semi-lep events and objects
    bool pass = evtSelected->eventSelection(muons, electrons, jets);
    int  topo = evtSelected->MCEvtSelection(genParticles);
-   /// calculate the selection efficiency
-   histo9 = h_Top;
-   ttEff->EventEfficiency( topo, pass, histo9 );
 
    //1. Isolation Leptons Selections
    histo3 = h_Muon;
    ttMuon->muonAnalysis( muons, histo3 );
-   std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection(muons, histo3);
    histo4 = h_Ele;
    ttEle->ElectronAnalysis(electrons, histo4);
-   std::vector<const reco::Candidate*> isoEle = ttEle->IsoEleSelection(electrons, histo4);
-   //2. W and b jets selections
-   std::vector<pat::Jet> selectedWJets = evtSelected->WJetSelection(jets);
-   std::vector<pat::Jet> selectedbJets = evtSelected->bJetSelection(jets);
-   
-   //3. reconstruct semi-leptonic Tt events 
-   std::vector<iReco> semiTt;
-   if ( pass ) {
-      semiTt = recoSemiLeptonicTtEvent(-1, selectedWJets, selectedbJets, isoMuons, isoEle, mets);
-      ttEff->EventShape(topo, isoMuons.size(), isoEle.size(), selectedbJets.size(), selectedWJets.size(), histo9);
-   }
-   //4. gen-reco matching selection for leptons and jets 
-   std::vector<const reco::Candidate*> mcMuons     = MCMatching->matchMuon(genParticles, muons);  
-   std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, electrons);  
-   std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets);
-   std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets);
 
-   //5. reconstruct semi-leptonic Tt events
-   std::vector<pat::Jet> theWJets ; 
-   for (size_t i =0; i< mcwjets.size(); i++ ){
-       if ( mcwjets[i].hasMatched ) theWJets.push_back( mcwjets[i].trueJet ) ;
-   }  
-   std::vector<pat::Jet> thebJets ; 
-   for (size_t i =0; i< mcbjets.size(); i++ ){
-       if ( mcbjets[i].hasMatched ) thebJets.push_back( mcbjets[i].trueJet ) ;
-   }
-   std::vector<iReco> semiMCTt = recoSemiLeptonicTtEvent( topo, theWJets, thebJets, mcMuons, mcElectrons, mets);
-
-   //6. look at top mass distribution 
-   histo9 = h_Top;
-   for(size_t i=0; i< semiMCTt.size(); i++ ){
-      double tMass = getInvMass( semiMCTt[i].p4 ); 
-      histo9->Fill9(tMass);
-   }
-   for(size_t i=0; i< semiTt.size(); i++ ){
-      double tMass = getInvMass( semiTt[i].p4 ); 
-      histo9->Fill9a(tMass);
-   }
-
-   //7. W studies 
-   /// From Reco
-   if ( pass && topo == 1) {
-      bool isMuon     = ( isoMuons.size() ==1 && isoEle.size() ==0 ) ? true : false ;
-      bool isElectron = ( isoMuons.size() ==0 && isoEle.size() ==1 ) ? true : false ;
-      std::vector<const reco::Candidate*> leptons = ( isMuon && !isElectron  ) ? isoMuons : isoEle ;
-      std::vector<iReco> LepWs;
-      bool leptonic = recoW( leptons, mets ,LepWs );
-      if (leptonic) dmSortRecoObjects( LepWs );
-      for (size_t i =0; i< LepWs.size(); i++) {
-          histo9->Fill9c( getInvMass( LepWs[i].p4 ) ); 
-      }
-      std::vector<iReco> HadWs;
-      bool hadronic = recoW( selectedWJets , HadWs );
-      if (hadronic) dmSortRecoObjects( HadWs );
-      for (size_t i =0; i<HadWs.size(); i++) {
-          histo9->Fill9e( getInvMass( HadWs[i].p4 ) ); 
-      }
-   }
-   ///  From MC 
-   if ( pass && topo == 1 ) {
-      bool isMuon     = ( mcMuons.size() ==1 && mcElectrons.size() ==0 ) ? true : false ;
-      bool isElectron = ( mcMuons.size() ==0 && mcElectrons.size() ==1 ) ? true : false ;
-      std::vector<const reco::Candidate*> mclepton = ( isMuon && !isElectron  ) ? mcMuons : mcElectrons ;
-      std::vector<iReco> mcLepWs;
-      bool leptonic = recoW( mclepton, mets ,mcLepWs );
-      if (leptonic) dmSortRecoObjects( mcLepWs );
-      for (size_t i =0; i<mcLepWs.size(); i++) {
-          histo9->Fill9b( getInvMass( mcLepWs[i].p4 ) ); 
-      }
-      std::vector<iReco> mcHadWs;
-      bool hadronic = recoW( theWJets, mcHadWs );
-      if (hadronic) dmSortRecoObjects( mcHadWs );
-      for (size_t i =0; i<mcHadWs.size(); i++) {
-          if (i > 0 ) break;
-          histo9->Fill9d( getInvMass( mcHadWs[i].p4 )  ); 
-      }
-   }
- 
-   // 8. Jet Studies
-   histo1 = h_Jet;
-   ttJet->jetAnalysis(jets, iEvent, histo1);
-
+   //2. build semi-Tt events
    histo6 = h_MJet;
    histo7 = h_BJet;
    histo8 = h_WJet;
+   histo9 = h_Top;
+   semiSol->BuildSemiTt(iEvent, iSetup, histo3, histo4, histo7, histo8, histo9 );
+ 
+   //3. Jet Studies
+   histo1 = h_Jet;
+   ttJet->jetAnalysis(jets, histo1);
+
+   std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection(muons, histo3);
+   std::vector<pat::Jet> tmpJets;
+   std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets, tmpJets, histo8, false);
+   std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets, tmpJets, histo7, false);
    ttJet->matchedWJetsAnalysis( mcwjets, isoMuons , histo8);
    ttJet->matchedbJetsAnalysis( mcbjets, mcwjets , isoMuons , histo7);
    ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true);
    ttJet->bTagAnalysis(jets, histo7);
+   ttJet->genJetInfo(genJets,genParticles, histo1, histo7, histo8);
 
    if ( pass && topo == 1) {
       ttJet->selectedWJetsAnalysis(jets,histo8);
    }
 
-   //9. MET from PAT
+   //4. MET from PAT
    histo2 = h_MET;
    ttMET->metAnalysis(mets, iEvent, histo2);
-   histo5 = h_Gam;
-   ttGam->PhotonAnalysis(photons, histo5);
 
-   //10. Electron Studies
+   //5. Electron Studies
+   std::vector<const reco::Candidate*> tempEle; 
+   std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, electrons, tempEle, histo4, false);  
    ttEle->matchedElectronAnalysis( mcElectrons, histo4 );
 
-   // Tt objects selection efficiency
-   ttEff->JetEfficiency( selectedbJets, thebJets, histo9 );
-   ttEff->JetEfficiency( selectedWJets, theWJets, histo9 );
-   ttEff->IsoLeptonEfficiency( isoMuons, mcMuons, histo9 );
-   ttEff->IsoLeptonEfficiency( isoEle, mcElectrons, histo9 );
+   //6. photon studies
+   histo5 = h_Gam;
+   ttGam->PhotonAnalysis(photons, histo5);
 
 }
 
@@ -432,211 +362,5 @@ hfPos TtAnalysis::findDaughter(int dauId, int momId, double mom_eta, double mom_
 
 } 
 
-
-// hadronic channel 
-bool TtAnalysis::recoW( std::vector<pat::Jet> wjets, std::vector<iReco>& wCandidate ) {
-
-    bool findW = false ; 
-    if ( wjets.size() < 2 ) return findW ;
-
-    for (size_t i=0; i< wjets.size(); i++ ) {
-       for (size_t j =i+1; j < wjets.size(); j++ ) {
-           double xW = wjets[i].p4().Px() + wjets[j].p4().Px() ;
-           double yW = wjets[i].p4().Py() + wjets[j].p4().Py() ;
-           double zW = wjets[i].p4().Pz() + wjets[j].p4().Pz() ;
-           double EW = wjets[i].p4().E()  + wjets[j].p4().E() ;
-	   double massTest =  (EW*EW) - (xW*xW) - (yW*yW) - (zW*zW) ;
-	   if (massTest < 0 ) continue;
-           iReco candW;
-           LorentzVector mW = LorentzVector(xW,yW,zW,EW) ;
-           std::pair<int,int> jetPair(i,j);
-           candW.p4   = mW;
-           candW.from = jetPair ;
-           candW.dm   = fabs( sqrt(massTest) - 80.4 ) ;
-           wCandidate.push_back( candW );
-           findW = true;
-       }
-    }
-    dmSortRecoObjects( wCandidate );
-    return findW;
-}
-
-// semi-leptonic channel 
-bool TtAnalysis::recoW( std::vector<const reco::Candidate*> lepton, Handle<std::vector<pat::MET> >  patMet, 
-                        std::vector<iReco>& wCandidate ) {
-    
-    std::vector<pat::MET> met ;
-    for (std::vector<pat::MET>::const_iterator m1 = patMet->begin(); m1 != patMet->end(); m1++){
-        met.push_back( *m1 );     
-    }
-
-    bool findW = false ; 
-    if ( lepton.size() != 1 || met.size() != 1) return findW ;
-
-    // use w mass constrain to solve 4 momentum of W
-    double xW = lepton[0]->p4().Px() + met[0].p4().Px() ;
-    double yW = lepton[0]->p4().Py() + met[0].p4().Py() ;
-    double nuPt2 = (met[0].p4().Px()*met[0].p4().Px()) + (met[0].p4().Py()*met[0].p4().Py()); 
- 
-    double zl = lepton[0]->p4().Pz() ;
-    double El = lepton[0]->p4().E()  ;
-
-    double D = (80.4*80.4) - (El*El) - nuPt2 + (xW*xW) + (yW*yW) + (zl*zl) ;
-
-    double A = 4.*( (zl*zl) - (El*El) ) ;
-    double B = 4.*D*zl ;
-    double C = (D*D) - (4.*El*El*nuPt2) ;
-
-    if ( (B*B) < (4.*A*C) ) return findW ;
-
-    double nz1 = (-1.*B + sqrt(B*B - 4.*A*C )) / (2.*A) ;
-    double nz2 = (-1.*B - sqrt(B*B - 4.*A*C )) / (2.*A) ;
-
-    for (int i=1; i<3; i++ ) {
-       double nz = 0.0;  
-       if (i==1) nz =nz1;
-       if (i==2) nz =nz2;
-       double ENu2 = (met[0].p4().Px()*met[0].p4().Px()) + (met[0].p4().Py()*met[0].p4().Py()) + (nz*nz);
-       double zW = lepton[0]->p4().Pz() + nz ;
-       double EW = lepton[0]->p4().E() + sqrt(ENu2) ;
-       double massTest =  (EW*EW) - (xW*xW) - (yW*yW) - (zW*zW) ;
-
-       if (massTest > 0. ) {
-          iReco candW; 
-          LorentzVector mW = LorentzVector(xW,yW,zW,EW) ;
-          std::pair<int,int> lvPair(0,0);
-          candW.p4   = mW;
-          candW.from = lvPair;      
-          candW.dm   = fabs( sqrt(massTest) - 80.4 );
-          wCandidate.push_back( candW );
-          findW = true;
-       }
-    }
-    
-    dmSortRecoObjects( wCandidate );
-    return findW;
-}
-
-bool TtAnalysis::recoTop( std::vector<iReco> wCandidate, std::vector<pat::Jet> bjets, std::vector<iReco>& tCandidates ) {
-
-  bool findt = false ;
-  tCandidates.clear();
-  if ( wCandidate.size() < 2 || bjets.size() < 2 ) return findt;
-
-  int widx = 0;
-  std::vector<iReco> bW1;
-  std::vector<iReco> bW2;
-
-  for(std::vector<iReco>::const_iterator i1 = wCandidate.begin(); i1 != wCandidate.end(); i1++ ){
-     widx++;
-     std::vector<iReco> bWpairList;  
-     int bj = -1;
-     for (std::vector<pat::Jet>::const_iterator i2 = bjets.begin(); i2 != bjets.end(); i2++ ){
-         bj++;    
-         double xT = i1->p4.Px() + (i2->p4()).Px() ;   
-         double yT = i1->p4.Py() + (i2->p4()).Py() ;
-         double zT = i1->p4.Pz() + (i2->p4()).Pz() ;
-         double ET = i1->p4.E()  + (i2->p4()).E()  ;
-	 LorentzVector mT = LorentzVector(xT,yT,zT,ET);
-         double massTest =  (ET*ET) - (xT*xT) - (yT*yT) - (zT*zT) ;
-
-	 if ( massTest <= 0. ) continue;
-         iReco bWpair;
-         bWpair.p4   = mT ;
-         bWpair.from = std::pair<int,int>( widx-1 , bj );
-         bWpair.dm   = fabs(sqrt(massTest) - 174.); 
-	 bWpairList.push_back( bWpair );
-	 findt = true;    
-     }
-     dmSortRecoObjects( bWpairList );
-     if (widx == 1) bW1 = bWpairList;
-     if (widx == 2) bW2 = bWpairList;
-  }
-
-  int sz = ( bW1.size() > bW2.size() ) ? bW1.size() : bW2.size() ;
-
-  for(int i=0; i < sz; i++) {
-
-     if (bW1[i].from.second != bW2[i].from.second ) {
-        tCandidates.push_back(bW1[i]);
-        tCandidates.push_back(bW2[i]);
-        break;
-     } else {
-        if ( bW1[i].dm < bW2[i].dm ) {
-           tCandidates.push_back(bW1[i]);
-           tCandidates.push_back(bW2[i+1]);
-           break;
-        }
-        if ( bW1[i].dm > bW2[i].dm ) {
-           tCandidates.push_back(bW1[i+1]);
-           tCandidates.push_back(bW2[i]);
-           break;
-        }
-     }
-     if ( tCandidates.size() > 1 ) break;
-
-  }
-
-  return findt;
-}
- 
-std::vector<iReco> TtAnalysis::recoSemiLeptonicTtEvent(int topo, std::vector<pat::Jet> theWJets,
-                            std::vector<pat::Jet> thebJets, std::vector<const reco::Candidate*> theMuons, 
-                            std::vector<const reco::Candidate*> theElectrons, 
-                            Handle<std::vector<pat::MET> >  mets ) {
-
-   std::vector<iReco> TtCollection;
-   if (topo != 1 && topo != -1) return TtCollection;
-
-   // get the leptons 
-   bool isMuon     = ( theMuons.size() ==1 && theElectrons.size() ==0 ) ? true : false ;
-   bool isElectron = ( theMuons.size() ==0 && theElectrons.size() ==1 ) ? true : false ;
-   std::vector<const reco::Candidate*> mclepton = ( isMuon && !isElectron  ) ? theMuons : theElectrons ;
-   
-   // reco hadronic W 
-   std::vector<iReco> hadWs;
-   bool hadronic = recoW( theWJets, hadWs );
-   // reco leptonic W
-   std::vector<iReco> lepWs;
-   bool leptonic = recoW( mclepton, mets, lepWs );
-
-   bool findtops = false ;
-   if ( hadronic && leptonic ) {
-      std::vector<iReco> wCandidates;
-      std::vector<iReco> Tt_temp;
-      for (size_t i=0; i< lepWs.size(); i++) {
-         double dm_had = 999.;
-         for (size_t j=0; j< hadWs.size(); j++) {
-            wCandidates.push_back(lepWs[i]);
-            wCandidates.push_back(hadWs[j]);
-            findtops = recoTop( wCandidates ,thebJets, Tt_temp );
-	    wCandidates.clear();
-            if ( !findtops ) continue;
-            // pick the best hadronic top
-            if (Tt_temp[1].dm < dm_had) TtCollection = Tt_temp ;
-         } 
-      }
-   }
-   return TtCollection ;
-
-}
-
-double TtAnalysis::getInvMass( LorentzVector lv ) {
-
-     double mom2  = (lv.Px()*lv.Px()) + (lv.Py()*lv.Py()) + (lv.Pz()*lv.Pz()) ;
-     double mass2 = lv.E()*lv.E() - mom2;
-     double mass = 0. ;
-     if (mass2 < 0. ) mass2 = 0;
-     mass = sqrt(mass2) ;
-     return mass;
-
-}
-
-
-void TtAnalysis::dmSortRecoObjects( std::vector<iReco>& objCandidates ) {
-
-   sort(objCandidates.begin(), objCandidates.end(), dmIncrease );
-
-}
 //define this as a plug-in
 DEFINE_FWK_MODULE(TtAnalysis);
