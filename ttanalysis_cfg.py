@@ -20,9 +20,9 @@ process.source = cms.Source("PoolSource",
     debugVebosity = cms.untracked.uint32(10),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-'rfio:/castor/cern.ch/user/s/sckao/Tt210Full/RelValTt210_full1.root',
-'rfio:/castor/cern.ch/user/s/sckao/Tt210Full/RelValTt210_full2.root',
-'rfio:/castor/cern.ch/user/s/sckao/Tt210Full/RelValTt210_full3.root'
+'file:/data/top/sckao/Tt210Full/RelValTt214_full1.root',
+'file:/data/top/sckao/Tt210Full/RelValTt214_full2.root',
+'file:/data/top/sckao/Tt210Full/RelValTt214_full3.root'
     )
 )
 
@@ -39,6 +39,7 @@ process.ttAna = cms.EDFilter("TtAnalysis",
     needTree = cms.untracked.bool(False),
     rootFileName = cms.untracked.string('tt_test_full210.root'),
     genParticles = cms.InputTag("genParticles"),
+    genJetSource = cms.InputTag("iterativeCone5GenJets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
     photonSource   = cms.InputTag("selectedLayer1Photons"),
     jetSource      = cms.InputTag("selectedLayer1Jets"),
