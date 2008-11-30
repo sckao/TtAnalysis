@@ -11,7 +11,7 @@ process.load("Geometry.CommonDetUnit.globalTrackingGeometry_cfi")
 process.load("Geometry.CaloEventSetup.CaloGeometry_cff")
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.GlobalTag.globaltag = 'IDEAL_V5::All'
+process.GlobalTag.globaltag = 'IDEAL_V9::All'
 
 from TrackingTools.TrackAssociator.default_cfi import * 
 
@@ -20,11 +20,16 @@ process.source = cms.Source("PoolSource",
     debugVebosity = cms.untracked.uint32(10),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-'file:/data/top/sckao/Tt210Full/RelValTt214_full1.root',
-'file:/data/top/sckao/Tt210Full/RelValTt214_full2.root',
+#'file:/data/top/sckao/Tt210Full/RelValTt214_full1.root',
+#'file:/data/top/sckao/Tt210Full/RelValTt214_full2.root',
 'file:/data/top/sckao/Tt210Full/RelValTt214_full3.root'
+#'file:/data/top/sckao/Tt210Full/RelValTt214_full4.root'
     )
 )
+
+# replace the source files from a file list
+import PhysicsTools.TtAnalysis.ttfilelist_cff as fileList
+process.source.fileNames = fileList.fileNames
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(-1)
@@ -37,7 +42,8 @@ process.ttAna = cms.EDFilter("TtAnalysis",
     TrackAssociatorParameters, 
     debug    = cms.untracked.bool(False),
     needTree = cms.untracked.bool(False),
-    rootFileName = cms.untracked.string('tt_test_full210.root'),
+    trigOn   = cms.untracked.bool(False),
+    rootFileName = cms.untracked.string('tt_11pb_Et20.root'),
     genParticles = cms.InputTag("genParticles"),
     genJetSource = cms.InputTag("iterativeCone5GenJets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
@@ -46,6 +52,8 @@ process.ttAna = cms.EDFilter("TtAnalysis",
     metSource      = cms.InputTag("selectedLayer1METs"),
     muonSource     = cms.InputTag("selectedLayer1Muons"),
     caloSource     = cms.InputTag("towerMaker"),
+    triggerSource  = cms.InputTag("TriggerResults","","HLT"),
+    #triggerSource  = cms.InputTag("TriggerResults","","PAT"),
     recoMuons      = cms.untracked.string('muons'),
     leptonFlavour  = cms.string('muon')
 )
