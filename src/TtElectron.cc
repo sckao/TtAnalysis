@@ -133,22 +133,20 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
      double sumE = emR.first + hdR.first ;
      int calR_count = emR.second + hdR.second ;
 
-     double IsoValue = emR.first / it->p() ;
+     //double IsoValue = emR.first / it->p() ;
+     double sumIso = emR.first + hdR.first + tkR.first ;
+     double IsoValue = it->et() / (it->et() + sumIso );
       
-     histo4->Fill4b(it->pt(), it->eta(), emR.first, hdR.first, sumE, calR_count, tkR.second,
+     histo4->Fill4b(it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
                     it->trackIso(), it->ecalIso(), it->hcalIso(), IsoValue );
   
      // Isolation Cut
      if ( tkR.second   > 3 ) continue;
      if ( it->trackIso() > 3 ) continue;
-     //if ( IsoValue > 0.12 && fabs(it->eta()) < 1.5 ) continue;
      if ( it->ecalIso()  > 3 && fabs(it->eta()) >= 1.5 ) continue;
-     //if ( it->ecalIso()  > 0.5 && fabs(it->eta()) <= 1.4 ) continue;
-     //if ( it->ecalIso()  > 5   && fabs(it->eta())  > 1.4 ) continue;
-     //if ( it->trackIso() > 3   && fabs(it->eta())  > 1.4 ) continue;
-     histo4->Fill4c(it->pt(), it->eta(), emR.first, hdR.first, sumE, calR_count, tkR.second,
-                    it->trackIso(), it->ecalIso(), it->hcalIso(), IsoValue );
 
+     histo4->Fill4c(it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
+                    it->trackIso(), it->ecalIso(), it->hcalIso(), IsoValue );
 
      isoEle.push_back( &*it );
 
@@ -157,4 +155,40 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
 
 }
 
+std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vector<pat::Electron> > patEle) {
+
+ //std::vector<pat::Electron> isoEle;
+ std::vector<const reco::Candidate*> isoEle;
+ isoEle.clear();
+ for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
+
+     //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+     const reco::IsoDeposit* ecalIso  = it->ecalIsoDeposit();
+     const reco::IsoDeposit* hcalIso  = it->hcalIsoDeposit();
+     const reco::IsoDeposit* trackIso = it->trackerIsoDeposit();
+     std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
+     std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
+     std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3); 
+     //double thetaCal = (ecalIso->direction()).theta();
+     //double thetaTrk = (trackIso->direction()).theta();
+     double sumE = emR.first + hdR.first ;
+     int calR_count = emR.second + hdR.second ;
+
+     //double IsoValue = emR.first / it->p() ;
+     //double sumIso = emR.first + hdR.first + tkR.first ;
+     //double IsoValue = it->et() / (it->et() + sumIso );
+      
+  
+     // Isolation Cut
+     if ( tkR.second   > 3 ) continue;
+     if ( it->trackIso() > 3 ) continue;
+     if ( it->ecalIso()  > 3 && fabs(it->eta()) >= 1.5 ) continue;
+
+
+     isoEle.push_back( &*it );
+
+ }
+ return isoEle ;
+
+}
 

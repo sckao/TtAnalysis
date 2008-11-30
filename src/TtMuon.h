@@ -43,6 +43,9 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
+#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h" 
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Framework/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
@@ -78,8 +81,13 @@ class TtMuon {
     void MuonTreeFeeder(edm::Handle<std::vector<pat::Muon> > patMu, NJet* jtree, int eventId );
 
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 );
+    std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
+
+    bool IsoMuonID( pat::Muon Mu, double isoCut );
 
     std::vector<double> MuonEtCorrection( edm::Handle<std::vector<pat::Muon> > mu );
+
+    void MuonTrigger( edm::Handle<std::vector<pat::Muon> >patMu, edm::Handle <edm::TriggerResults> triggers);
 
    private:
 

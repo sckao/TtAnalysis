@@ -82,6 +82,7 @@ void TtMuon::muonAnalysis(Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 )
 
  for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
      histo3->Fill3a( it->pt(), it->eta() );
+     if ( IsoMuonID( *it , 0.9 ) ) histo3->Fill3i( it->pt(), it->eta()  );
  }
 
 }
@@ -123,29 +124,64 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
      double sumPtR5 = (tkR5.first )* sin(thetaTrk) ;
      int calR3_count = emR3.second + hdR3.second ;
      int calR5_count = emR5.second + hdR5.second ;
-     double IsoValue = it->pt() / ( it->pt() + sumEtR3 + sumPtR3 ) ;
+
+     //double IsoValue = it->pt() / ( it->pt() + sumEtR3 + sumPtR3 ) ;
+     double RelIso = it->pt() / ( it->pt() + emR3.first + hdR3.first + tkR3.first ) ;
       
      histo3->Fill3b(emR3.first,  emR5.first,  hdR3.first,   hdR5.first,  
                     calR3_count, calR5_count, tkR3.second, tkR5.second, 
                     sumPtR3, sumPtR5, sumEtR3, sumEtR5,
-                    it->caloIso(), it->ecalIso(), it->hcalIso(), IsoValue, it->pt() );
+                    it->caloIso(), it->ecalIso(), it->hcalIso(), RelIso, it->pt() );
+
   
      // Isolation Cut
-     //if ( sumPtR3 > 3. || sumEtR3 > 5. ) continue; 
-     if (IsoValue < 0.9 ) continue;
-     //if ( tkR3.second   > 1 ) continue;
-     //if ( it->ecalIso() > 3 ) continue;
-     //if ( it->hcalIso() > 1 ) continue;
+     if ( RelIso < 0.9 ) continue;
 
      histo3->Fill3c(emR3.first,  emR5.first,  hdR3.first,   hdR5.first,  
                     calR3_count, calR5_count, tkR3.second, tkR5.second,  
                     sumPtR3, sumPtR5, sumEtR3, sumEtR5,
-                    it->caloIso(), it->ecalIso(), it->hcalIso(),  IsoValue, it->pt() );
+                    it->caloIso(), it->ecalIso(), it->hcalIso(),  RelIso, it->pt() );
 
      isoMuons.push_back( &*it );
  }
  
  return isoMuons ;
+}
+
+std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector<pat::Muon> > patMu) {
+
+ //std::vector<pat::Muon> isoMuons;
+ std::vector<const reco::Candidate*> isoMuons;
+ isoMuons.clear();
+ for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
+
+     bool isolated = IsoMuonID( *it, 0.9 );    
+
+     if ( isolated && it->pt() > 6. ) isoMuons.push_back( &*it );
+ }
+ 
+ return isoMuons ;
+
+}
+
+bool TtMuon::IsoMuonID( pat::Muon muon, double isoCut ) {
+
+    bool isolation = false;
+    //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+    const reco::IsoDeposit* ecalIso  = muon.ecalIsoDeposit();
+    const reco::IsoDeposit* hcalIso  = muon.hcalIsoDeposit();
+    const reco::IsoDeposit* trackIso = muon.trackerIsoDeposit();
+    std::pair<double, int> emR3 = ecalIso->depositAndCountWithin(0.3);
+    std::pair<double, int> hdR3 = hcalIso->depositAndCountWithin(0.3);
+    std::pair<double, int> tkR3 = trackIso->depositAndCountWithin(0.3);
+
+    double RelIso = muon.pt() / ( muon.pt() + emR3.first + hdR3.first + tkR3.first ) ;
+
+    // Isolation Cut
+    if ( RelIso >= isoCut ) isolation = true;
+
+    return isolation;
+
 }
 
 std::vector<double> TtMuon::MuonEtCorrection( Handle<std::vector<pat::Muon> > mu ) {
@@ -175,3 +211,25 @@ std::vector<double> TtMuon::MuonEtCorrection( Handle<std::vector<pat::Muon> > mu
      return ptcorr ;
 }
 
+void TtMuon::MuonTrigger( Handle<std::vector<pat::Muon> >patMu, Handle <edm::TriggerResults> triggers ) {
+
+   for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
+       std::vector<pat::TriggerPrimitive> trigInfo = it->triggerMatches() ;
+       cout<<" === Muon trigger ==== "<<endl;
+       for(size_t i=0; i< trigInfo.size(); i++) {
+          cout<<"    ObjId:"<< trigInfo[i].triggerObjectId() ;
+          cout<<"  ObjType:"<< trigInfo[i].triggerObjectType() <<endl;
+          cout<<" filter name:"<<trigInfo[i].filterName() <<endl; 
+       }
+       /*
+       if ( trigInfo.size() < 1) continue;
+       edm::TriggerNames trigNames( *triggers );
+       for (size_t i=0; i< triggers->size(); i++ ) {
+           string triggered = triggers->accept(i) ? "Yes" : "No" ;
+           cout<<" path("<<i<<") accepted ? "<< triggered ;
+           cout<<" trigName: "<< trigNames.triggerName(i)<<endl;
+       }
+       */
+   }
+
+}

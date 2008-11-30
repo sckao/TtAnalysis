@@ -43,6 +43,9 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
+#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Framework/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
@@ -51,6 +54,8 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
+
+#include "TtAnalysisHisto.h"
 
 #include "TFile.h"
 #include <vector>
@@ -75,8 +80,11 @@ class TtEvtSelector {
                         edm::Handle<std::vector<pat::Jet> > rJet );
     int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
-    std::vector<pat::Jet> WJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
-    std::vector<pat::Jet> bJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
+    std::vector< const pat::Jet* > WJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
+    std::vector< const pat::Jet* > bJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
+
+    bool HLTSemiSelection( edm::Handle <edm::TriggerResults> triggers, int setup );
+    void TriggerStudy( edm::Handle <edm::TriggerResults> triggers, int topo, int setup, HTOP9* histo9 );
 
     //std::vector<pat::Muon> MuonSelection( edm::Handle<std::vector<pat::Muon> >  Muons );
    private:

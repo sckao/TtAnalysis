@@ -60,6 +60,9 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
+#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Framework/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
@@ -105,6 +108,12 @@ class TtJet {
 
     void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
 
+    void thirdETJetSpectrum( edm::Handle<std::vector<reco::GenJet> > genJet, HTOP1* histo1);
+    void thirdETJetSpectrum( std::vector<pat::Jet> patJet, HTOP1* histo1);
+
+    void dPhiMuJet( std::vector<pat::Jet> patJet, LorentzVector p1, HTOP1* histo1 );
+    void JetAndLepW( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* histo1 );
+
     void genJetInfo(edm::Handle<std::vector<reco::GenJet> > genJet,
                     edm::Handle<std::vector<reco::GenParticle> > genParticles,
                     HTOP1* histo1, HTOP7* histo7, HTOP8* histo8 );
@@ -130,9 +139,15 @@ class TtJet {
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
     double getEta(double vx, double vy, double vz );
+    double getdPhi(  LorentzVector v1, LorentzVector v2 );
+    double getdR(  LorentzVector v1, LorentzVector v2 );
+    double getY( LorentzVector v1 );
+    double getInvMass( std::vector<LorentzVector> vlist );
+    std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, LorentzVector muP4 );
 
     void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, HTOP7* histo7 );
 
+    void JetTrigger( edm::Handle<std::vector<pat::Jet> > jets, edm::Handle <edm::TriggerResults> triggers);
 
    private:
 

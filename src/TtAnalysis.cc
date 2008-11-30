@@ -40,6 +40,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
   needTree          = iConfig.getUntrackedParameter<bool>   ("needTree");
+  trigOn            = iConfig.getUntrackedParameter<bool>   ("trigOn");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   leptonFlavour     = iConfig.getParameter<std::string>   ("leptonFlavour");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
@@ -51,6 +52,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
   recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
   caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
+  triggerSrc        = iConfig.getParameter<edm::InputTag> ("triggerSource");
 
   //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
 
@@ -219,6 +221,11 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    Handle<CaloTowerCollection>  caloTowers;
    iEvent.getByLabel(caloSrc, caloTowers);
 
+   //Handle<std::vector<pat::TriggerPrimitive> >  triggers;
+
+   // Handle<edm::TriggerResults>  triggers;
+   // iEvent.getByLabel(triggerSrc, triggers);
+
    // Initial the histograms
    HTOP1 *histo1 = 0;
    HTOP2 *histo2 = 0;
@@ -234,6 +241,7 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    evtIt++;
    int eventId = evtIt + (iEvent.id().run()*100000) ;
+
    // The Tree Feeder 
    if ( needTree ) {
       NJet *jtree = 0;
@@ -250,47 +258,94 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    bool pass = evtSelected->eventSelection(muons, electrons, jets);
    int  topo = evtSelected->MCEvtSelection(genParticles);
 
-   //1. Isolation Leptons Selections
-   histo3 = h_Muon;
-   ttMuon->muonAnalysis( muons, histo3 );
-   histo4 = h_Ele;
-   ttEle->ElectronAnalysis(electrons, histo4);
 
-   //2. build semi-Tt events
+   histo1 = h_Jet;
+   histo3 = h_Muon;
+   histo4 = h_Ele;
    histo6 = h_MJet;
    histo7 = h_BJet;
    histo8 = h_WJet;
    histo9 = h_Top;
+
+   //1. Isolation Leptons Selections
+   ttMuon->muonAnalysis( muons, histo3 );
+   //ttMuon->MuonTrigger( muons, triggers );
+
+   ttEle->ElectronAnalysis(electrons, histo4);
+
+   //2. build semi-Tt events
+
+   if ( trigOn ) {
+      Handle<edm::TriggerResults>  triggers;
+      iEvent.getByLabel(triggerSrc, triggers);
+      evtSelected->TriggerStudy( triggers, topo, 3 ,histo9 );
+   }
    semiSol->BuildSemiTt(iEvent, iSetup, histo3, histo4, histo7, histo8, histo9 );
  
-   //3. Jet Studies
-   histo1 = h_Jet;
+   //3. W+Jets analysis
+   std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
+   //double minMET = ((*mets)[0]).et() ;
+
+   if ( isoMu.size() == 1  ) {
+
+      std::vector<pat::Jet> theJets = ttJet->JetSelection( jets, isoMu[0]->p4() ) ;
+
+      ttJet->thirdETJetSpectrum( theJets, histo1 );
+      //ttJet->thirdETJetSpectrum( genJets, histo1 );
+      ttJet->dPhiMuJet( theJets, isoMu[0]->p4() , histo1 );
+      
+      std::vector<iReco> lepW;
+      semiSol->recoW( isoMu, mets, lepW );
+      if ( lepW.size() > 0 ) {
+         int wl = MCMatching->matchLeptonicW( genParticles, lepW, histo9 );
+         if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
+         //ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
+      }
+   }
+
+   // looking for muon decay W
+   /*
+   LorentzVector wP4(0.,0.,0.,0.);
+   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
+       if ( abs((*it).pdgId()) != 24 ) continue;
+       for (size_t q=0; q< (*it).numberOfDaughters(); q++) {
+           const reco::Candidate *dau = (*it).daughter(q) ;
+           if ( abs(dau->pdgId()) ==  13 && it->status() == 3 ) wP4 = it->p4() ;
+       }
+       LorentzVector zero(0.,0.,0.,0.);
+       if ( wP4 != zero ) ttJet->JetAndLepW( jets, wP4, histo1 );
+   }        
+   */
+
+   //4. Jet Studies
    ttJet->jetAnalysis(jets, histo1);
+   //ttJet->JetTrigger( jets, triggers );
 
    std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection(muons, histo3);
-   std::vector<pat::Jet> tmpJets;
+   std::vector<const pat::Jet*> tmpJets;
    std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets, tmpJets, histo8, false);
    std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets, tmpJets, histo7, false);
-   ttJet->matchedWJetsAnalysis( mcwjets, isoMuons , histo8);
-   ttJet->matchedbJetsAnalysis( mcbjets, mcwjets , isoMuons , histo7);
-   ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true);
+   ttJet->matchedWJetsAnalysis( mcwjets, isoMuons, histo8 );
+   ttJet->matchedbJetsAnalysis( mcbjets, mcwjets, isoMuons, histo7 );
+   ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true );
    ttJet->bTagAnalysis(jets, histo7);
-   ttJet->genJetInfo(genJets,genParticles, histo1, histo7, histo8);
-
+   if ( topo == 1) {
+      ttJet->genJetInfo(genJets,genParticles, histo1, histo7, histo8);
+   } 
    if ( pass && topo == 1) {
       ttJet->selectedWJetsAnalysis(jets,histo8);
    }
 
-   //4. MET from PAT
+   //5. MET from PAT
    histo2 = h_MET;
    ttMET->metAnalysis(mets, iEvent, histo2);
 
-   //5. Electron Studies
+   //6. Electron Studies
    std::vector<const reco::Candidate*> tempEle; 
    std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, electrons, tempEle, histo4, false);  
    ttEle->matchedElectronAnalysis( mcElectrons, histo4 );
 
-   //6. photon studies
+   //7. photon studies
    histo5 = h_Gam;
    ttGam->PhotonAnalysis(photons, histo5);
 
@@ -361,6 +416,7 @@ hfPos TtAnalysis::findDaughter(int dauId, int momId, double mom_eta, double mom_
   return decayPos;
 
 } 
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(TtAnalysis);

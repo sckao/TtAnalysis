@@ -44,6 +44,9 @@
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
+#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Framework/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
@@ -74,6 +77,7 @@
 #include "TtJet.h"
 #include "TtEfficiency.h"
 #include "TtSemiEventSolution.h"
+#include "TtFormat.h"
 
 #include "TFile.h"
 #include "TVector3.h"
@@ -97,9 +101,9 @@ class TtEfficiency;
 class TtSemiEventSolution;
 
 // hfPos[0]:eta, hfPos[1]:phi, hfPos[2]:pt 
-typedef std::vector<double> hfPos ;
+//typedef std::vector<double> hfPos ;
 /// Lorentz vector
-typedef math::XYZTLorentzVector LorentzVector;
+//typedef math::XYZTLorentzVector LorentzVector;
 
 class TtAnalysis : public edm::EDAnalyzer {
    public:
@@ -117,7 +121,7 @@ class TtAnalysis : public edm::EDAnalyzer {
                                  edm::Handle<std::vector<reco::GenParticle> > genParticles);
     hfPos findDaughter(int dauId, int momId, double eta, double phi,
                                  edm::Handle<std::vector<reco::GenParticle> > genParticles);
- 
+
 
    private:
       // ----------member data ---------------------------
@@ -152,6 +156,7 @@ class TtAnalysis : public edm::EDAnalyzer {
     // Switch for debug output
     bool debug;
     bool needTree; 
+    bool trigOn;
     int evtIt;
 
     std::string rootFileName;
@@ -166,6 +171,7 @@ class TtAnalysis : public edm::EDAnalyzer {
     edm::InputTag jetObj;
     edm::InputTag genSrc;
     edm::InputTag caloSrc;
+    edm::InputTag triggerSrc;
 
 
 };

@@ -54,6 +54,7 @@
 
 #include "TtAnalysisNtuple.h"
 #include "TtAnalysisHisto.h"
+#include "TtFormat.h"
 
 #include "TFile.h"
 #include <vector>
@@ -65,6 +66,7 @@
 //
 // class decleration
 //
+/*
 typedef math::XYZTLorentzVector LorentzVector;
 
 struct jmatch {
@@ -73,7 +75,7 @@ struct jmatch {
        LorentzVector sumP4 ;
        std::vector<pat::Jet> assJets ;
        pat::Jet leadingJet ;
-       pat::Jet trueJet ;
+       const pat::Jet* trueJet ;
        reco::Particle mom ;
        bool hasMatched; 
 };
@@ -85,7 +87,7 @@ struct iTt {
     GlobalVector  gv; 
     double pt;
 };
-
+*/
 class TtMCMatching {
    public:
     /// Constructor
@@ -97,11 +99,13 @@ class TtMCMatching {
     void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, NJet* jtree, int eventId);
 
     std::vector<jmatch> matchWJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<pat::Jet> selectedWJets,
+                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<const pat::Jet*> selectedWJets,
                                    HTOP8* histo8, bool fillhisto );
+
     std::vector<jmatch> matchbJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<pat::Jet> selectedbJets,
+                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<const pat::Jet*> selectedbJets,
                                    HTOP7* histo7, bool fillhisto );
+
     std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                         edm::Handle<std::vector<pat::Muon> > muons, 
                                         std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3, bool fillhisto);
@@ -109,6 +113,9 @@ class TtMCMatching {
     std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                         edm::Handle<std::vector<pat::Electron> > electrons,
                                         std::vector<const reco::Candidate*> isoEle, HTOP4* histo4, bool fillhisto);
+
+    int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution );
+    int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution, HTOP9* histo9 );
 
     bool matchingGeneral( LorentzVector p4_1, iTt ttObject, double& dR0, double& ptRes0 );
 

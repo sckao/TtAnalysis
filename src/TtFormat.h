@@ -1,11 +1,11 @@
-#ifndef TtEfficiency_H
-#define TtEfficiency_H
+#ifndef TtFormat_H
+#define TtFormat_H
 // -*- C++ -*-
 //
-// Package:    TtEfficiency
-// Class:      TtEfficiency
+// Package:    TtFormat
+// Class:      TtFormat
 // 
-/**\class TtEfficiency TtEfficiency.cc PhysicsTools/TtAnalysis/src/TtEfficiency.cc
+/**\class TtFormat TtFormat.cc PhysicsTools/TtAnalysis/src/TtFormat.cc
 
  Description: <one line class summary>
 
@@ -24,17 +24,6 @@
 #include <memory>
 
 // user include files
-#include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "DataFormats/Common/interface/Handle.h"
-#include "FWCore/Framework/interface/ESHandle.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
-#include "FWCore/Framework/interface/Event.h"
-//#include "FWCore/Framework/interface/MakerMacros.h"
-
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
-
-
 #include "DataFormats/PatCandidates/interface/PATObject.h"
 #include "DataFormats/PatCandidates/interface/Particle.h"
 #include "DataFormats/PatCandidates/interface/Lepton.h"
@@ -43,6 +32,9 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
+#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Framework/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
@@ -53,34 +45,50 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TFile.h"
+#include "TVector3.h"
 #include <vector>
 #include <map>
 #include <string>
 #include <utility>
 
-#include "TtAnalysisHisto.h"
-#include "TtAnalysisNtuple.h"
 
 //
 // class decleration
 //
 typedef math::XYZTLorentzVector LorentzVector;
+typedef std::pair<int, LorentzVector> iParton;
+// hfPos[0]:eta, hfPos[1]:phi, hfPos[2]:pt
+typedef std::vector<double> hfPos ;
 
-class TtEfficiency {
-   public:
-    /// Constructor
-    explicit TtEfficiency();
-    /// Destructor
-    ~TtEfficiency();
+//
+struct iReco{
+    LorentzVector p4;
+    std::pair<int,int> from;
+    std::pair<const reco::Candidate*, const reco::Candidate*> ptr;
+    //std::pair<LorentzVector, LorentzVector> q4;
+    std::vector<iParton> q4v ;
+    double dm;
+    double mt; // only filled for leptonic W
+};
 
-    /// Perform the real analysis
-    void EventEfficiency(int topo, bool pass, HTOP9* histo9 );
-    void EventShape(int topo, size_t isoMu, size_t isoE , size_t nBJ, size_t wJ, HTOP9* histo9 );
-    void JetEfficiency(std::vector<const pat::Jet*> recojets, std::vector<const pat::Jet*> mcjets, HTOP9* histo9 );
-    void IsoLeptonEfficiency(std::vector<const reco::Candidate*> isolep, std::vector<const reco::Candidate*> mclep, HTOP9* histo9 );
+// information of matched jets 
+struct jmatch {
+       int MomIdx ;
+       double res_P;
+       LorentzVector sumP4 ;
+       std::vector<pat::Jet> assJets ;
+       pat::Jet leadingJet ;
+       const pat::Jet* trueJet ;
+       reco::Particle mom ;
+       bool hasMatched;
+};
 
-   private:
-
+struct iTt {
+    int pdgId;
+    int momId;
+    LorentzVector p4;
+    GlobalVector  gv;
+    double pt;
 };
 
 #endif

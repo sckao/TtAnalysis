@@ -123,13 +123,13 @@ void TtEfficiency::IsoLeptonEfficiency(std::vector<const reco::Candidate*> isole
 }
 
 
-void TtEfficiency::JetEfficiency(std::vector<pat::Jet> recojets, std::vector<pat::Jet> mcjets, HTOP9* histo9 ){ 
+void TtEfficiency::JetEfficiency(std::vector<const pat::Jet*> recojets, std::vector<const pat::Jet*> mcjets, HTOP9* histo9 ){ 
 
  int mc = 0; 
  int rc = 0; 
  for(size_t i=0; i< mcjets.size(); i++ ){
-    LorentzVector mcP = mcjets[i].p4();
-    int pid1 = mcjets[i].partonFlavour();
+    LorentzVector mcP = mcjets[i]->p4();
+    int pid1 = mcjets[i]->partonFlavour();
     if ( abs(pid1) == 5 ) {
        mc = 5;
        rc = 6;
@@ -142,8 +142,8 @@ void TtEfficiency::JetEfficiency(std::vector<pat::Jet> recojets, std::vector<pat
     histo9->Fill9i( mc ); 
 
     for (size_t j=0; j< recojets.size(); j++  ) {
-        LorentzVector recoP = recojets[j].p4();
-        int pid2 = recojets[j].partonFlavour();
+        LorentzVector recoP = recojets[j]->p4();
+        int pid2 = recojets[j]->partonFlavour();
         if (pid1 == pid2 && mcP == recoP ) { 
            histo9->Fill9i( rc ); 
         }
