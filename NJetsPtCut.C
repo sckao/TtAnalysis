@@ -4,12 +4,12 @@
 //#include <stdio.h>
 //#include <fstream>
 
-void NJetsPtCut() {
+void NJetsPtCut( int scaleW, int scaleQCD ) {
 
- TFile *file  = TFile::Open("ttj_100pb_Et20.root");
- TFile *file1 = TFile::Open("wjets_10pb_Et20.root");
- TFile *file2 = TFile::Open("qcd_10pb_Et20.root");
- TString hfolder = "TtBackground";
+ TFile *file  = TFile::Open("ttj_2Jskim.root");
+ TFile *file1 = TFile::Open("wjets_2Jskim.root");
+ TFile *file2 = TFile::Open("qcd_2Jskim.root");
+ TString hfolder = "tt_test2";
 
  TString plot1 = "njets.gif";
 
@@ -43,10 +43,10 @@ void NJetsPtCut() {
  h0jet20->DrawCopy();
 
  h1jet20->SetLineColor(kRed);
- h1jet20->Scale(10.);
+ h1jet20->Scale( scaleW );
  h1jet20->DrawCopy("same");
  h2jet20->SetLineColor(kBlue);
- h2jet20->Scale(10.);
+ h2jet20->Scale( scaleQCD );
  h2jet20->DrawCopy("same");
 
  c1->cd(2);
@@ -59,10 +59,10 @@ void NJetsPtCut() {
  h0jet30->DrawCopy();
 
  h1jet30->SetLineColor(kRed);
- h1jet30->Scale(10.);
+ h1jet30->Scale( scaleW );
  h1jet30->DrawCopy("same");
  h2jet30->SetLineColor(kBlue);
- h2jet30->Scale(10.);
+ h2jet30->Scale( scaleQCD );
  h2jet30->DrawCopy("same");
 
  c1->cd(3);
@@ -75,10 +75,10 @@ void NJetsPtCut() {
  h0jet40->DrawCopy();
 
  h1jet40->SetLineColor(kRed);
- h1jet40->Scale(10.);
+ h1jet40->Scale( scaleW );
  h1jet40->DrawCopy("same");
  h2jet40->SetLineColor(kBlue);
- h2jet40->Scale(10.);
+ h2jet40->Scale( scaleQCD );
  h2jet40->DrawCopy("same");
 
  c1->cd(4);
