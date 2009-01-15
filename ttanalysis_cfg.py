@@ -20,19 +20,17 @@ process.source = cms.Source("PoolSource",
     debugVebosity = cms.untracked.uint32(10),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-#'file:/data/top/sckao/Tt210Full/RelValTt214_full1.root',
-#'file:/data/top/sckao/Tt210Full/RelValTt214_full2.root',
-'file:/data/top/sckao/Tt210Full/RelValTt214_full3.root'
-#'file:/data/top/sckao/Tt210Full/RelValTt214_full4.root'
+'file:/data/top/sckao/MGTtJets/TtJets_PAT1_0.root'
     )
 )
 
 # replace the source files from a file list
-import PhysicsTools.TtAnalysis.ttfilelist_cff as fileList
+#import PhysicsTools.TtAnalysis.ttjetslist_cff as fileList
+import PhysicsTools.TtAnalysis.ttjetslist_skim1 as fileList
 process.source.fileNames = fileList.fileNames
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(-1)
+    input = cms.untracked.int32(8353)
 )
 process.MessageLogger = cms.Service("MessageLogger")
 
@@ -41,9 +39,10 @@ process.ttAna = cms.EDFilter("TtAnalysis",
     TrackAssociatorParameterBlock,
     TrackAssociatorParameters, 
     debug    = cms.untracked.bool(False),
+    btag     = cms.untracked.bool(False),
     needTree = cms.untracked.bool(False),
     trigOn   = cms.untracked.bool(False),
-    rootFileName = cms.untracked.string('tt_11pb_Et20.root'),
+    rootFileName = cms.untracked.string('ttj_1Jskim_NoBTag1.root'),
     genParticles = cms.InputTag("genParticles"),
     genJetSource = cms.InputTag("iterativeCone5GenJets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
