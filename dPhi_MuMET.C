@@ -1,8 +1,8 @@
 void dPhi_MuMET( TString name1 ) {
 
- TFile *file  = TFile::Open("ttj_100pb_Et20b.root");
- TFile *file1 = TFile::Open("wjets_10pb_Et20b.root");
- TFile *file2 = TFile::Open("qcd_10pb_Et20a.root");
+ TFile *file  = TFile::Open("ttj_1Jskim.root");
+ TFile *file1 = TFile::Open("wjets_1Jskim.root");
+ TFile *file2 = TFile::Open("qcd_1Jskim.root");
  TString hfolder = "tt_test";
 
  Int_t rb = 2;
@@ -14,8 +14,8 @@ void dPhi_MuMET( TString name1 ) {
 
  met_df   = (TH2F *) file->Get("METs/"+name1); 
  met_dfa  = (TH2F *) file1->Get("METs/"+name1); 
- //met_dfb  = (TH2F *) file2->Get("METs/"+name1); 
- met_dfb  = (TH2F *) file2->Get("METs/MET_dPhi"); 
+ met_dfb  = (TH2F *) file2->Get("METs/"+name1); 
+ //met_dfb  = (TH2F *) file2->Get("METs/MET_dPhi"); 
 
  gSystem->mkdir(hfolder);
  gSystem->cd(hfolder);
