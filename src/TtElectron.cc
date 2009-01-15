@@ -100,7 +100,9 @@ void TtElectron::matchedElectronAnalysis( std::vector<const reco::Candidate*>  m
      //double hdE   = emE * HovE  ;
      double EovP = caloE / (*it)->p() ;
  
-     double IsoValue = emR.first / (*it)->p() ;
+     double emCompensation = ecalIso->depositWithin(0.055);
+     double sumIso = emR.first + hdR.first + tkR.first - emCompensation ;
+     double IsoValue = it1->et() / (it1->et() + sumIso );
 
      //cout<<" Pt:"<< (*it)->pt() <<" emR5= "<<emR5.first <<"  candE= "<<ecalIso->candEnergy() ;
      //cout<<" caloE: "<< it1->caloEnergy()<<endl;
@@ -108,7 +110,7 @@ void TtElectron::matchedElectronAnalysis( std::vector<const reco::Candidate*>  m
      //cout<< "  isoH:"<<hdR.first<<"/"<<hdR.second <<endl;
 
      histo4->Fill4d( (*it)->pt(), (*it)->eta(), EovP, HovE, tkR.second, emR.second,
-                      it1->trackIso(), it1->ecalIso(), it1->hcalIso(), IsoValue );
+                      tkR.first, emR.first, hdR.first, IsoValue );
 
  }
 
@@ -128,25 +130,30 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
      std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3); 
-     //double thetaCal = (ecalIso->direction()).theta();
-     //double thetaTrk = (trackIso->direction()).theta();
+
      double sumE = emR.first + hdR.first ;
      int calR_count = emR.second + hdR.second ;
 
-     //double IsoValue = emR.first / it->p() ;
-     double sumIso = emR.first + hdR.first + tkR.first ;
+     double emCompensation = ecalIso->depositWithin(0.055);
+     double sumIso = emR.first + hdR.first + tkR.first - emCompensation ;
      double IsoValue = it->et() / (it->et() + sumIso );
       
+     double EovP = it->caloEnergy() / it->p() ;
+     double HovE = it->hadronicOverEm() ;
+
      histo4->Fill4b(it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
-                    it->trackIso(), it->ecalIso(), it->hcalIso(), IsoValue );
+                    IsoValue, HovE, EovP );
   
      // Isolation Cut
-     if ( tkR.second   > 3 ) continue;
-     if ( it->trackIso() > 3 ) continue;
-     if ( it->ecalIso()  > 3 && fabs(it->eta()) >= 1.5 ) continue;
+     if ( IsoValue < 0.47 ) continue;
+     if ( fabs( it->eta() ) > 2.4 ) continue;    
 
-     histo4->Fill4c(it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
-                    it->trackIso(), it->ecalIso(), it->hcalIso(), IsoValue );
+     histo4->Fill4c(it->pt(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
+                    IsoValue, HovE, EovP );
+
+     if ( it->pt() < 20.0 )  continue ;
+     if ( EovP < 0.98 ) continue;
+     if ( HovE > 0.02 ) continue;
 
      isoEle.push_back( &*it );
 
@@ -169,21 +176,19 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
      std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3); 
-     //double thetaCal = (ecalIso->direction()).theta();
-     //double thetaTrk = (trackIso->direction()).theta();
-     double sumE = emR.first + hdR.first ;
-     int calR_count = emR.second + hdR.second ;
 
-     //double IsoValue = emR.first / it->p() ;
-     //double sumIso = emR.first + hdR.first + tkR.first ;
-     //double IsoValue = it->et() / (it->et() + sumIso );
+     double emCompensation = ecalIso->depositWithin(0.055);
+     double sumIso = emR.first + hdR.first + tkR.first - emCompensation;
+     double IsoValue = it->et() / (it->et() + sumIso );
       
-  
-     // Isolation Cut
-     if ( tkR.second   > 3 ) continue;
-     if ( it->trackIso() > 3 ) continue;
-     if ( it->ecalIso()  > 3 && fabs(it->eta()) >= 1.5 ) continue;
+     double EovP = it->caloEnergy() / it->p() ;
+     double HovE = it->hadronicOverEm() ;
 
+     // Isolation Cut
+     if ( IsoValue < 0.47 ) continue;     
+     if ( it->pt() < 20.0 || fabs( it->eta() ) > 2.4 )  continue ;
+     if ( EovP < 0.98 ) continue;
+     if ( HovE > 0.02 ) continue;
 
      isoEle.push_back( &*it );
 

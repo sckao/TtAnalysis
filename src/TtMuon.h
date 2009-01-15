@@ -89,6 +89,8 @@ class TtMuon {
 
     void MuonTrigger( edm::Handle<std::vector<pat::Muon> >patMu, edm::Handle <edm::TriggerResults> triggers);
 
+    void matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HTOP3* histo3  ); 
+
    private:
 
 };

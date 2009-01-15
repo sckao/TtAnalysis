@@ -55,6 +55,7 @@
 #include "TtAnalysisHisto.h"
 #include "TtAnalysisNtuple.h"
 #include "TtMuon.h"
+#include "TtFormat.h"
 
 #include "TFile.h"
 #include <vector>
@@ -66,7 +67,6 @@
 //
 // class decleration
 //
-typedef math::XYZTLorentzVector LorentzVector;
 class TtMuon;
 
 class TtMET {
@@ -82,7 +82,11 @@ class TtMET {
     void metAnalysis(edm::Handle<std::vector<pat::MET> > patMet, const edm::Event & iEvent, HTOP2* histo2);
 
     LorentzVector findNeutrino(edm::Handle<std::vector<reco::GenParticle> > genParticles );
+
     std::vector<double> CaloMET( edm::Handle<CaloTowerCollection> calotowers );
+
+    void MetAndMuon( edm::Handle<std::vector<pat::MET> > patMet, std::vector<const reco::Candidate*> isoMuons, HTOP2* histo2, int njets  );
+
 
 
    private:

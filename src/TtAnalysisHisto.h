@@ -557,6 +557,12 @@ public:
     hPhiCal = new TH1F("PhiCal","Cal Phi Resolution", 100, -5.,5.);
     hPhiCor = new TH1F("PhiCor","Cor Phi Resolution", 100, -5.,5.);
 
+    MET_dPhi0 = new TH2F("MET_dPhi0","MET vs dPhi(Mu,MET) 0j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi1 = new TH2F("MET_dPhi1","MET vs dPhi(Mu,MET) 1j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi2 = new TH2F("MET_dPhi2","MET vs dPhi(Mu,MET) 2j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi3 = new TH2F("MET_dPhi3","MET vs dPhi(Mu,MET) 3j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi4 = new TH2F("MET_dPhi4","MET vs dPhi(Mu,MET) 4j", 500, 0,500, 32, -0.05,3.15);
+
  } 
 
  HTOP2(TString name_, TFile* file) {
@@ -570,6 +576,12 @@ public:
     hPhiPAT     = (TH1F *) file->Get("hPhiPAT");
     hPhiCal     = (TH1F *) file->Get("hPhiCal");
     hPhiCor     = (TH1F *) file->Get("hPhiCor");
+
+    MET_dPhi0   = (TH2F *) file->Get("MET_dPhi0");
+    MET_dPhi1   = (TH2F *) file->Get("MET_dPhi1");
+    MET_dPhi2   = (TH2F *) file->Get("MET_dPhi2");
+    MET_dPhi3   = (TH2F *) file->Get("MET_dPhi3");
+    MET_dPhi4   = (TH2F *) file->Get("MET_dPhi4");
  }
 
  /// Destructor
@@ -583,6 +595,12 @@ public:
     delete hPhiPAT;
     delete hPhiCal;
     delete hPhiCor;
+
+    delete MET_dPhi0;
+    delete MET_dPhi1;
+    delete MET_dPhi2;
+    delete MET_dPhi3;
+    delete MET_dPhi4;
  }
 
  void Fill2a(double met, double emf, double emfCalo, double sumEt){
@@ -600,6 +618,22 @@ public:
     hPhiCor->Fill(phicor);
  }
 
+ void Fill2c0( double met, double dPhi) {
+    MET_dPhi0->Fill(met, dPhi);
+ }
+ void Fill2c1( double met, double dPhi) {
+    MET_dPhi1->Fill(met, dPhi);
+ }
+ void Fill2c2( double met, double dPhi) {
+    MET_dPhi2->Fill(met, dPhi);
+ }
+ void Fill2c3( double met, double dPhi) {
+    MET_dPhi3->Fill(met, dPhi);
+ }
+ void Fill2c4( double met, double dPhi) {
+    MET_dPhi4->Fill(met, dPhi);
+ }
+
  void Write() {
 
     hemfMET->Write();
@@ -612,6 +646,11 @@ public:
     hPhiCal->Write();
     hPhiCor->Write();
 
+    MET_dPhi0->Write();
+    MET_dPhi1->Write();
+    MET_dPhi2->Write();
+    MET_dPhi3->Write();
+    MET_dPhi4->Write();
  }
 
   TH2F *hemfMET;
@@ -623,6 +662,12 @@ public:
   TH1F *hPhiPAT;
   TH1F *hPhiCal;
   TH1F *hPhiCor;
+
+  TH2F *MET_dPhi0;
+  TH2F *MET_dPhi1;
+  TH2F *MET_dPhi2;
+  TH2F *MET_dPhi3;
+  TH2F *MET_dPhi4;
 
  TString name;
 
@@ -649,31 +694,36 @@ public:
     hPt1b   = new TH2F("hPt1b", " Pt vs Pt_Resolution for muon of semi Tt(mcMatched)",30,0,300, 31,-1.55,1.55 );
     hPt1c   = new TH2F("hPt1c", " Pt vs Pt_Resolution for muon of semi Tt(recoUsed)",30,0,300, 31,-1.55,1.55 );
 
-   // Isolation
-    hemEt   = new TH2F("hemEt","emEt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hhadEt  = new TH2F("hhadEt","hadEt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hNCalo  = new TH2F("hNCalo","hNCalo: (R3x, R5y)",40,0.,40.,40,0.,40 );
-    hnTrack = new TH2F("hnTrack","hnTrack: (R3x, R5y)",40,0.,40.,40,0.,40 );
-    hsumPt  = new TH2F("hsumPt","hsumPt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hsumEt  = new TH2F("hsumEt","hsumEt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hcaloIso= new TH1F("hcaloIso"," caloIso value", 75,-0.5,14.5 );
-    hcaloIso2D= new TH2F("hcaloIso2D"," ECaloIso(x) , HCaloIso(y)", 75,-0.5,14.5, 75,-0.5,14.5 );
-    hIso_Pt = new TH2F("hIso_Pt"," IsoValue(x) , Pt(y)", 120,-0.1,1.1, 500,0,500);
-
-    hemEt2   = new TH2F("hemEt2","IsoSelected emEt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hhadEt2  = new TH2F("hhadEt2","IsoSelected hadEt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hNCalo2   = new TH2F("hNCalo2","IsoSelected hNCalo: (R3x, R5y)",40,0.,40.,40,0.,40 );
-    hnTrack2 = new TH2F("hnTrack2","IsoSelected hnTrack: (R3x, R5y)",40,0.,40.,40,0.,40 );
-    hsumPt2  = new TH2F("hsumPt2","IsoSelected hsumPt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hsumEt2  = new TH2F("hsumEt2","IsoSelected hsumEt: (R3x, R5y)",400,0.,20.,400,0.,20 );
-    hcaloIso_2 = new TH1F("hcaloIso_2","IsoSelected caloIso value", 75,-0.5,14.5 );
-    hcaloIso2D_2= new TH2F("hcaloIso2D_2","IsoSelected ECalIso(x) , HCalIso(y)", 75,-0.5,14.5, 75,-0.5,14.5 );
-    hIso_Pt2 = new TH2F("hIso_Pt2","IsoSelected IsoValue(x) , Pt(y)", 120,-0.1,1.1, 500,0,500);
-
     hIMu_caloE = new TH2F("hIMu_caloE","IsoMu caloE vs muon p ",800,0.,200., 800,0.,200. );
     hJMu_caloE = new TH2F("hJMu_caloE","JetMu caloE vs muon p ",800,0.,200., 800,0.,200. );
     hIMu_caloE_jE = new TH2F("hIMu_caloE_jE","IsoMu caloE vs jet E ",800,0.,200., 800,0.,200. );
     hJMu_caloE_jE = new TH2F("hJMu_caloE_jE","JetMu caloE vs jet E ",800,0.,200., 800,0.,200. );
+
+   // Isolation
+
+    Pt_emIso1    = new TH2F("Pt_emIso1", "pt vs iso emE for all",200,0.,200., 100, 0., 100.);
+    Pt_hdIso1    = new TH2F("Pt_hdIso1", "pt vs iso hdE for all",200,0.,200., 100, 0., 100.);
+    Pt_tkIso1    = new TH2F("Pt_tkIso1", "pt vs iso tkP for all",200,0.,200., 100, 0., 100.);
+    Pt_CaloIso1  = new TH2F("Pt_CaloIso1","pt vs calo iso for all",200,0.,200., 100, 0., 100.);
+    Pt_Iso1      = new TH2F("Pt_Iso1"  , "pt vs Iso value for all",200,0.,200., 200, -0.5, 1.5 );
+    Eta_Iso1     = new TH2F("Eta_Iso1", "eta vs Iso for all ",61, -3.05,3.05 , 200, -0.5, 1.5);  
+    Eta_CaloIso1 = new TH2F("Eta_CaloIso1", "eta vs CaloIso for all ",61, -3.05,3.05 , 200, -0.5, 1.5);  
+
+    Pt_emIso2    = new TH2F("Pt_emIso2", "pt vs iso emE after cut",200,0.,200., 100, 0., 100.);
+    Pt_hdIso2    = new TH2F("Pt_hdIso2", "pt vs iso hdE after cut",200,0.,200., 100, 0., 100.);
+    Pt_tkIso2    = new TH2F("Pt_tkIso2", "pt vs iso tkP after cut",200,0.,200., 100, 0., 100.);
+    Pt_CaloIso2  = new TH2F("Pt_CaloIso2","pt vs calo iso after cut",200,0.,200., 100, 0., 100.);
+    Pt_Iso2      = new TH2F("Pt_Iso2"  , "pt vs Iso value after cut",200,0.,200., 200, -0.5, 1.5 );
+    Eta_Iso2     = new TH2F("Eta_Iso2", "eta vs Iso after cut ",61, -3.05,3.05 , 200, -0.5, 1.5);  
+    Eta_CaloIso2 = new TH2F("Eta_CaloIso2", "eta vs CaloIso after cut ",61, -3.05,3.05 , 200, -0.5, 1.5);  
+
+    Pt_emIso    = new TH2F("Pt_emIso", "pt vs iso emE  MC Matched",200,0.,200., 100, 0., 100.);
+    Pt_hdIso    = new TH2F("Pt_hdIso", "pt vs iso hdE  MC Matched",200,0.,200., 100, 0., 100.);
+    Pt_tkIso    = new TH2F("Pt_tkIso", "pt vs iso tkP  MC Matched",200,0.,200., 100, 0., 100.);
+    Pt_CaloIso  = new TH2F("Pt_CaloIso","pt vs calo iso  MC Matched",200,0.,200., 100, 0., 100.);
+    Pt_Iso      = new TH2F("Pt_Iso"  , "pt vs Iso value  MC Matched",200,0.,200., 200, -0.5, 1.5 );
+    Eta_Iso     = new TH2F("Eta_Iso", "eta vs Iso  MC Matched ",61, -3.05,3.05 , 200, -0.5, 1.5);  
+    Eta_CaloIso = new TH2F("Eta_CaloIso", "eta vs CaloIso  MC Matched ",61, -3.05,3.05 , 200, -0.5, 1.5);  
 
  } 
 
@@ -692,25 +742,29 @@ public:
     hPt1b  = (TH2F *) file->Get("hPt1b");
     hPt1c  = (TH2F *) file->Get("hPt1c");
 
-    hemEt  = (TH2F *) file->Get("hemEt"); 
-    hhadEt = (TH2F *) file->Get("hhadEt"); 
-    hNCalo  = (TH2F *) file->Get("hNCalo"); 
-    hnTrack = (TH2F *) file->Get("hnTrack"); 
-    hsumPt  = (TH2F *) file->Get("hsumPt"); 
-    hsumEt  = (TH2F *) file->Get("hsumEt"); 
-    hcaloIso = (TH1F *) file->Get("hcaloIso");
-    hcaloIso2D = (TH2F *) file->Get("hcaloIso2D");
-    hIso_Pt = (TH2F *) file->Get("hIso_Pt");
-    
-    hemEt2  = (TH2F *) file->Get("hemEt2"); 
-    hhadEt2 = (TH2F *) file->Get("hhadEt2"); 
-    hNCalo2  = (TH2F *) file->Get("hNCalo2"); 
-    hnTrack2 = (TH2F *) file->Get("hnTrack2"); 
-    hsumPt2  = (TH2F *) file->Get("hsumPt2"); 
-    hsumEt2  = (TH2F *) file->Get("hsumEt2"); 
-    hcaloIso_2 = (TH1F *) file->Get("hcaloIso_2");
-    hcaloIso2D_2 = (TH2F *) file->Get("hcaloIso2D_2");
-    hIso_Pt2 = (TH2F *) file->Get("hIso_Pt2");
+    Pt_emIso1    = (TH2F *) file->Get("Pt_emIso1");
+    Pt_hdIso1    = (TH2F *) file->Get("Pt_hdIso1");
+    Pt_tkIso1    = (TH2F *) file->Get("Pt_tkIso1");
+    Pt_CaloIso1  = (TH2F *) file->Get("Pt_CaloIso1");
+    Pt_Iso1      = (TH2F *) file->Get("Pt_Iso1");
+    Eta_Iso1     = (TH2F *) file->Get("Eta_Iso1");
+    Eta_CaloIso1 = (TH2F *) file->Get("Eta_CaloIso1");
+
+    Pt_emIso2    = (TH2F *) file->Get("Pt_emIso2");
+    Pt_hdIso2    = (TH2F *) file->Get("Pt_hdIso2");
+    Pt_tkIso2    = (TH2F *) file->Get("Pt_tkIso2");
+    Pt_CaloIso2  = (TH2F *) file->Get("Pt_CaloIso2");
+    Pt_Iso2      = (TH2F *) file->Get("Pt_Iso2");
+    Eta_Iso2     = (TH2F *) file->Get("Eta_Iso2");
+    Eta_CaloIso2 = (TH2F *) file->Get("Eta_CaloIso2");
+
+    Pt_emIso    = (TH2F *) file->Get("Pt_emIso");
+    Pt_hdIso    = (TH2F *) file->Get("Pt_hdIso");
+    Pt_tkIso    = (TH2F *) file->Get("Pt_tkIso");
+    Pt_CaloIso  = (TH2F *) file->Get("Pt_CaloIso");
+    Pt_Iso      = (TH2F *) file->Get("Pt_Iso");
+    Eta_Iso     = (TH2F *) file->Get("Eta_Iso");
+    Eta_CaloIso = (TH2F *) file->Get("Eta_CaloIso");
 
     hIMu_caloE = (TH2F *) file->Get("hIMu_caloE");
     hJMu_caloE = (TH2F *) file->Get("hJMu_caloE");
@@ -733,26 +787,30 @@ public:
     delete hPt1b;
     delete hPt1c;
  
-    delete hemEt;
-    delete hhadEt;
-    delete hNCalo;
-    delete hnTrack;
-    delete hsumPt;
-    delete hsumEt;
-    delete hcaloIso; 
-    delete hcaloIso2D; 
-    delete hIso_Pt; 
+    delete Pt_emIso1;
+    delete Pt_hdIso1;
+    delete Pt_tkIso1;
+    delete Pt_CaloIso1;
+    delete Pt_Iso1;
+    delete Eta_Iso1;
+    delete Eta_CaloIso1;
 
-    delete hemEt2;
-    delete hhadEt2;
-    delete hNCalo2;
-    delete hnTrack2;
-    delete hsumPt2;
-    delete hsumEt2;
-    delete hcaloIso_2; 
-    delete hcaloIso2D_2; 
-    delete hIso_Pt2; 
- 
+    delete Pt_emIso2;
+    delete Pt_hdIso2;
+    delete Pt_tkIso2;
+    delete Pt_CaloIso2;
+    delete Pt_Iso2;
+    delete Eta_Iso2;
+    delete Eta_CaloIso2;
+
+    delete Pt_emIso;
+    delete Pt_hdIso;
+    delete Pt_tkIso;
+    delete Pt_CaloIso;
+    delete Pt_Iso;
+    delete Eta_Iso;
+    delete Eta_CaloIso;
+
     delete hIMu_caloE;
     delete hJMu_caloE;
     delete hIMu_caloE_jE;
@@ -764,43 +822,40 @@ public:
     hEta->Fill(Eta);
  }
  
- void Fill3b(double emEt3, double emEt5, double hdEt3, double hdEt5, int nCal3, int nCal5, 
-             int ntrack3, int ntrack5, double sumPt3, double sumPt5, double sumEt3, double sumEt5,
-             double caloIso, double ecalIso, double hcalIso, double Iso, double pt ) {
+ void Fill3b(double pt, double eta, double emE, double hdE, double tkP, double sumE, double Iso ){
 
-    hemEt->Fill(emEt3,emEt5);
-    hhadEt->Fill(hdEt3,hdEt5);
-    hNCalo->Fill(nCal3,nCal5);
-    hnTrack->Fill(ntrack3,ntrack5);
-    hsumPt->Fill(sumPt3,sumPt5);
-    hsumEt->Fill(sumEt3,sumEt5);
-    hcaloIso->Fill(caloIso);
-    hcaloIso2D->Fill(ecalIso,hcalIso);
-    hIso_Pt->Fill(Iso, pt);
+    Pt_emIso1->Fill(pt, emE);
+    Pt_hdIso1->Fill(pt, hdE);
+    Pt_tkIso1->Fill(pt, tkP);
+    Pt_CaloIso1->Fill(pt, sumE);
+    Pt_Iso1->Fill(pt, Iso);
+    Eta_Iso1->Fill(eta, Iso);
+    Eta_CaloIso1->Fill(eta, sumE);
+
  }
  
- void Fill3c(double emEt3, double emEt5, double hdEt3, double hdEt5, int nCal3, int nCal5,
-             int ntrack3, int ntrack5, double sumPt3, double sumPt5, double sumEt3, double sumEt5,
-             double caloIso, double ecalIso, double hcalIso, double Iso, double pt ) {
+ void Fill3c(double pt, double eta, double emE, double hdE, double tkP, double sumE, double Iso ){
 
-    hemEt2->Fill(emEt3,emEt5);
-    hhadEt2->Fill(hdEt3,hdEt5);
-    hNCalo2->Fill(nCal3,nCal5);
-    hnTrack2->Fill(ntrack3,ntrack5);
-    hsumPt2->Fill(sumPt3,sumPt5);
-    hsumEt2->Fill(sumEt3,sumEt5);
-    hcaloIso_2->Fill(caloIso);
-    hcaloIso2D_2->Fill(ecalIso,hcalIso);
-    hIso_Pt2->Fill(Iso, pt);
+    Pt_emIso2->Fill(pt, emE);
+    Pt_hdIso2->Fill(pt, hdE);
+    Pt_tkIso2->Fill(pt, tkP);
+    Pt_CaloIso2->Fill(pt, sumE);
+    Pt_Iso2->Fill(pt, Iso);
+    Eta_Iso2->Fill(eta, Iso);
+    Eta_CaloIso2->Fill(eta, sumE);
+
  }
 
- void Fill3d(double isoMuE, double mu_p, double jet_E ) {
-    hIMu_caloE->Fill(isoMuE, mu_p);
-    hIMu_caloE_jE->Fill(isoMuE, jet_E);
- }
- void Fill3e(double jetMuE, double mu_p, double jet_E ) {
-    hJMu_caloE->Fill(jetMuE, mu_p);
-    hJMu_caloE_jE->Fill(jetMuE, jet_E);
+ void Fill3d(double pt, double eta, double emE, double hdE, double tkP, double sumE, double Iso ){
+
+    Pt_emIso->Fill(pt, emE);
+    Pt_hdIso->Fill(pt, hdE);
+    Pt_tkIso->Fill(pt, tkP);
+    Pt_CaloIso->Fill(pt, sumE);
+    Pt_Iso->Fill(pt, Iso);
+    Eta_Iso->Fill(eta, Iso);
+    Eta_CaloIso->Fill(eta, sumE);
+
  }
 
  void Fill3f(double eta, double pt) {
@@ -819,6 +874,15 @@ public:
     iPt->Fill(Pt);
     iEta->Fill(Eta);
  }
+ void Fill3j(double isoMuE, double mu_p, double jet_E ) {
+    hIMu_caloE->Fill(isoMuE, mu_p);
+    hIMu_caloE_jE->Fill(isoMuE, jet_E);
+ }
+ void Fill3k(double jetMuE, double mu_p, double jet_E ) {
+    hJMu_caloE->Fill(jetMuE, mu_p);
+    hJMu_caloE_jE->Fill(jetMuE, jet_E);
+ }
+
  
 
  void Write() {
@@ -834,25 +898,29 @@ public:
     hPt1b->Write();
     hPt1c->Write();
  
-    hemEt->Write();
-    hhadEt->Write();
-    hNCalo->Write();
-    hnTrack->Write();
-    hsumPt->Write();
-    hsumEt->Write();
-    hcaloIso->Write();
-    hcaloIso2D->Write();
-    hIso_Pt->Write();
+    Pt_emIso1->Write();
+    Pt_hdIso1->Write();
+    Pt_tkIso1->Write();
+    Pt_CaloIso1->Write();
+    Pt_Iso1->Write();
+    Eta_Iso1->Write();
+    Eta_CaloIso1->Write();
 
-    hemEt2->Write();
-    hhadEt2->Write();
-    hNCalo2->Write();
-    hnTrack2->Write();
-    hsumPt2->Write();
-    hsumEt2->Write();
-    hcaloIso_2->Write();
-    hcaloIso2D_2->Write();
-    hIso_Pt2->Write();
+    Pt_emIso2->Write();
+    Pt_hdIso2->Write();
+    Pt_tkIso2->Write();
+    Pt_CaloIso2->Write();
+    Pt_Iso2->Write();
+    Eta_Iso2->Write();
+    Eta_CaloIso2->Write();
+
+    Pt_emIso->Write();
+    Pt_hdIso->Write();
+    Pt_tkIso->Write();
+    Pt_CaloIso->Write();
+    Pt_Iso->Write();
+    Eta_Iso->Write();
+    Eta_CaloIso->Write();
 
     hIMu_caloE->Write();
     hJMu_caloE->Write();
@@ -872,25 +940,29 @@ public:
   TH2F *hPt1b;
   TH2F *hPt1c;
 
-  TH2F *hemEt;
-  TH2F *hhadEt;
-  TH2F *hNCalo;
-  TH2F *hnTrack;
-  TH2F *hsumPt;
-  TH2F *hsumEt;
-  TH1F *hcaloIso;
-  TH2F *hcaloIso2D;
-  TH2F *hIso_Pt;
+  TH2F *Pt_emIso1;
+  TH2F *Pt_hdIso1;
+  TH2F *Pt_tkIso1;
+  TH2F *Pt_CaloIso1;
+  TH2F *Pt_Iso1;
+  TH2F *Eta_Iso1;
+  TH2F *Eta_CaloIso1;
 
-  TH2F *hemEt2;
-  TH2F *hhadEt2;
-  TH2F *hNCalo2;
-  TH2F *hnTrack2;
-  TH2F *hsumPt2;
-  TH2F *hsumEt2;
-  TH1F *hcaloIso_2;
-  TH2F *hcaloIso2D_2;
-  TH2F *hIso_Pt2;
+  TH2F *Pt_emIso2;
+  TH2F *Pt_hdIso2;
+  TH2F *Pt_tkIso2;
+  TH2F *Pt_CaloIso2;
+  TH2F *Pt_Iso2;
+  TH2F *Eta_Iso2;
+  TH2F *Eta_CaloIso2;
+
+  TH2F *Pt_emIso;
+  TH2F *Pt_hdIso;
+  TH2F *Pt_tkIso;
+  TH2F *Pt_CaloIso;
+  TH2F *Pt_Iso;
+  TH2F *Eta_Iso;
+  TH2F *Eta_CaloIso;
 
   TH2F *hIMu_caloE;
   TH2F *hJMu_caloE;
@@ -913,47 +985,44 @@ public:
     hEta  = new TH1F("hEta"," eta distribution",59,-2.95,2.95);
 
     // parton level
-    hEta1a  = new TH1F("hEta1a"," eta distribution for electron of semi Tt(parton) ",71,-3.55,3.55);
-    hEta1b  = new TH1F("hEta1b"," eta distribution for electron of semi Tt(mcMatched)",71,-3.55,3.55);
-    hEta1c  = new TH1F("hEta1c"," eta distribution for electron of semi Tt(recoUsed)",71,-3.55,3.55);
-    hPt1a   = new TH1F("hPt1a", " Pt distribution for e of semi Tt(parton)",30,0,300 );
-    hPt1b   = new TH2F("hPt1b", " Pt vs Pt_Resolution for e of semi Tt(mcMatched)",30,0,300, 31,-1.55,1.55 );
-    hPt1c   = new TH2F("hPt1c", " Pt vs Pt_Resolution for e of semi Tt(recoUsed)",30,0,300, 31,-1.55,1.55 );
+    hEta1a = new TH1F("hEta1a"," eta distribution for electron of semi Tt(parton) ",71,-3.55,3.55);
+    hEta1b = new TH1F("hEta1b"," eta distribution for electron of semi Tt(mcMatched)",71,-3.55,3.55);
+    hEta1c = new TH1F("hEta1c"," eta distribution for electron of semi Tt(recoUsed)",71,-3.55,3.55);
+    hPt1a  = new TH1F("hPt1a", " Pt distribution for e of semi Tt(parton)",30,0,300 );
+    hPt1b  = new TH2F("hPt1b", " Pt vs Pt_Resolution for e of semi Tt(mcMatched)",30,0,300, 31,-1.55,1.55 );
+    hPt1c  = new TH2F("hPt1c", " Pt vs Pt_Resolution for e of semi Tt(recoUsed)",30,0,300, 31,-1.55,1.55 );
    // Isolation
-    hPt_em1  = new TH2F("hPt_em1", "pt vs iso emE for all",800,0.,200., 400, 0., 40.);
-    hPt_hd1  = new TH2F("hPt_hd1", "pt vs iso hdE for all",800,0.,200., 400, 0., 40.);
-    hPt_tk1  = new TH2F("hPt_tk1", "pt vs iso tkP for all",800,0.,200., 400, 0., 40.);
-    hPt_sum1 = new TH2F("hPt_sum1","pt vs iso caloE for all",800,0.,200., 400, 0., 40.);
-    hPt_Cal1 = new TH2F("hPt_Cal1","pt vs # of CaloDeposit in isoR3 for all ",800,0.,200., 11, -0.5, 10.5 );
-    hPt_Trk1 = new TH2F("hPt_Trk1","pt vs # of Track in isoR3 for all ",800,0.,200., 11, -0.5, 10.5 );
-    hPt_Iso1 = new TH2F("hPt_Iso1","pt vs Iso value for all",800,0.,200., 200, -0.5, 1.5 );
     hEta_Iso1= new TH2F("hEta_Iso1", "eta vs Iso for all ",61, -3.05,3.05 , 200, -0.5, 1.5);  
-    hEta_trkIso1  = new TH2F("hEta_trkIso1", "eta vs trkIso for all ",61, -3.05,3.05 , 30, -0.25,14.75);  
-    hEta_ecalIso1 = new TH2F("hEta_ecalIso1","eta vs ecalIso for all",61, -3.05,3.05 , 30, -0.25,14.75);  
-    hEta_hcalIso1 = new TH2F("hEta_hcalIso1","eta vs hcalIso for all",61, -3.05,3.05 , 30, -0.25,14.75);  
+    Pt_emIso1 = new TH2F("Pt_emIso1", "pt vs iso emE for all",200,0.,200., 100, 0., 100.);
+    Pt_hdIso1 = new TH2F("Pt_hdIso1", "pt vs iso hdE for all",200,0.,200., 100, 0., 100.);
+    Pt_tkIso1 = new TH2F("Pt_tkIso1", "pt vs iso tkP for all",200,0.,200., 100, 0., 100.);
+    hPt_sum1 = new TH2F("hPt_sum1","pt vs iso caloE for all",200,0.,200., 100, 0., 100.);
+    hPt_Cal1 = new TH2F("hPt_Cal1","pt vs # of CaloDeposit in isoR3 for all ",200,0.,200., 25, -0.5, 24.5 );
+    hPt_Trk1 = new TH2F("hPt_Trk1","pt vs # of Track in isoR3 for all ",200,0.,200., 25, -0.5, 24.5 );
+    hPt_Iso1 = new TH2F("hPt_Iso1","pt vs Iso value for all",200,0.,200., 200, -0.5, 1.5 );
+    Iso_EovP1 = new TH2F("Iso_EovP1","RelIso vs emE/P for all",55,-0.05, 1.05, 150, -0.25, 1.25 );
+    Iso_HovE1 = new TH2F("Iso_HovE1","RelIso vs H/E  for all ",55,-0.05, 1.05, 60, -0.05, 0.25 );
 
-    hPt_em2  = new TH2F("hPt_em2", "pt vs iso emE after cut",800,0.,200., 400, 0., 40.);
-    hPt_hd2  = new TH2F("hPt_hd2", "pt vs iso hdE after cut",800,0.,200., 400, 0., 40.);
-    hPt_tk2  = new TH2F("hPt_tk2", "pt vs iso tkP for all",800,0.,200., 400, 0., 40.);
-    hPt_sum2 = new TH2F("hPt_sum2","pt vs iso caloE after cut",800,0.,200., 400, 0., 40.);
-    hPt_Cal2 = new TH2F("hPt_Cal2","pt vs # of CaloDeposit in isoR3 after cut",800,0.,200., 11, -0.5, 10.5 );
-    hPt_Trk2 = new TH2F("hPt_Trk2","pt vs # of Track in isoR3 after cut",800,0.,200., 11, -0.5, 10.5 );
-    hPt_Iso2 = new TH2F("hPt_Iso2","pt vs Iso value after cut",800,0.,200., 200, -0.5, 1.5 );
-    hEta_trkIso2  = new TH2F("hEta_trkIso2", "eta vs trkIso after cut",61, -3.05,3.05 , 30, -0.25,14.75);  
-    hEta_ecalIso2 = new TH2F("hEta_ecalIso2","eta vs ecalIso after cut",61, -3.05,3.05 , 30, -0.25,14.75);  
-    hEta_hcalIso2 = new TH2F("hEta_hcalIso2","eta vs hcalIso after cut",61, -3.05,3.05 , 30, -0.25,14.75);  
+    Pt_emIso2 = new TH2F("Pt_emIso2", "pt vs iso emE after cut",200,0.,200., 100, 0., 100.);
+    Pt_hdIso2 = new TH2F("Pt_hdIso2", "pt vs iso hdE after cut",200,0.,200., 100, 0., 100.);
+    Pt_tkIso2 = new TH2F("Pt_tkIso2", "pt vs iso tkP for all",200,0.,200., 100, 0., 100.);
+    hPt_sum2 = new TH2F("hPt_sum2","pt vs iso caloE after cut",200,0.,200., 100, 0., 100.);
+    hPt_Cal2 = new TH2F("hPt_Cal2","pt vs # of CaloDeposit in isoR3 after cut",200,0.,200., 25, -0.5, 24.5 );
+    hPt_Trk2 = new TH2F("hPt_Trk2","pt vs # of Track in isoR3 after cut",200,0.,200., 25, -0.5, 24.5 );
+    hPt_Iso2 = new TH2F("hPt_Iso2","pt vs Iso value after cut",200,0.,200., 200, -0.5, 1.5 );
+    Iso_EovP2 = new TH2F("Iso_EovP2","RelIso vs emE/P after cut",55,-0.05, 1.05, 150, -0.25, 1.25 );
+    Iso_HovE2 = new TH2F("Iso_HovE2","RelIso vs H/E after cut ",55,-0.05, 1.05, 60, -0.05, 0.25 );
 
    // MC matching electrons
-    hPt_EovP = new TH2F("hPt_EovP","pt vs emE/P  ",800,0.,200., 500, 0.25, 1.25 );
-    hPt_HovE = new TH2F("hPt_HovE","pt vs H/E ",800,0.,200., 500, -0.25, 0.75 );
-    hPt_nTrk = new TH2F("hPt_nTrk","pt vs # of track in isoR3 ",800,0.,200., 11, -0.5, 10.5 );
-    hPt_nCal = new TH2F("hPt_nCal","pt vs # of CaloDeposit in isoR3 ",800,0.,200., 11, -0.5, 10.5 );
-    hPt_Iso  = new TH2F("hPt_Iso","pt vs Iso value - MC matched ",800,0.,200., 200, -0.5, 1.5);
     hEta_Iso = new TH2F("hEta_Iso", "eta vs Iso - MC matched ",61, -3.05,3.05, 200, -0.5, 1.5);  
-    hEta_trkIso  = new TH2F("hEta_trkIso", "eta vs trkIso  ",61, -3.05,3.05 , 30, -0.25,14.75);  
-    hEta_ecalIso = new TH2F("hEta_ecalIso","eta vs ecalIso ",61, -3.05,3.05 , 30, -0.25,14.75);  
-    hEta_hcalIso = new TH2F("hEta_hcalIso","eta vs hcalIso ",61, -3.05,3.05 , 30, -0.25,14.75);  
- 
+    hPt_nTrk = new TH2F("hPt_nTrk","pt vs # of track in isoR3 ",200,0.,200., 25, -0.5, 24.5 );
+    hPt_nCal = new TH2F("hPt_nCal","pt vs # of CaloDeposit in isoR3 ",200,0.,200., 25, -0.5, 24.5 );
+    hPt_Iso  = new TH2F("hPt_Iso","pt vs Iso value - MC matched ",200,0.,200., 200, -0.5, 1.5);
+    Pt_tkIso = new TH2F("Pt_tkIso", "pt vs trkIso ", 200, 0., 200. , 100, 0., 100.);  
+    Pt_emIso = new TH2F("Pt_emIso","pt vs ecalIso ", 200, 0., 200. , 100, 0., 100.);  
+    Pt_hdIso = new TH2F("Pt_hdIso","pt vs hcalIso ", 200, 0., 200. , 100, 0., 100.);  
+    Iso_EovP = new TH2F("Iso_EovP","RelIso vs emE/P ",55,-0.05, 1.05, 150, -0.25, 1.25 );
+    Iso_HovE = new TH2F("Iso_HovE","RelIso vs H/E   ",55,-0.05, 1.05, 60, -0.05, 0.25 );
 
  } 
 
@@ -969,38 +1038,36 @@ public:
     hPt1b  = (TH2F *) file->Get("hPt1b");
     hPt1c  = (TH2F *) file->Get("hPt1c");
 
-    hPt_em1 = (TH2F *) file->Get("hPt_em1");
-    hPt_hd1 = (TH2F *) file->Get("hPt_hd1");
-    hPt_tk1 = (TH2F *) file->Get("hPt_tk1");
+    Pt_emIso1 = (TH2F *) file->Get("Pt_emIso1");
+    Pt_hdIso1 = (TH2F *) file->Get("Pt_hdIso1");
+    Pt_tkIso1 = (TH2F *) file->Get("Pt_tkIso1");
     hPt_sum1 = (TH2F *) file->Get("hPt_sum1");
     hPt_Cal1 = (TH2F *) file->Get("hPt_Cal1");
     hPt_Trk1 = (TH2F *) file->Get("hPt_Trk1");
     hPt_Iso1 = (TH2F *) file->Get("hPt_Iso1");
     hEta_Iso1 = (TH2F *) file->Get("hEta_Iso1");
-    hEta_trkIso1  = (TH2F *) file->Get("hEta_trkIso1");
-    hEta_ecalIso1 = (TH2F *) file->Get("hEta_ecalIso1");
-    hEta_hcalIso1 = (TH2F *) file->Get("hEta_hcalIso1");
+    Iso_EovP1 = (TH2F *) file->Get("Iso_EovP1");
+    Iso_HovE1 = (TH2F *) file->Get("Iso_HovE1");
 
-    hPt_em2 = (TH2F *) file->Get("hPt_em2");
-    hPt_hd2 = (TH2F *) file->Get("hPt_hd2");
-    hPt_tk2 = (TH2F *) file->Get("hPt_tk2");
+    Pt_emIso2 = (TH2F *) file->Get("Pt_emIso2");
+    Pt_hdIso2 = (TH2F *) file->Get("Pt_hdIso2");
+    Pt_tkIso2 = (TH2F *) file->Get("Pt_tkIso2");
     hPt_sum2 = (TH2F *) file->Get("hPt_sum2");
     hPt_Cal2 = (TH2F *) file->Get("hPt_Cal2");
     hPt_Trk2 = (TH2F *) file->Get("hPt_Trk2");
     hPt_Iso2 = (TH2F *) file->Get("hPt_Iso2");
-    hEta_trkIso2  = (TH2F *) file->Get("hEta_trkIso2");
-    hEta_ecalIso2 = (TH2F *) file->Get("hEta_ecalIso2");
-    hEta_hcalIso2 = (TH2F *) file->Get("hEta_hcalIso2");
+    Iso_EovP2 = (TH2F *) file->Get("Iso_EovP2");
+    Iso_HovE2 = (TH2F *) file->Get("Iso_HovE2");
 
-    hPt_EovP = (TH2F *) file->Get("hPt_EovP");
-    hPt_HovE = (TH2F *) file->Get("hPt_HovE");
+    Iso_EovP = (TH2F *) file->Get("Iso_EovP");
+    Iso_HovE = (TH2F *) file->Get("Iso_HovE");
     hPt_nTrk = (TH2F *) file->Get("hPt_nTrk");
     hPt_nCal = (TH2F *) file->Get("hPt_nCal");
     hPt_Iso  = (TH2F *) file->Get("hPt_Iso");
     hEta_Iso = (TH2F *) file->Get("hEta_Iso");
-    hEta_trkIso  = (TH2F *) file->Get("hEta_trkIso");
-    hEta_ecalIso = (TH2F *) file->Get("hEta_ecalIso");
-    hEta_hcalIso = (TH2F *) file->Get("hEta_hcalIso");
+    Pt_tkIso  = (TH2F *) file->Get("Pt_tkIso");
+    Pt_emIso = (TH2F *) file->Get("Pt_emIso");
+    Pt_hdIso = (TH2F *) file->Get("Pt_hdIso");
 
  }
 
@@ -1016,38 +1083,36 @@ public:
     delete hPt1b;
     delete hPt1c;
  
-    delete hPt_em1;
-    delete hPt_hd1;
-    delete hPt_tk1;
+    delete Pt_emIso1;
+    delete Pt_hdIso1;
+    delete Pt_tkIso1;
     delete hPt_sum1;
     delete hPt_Cal1;
     delete hPt_Trk1;
     delete hPt_Iso1;
     delete hEta_Iso1;
-    delete hEta_trkIso1;
-    delete hEta_ecalIso1;
-    delete hEta_hcalIso1;
+    delete Iso_EovP1;
+    delete Iso_HovE1;
 
-    delete hPt_em2;
-    delete hPt_hd2;
-    delete hPt_tk2;
+    delete Pt_emIso2;
+    delete Pt_hdIso2;
+    delete Pt_tkIso2;
     delete hPt_sum2;
     delete hPt_Cal2;
     delete hPt_Trk2;
-    delete hEta_trkIso2;
-    delete hEta_ecalIso2;
-    delete hEta_hcalIso2;
     delete hPt_Iso2;
+    delete Iso_EovP2;
+    delete Iso_HovE2;
 
-    delete hPt_EovP;
-    delete hPt_HovE;
+    delete Iso_EovP;
+    delete Iso_HovE;
     delete hPt_nTrk;
     delete hPt_nCal;
     delete hPt_Iso;
     delete hEta_Iso;
-    delete hEta_trkIso;
-    delete hEta_ecalIso;
-    delete hEta_hcalIso;
+    delete Pt_tkIso;
+    delete Pt_emIso;
+    delete Pt_hdIso;
 
  }
 
@@ -1057,46 +1122,44 @@ public:
  }
  
  void Fill4b(double pt, double eta, double emE, double hdE, double tkP, double sumE, int nCal3, int ntrack3, 
-             double trackIso, double ecalIso, double hcalIso, double Iso){
+             double Iso, double HovE, double EovP ){
 
-    hPt_em1->Fill(pt, emE);
-    hPt_hd1->Fill(pt, hdE);
-    hPt_tk1->Fill(pt, tkP);
+    Pt_emIso1->Fill(pt, emE);
+    Pt_hdIso1->Fill(pt, hdE);
+    Pt_tkIso1->Fill(pt, tkP);
     hPt_sum1->Fill(pt, sumE);
     hPt_Cal1->Fill(pt, nCal3);
     hPt_Trk1->Fill(pt, ntrack3);
-    hEta_trkIso1->Fill(eta, trackIso);
-    hEta_ecalIso1->Fill(eta, ecalIso);
-    hEta_hcalIso1->Fill(eta, hcalIso);
     hPt_Iso1->Fill(pt, Iso);
     hEta_Iso1->Fill(eta, Iso);
+    Iso_EovP1->Fill(Iso, EovP);
+    Iso_HovE1->Fill(Iso, HovE);
  }
  
- void Fill4c(double pt, double eta, double emE, double hdE, double tkP, double sumE, int nCal3, int ntrack3, 
-             double trackIso, double ecalIso, double hcalIso, double Iso){
+ void Fill4c(double pt, double emE, double hdE, double tkP, double sumE, int nCal3, int ntrack3, 
+             double Iso, double HovE, double EovP){
 
-    hPt_em2->Fill(pt, emE);
-    hPt_hd2->Fill(pt, hdE);
-    hPt_tk2->Fill(pt, tkP);
+    Pt_emIso2->Fill(pt, emE);
+    Pt_hdIso2->Fill(pt, hdE);
+    Pt_tkIso2->Fill(pt, tkP);
     hPt_sum2->Fill(pt, sumE);
     hPt_Cal2->Fill(pt, nCal3);
     hPt_Trk2->Fill(pt, ntrack3);
-    hEta_trkIso2->Fill(eta, trackIso);
-    hEta_ecalIso2->Fill(eta, ecalIso);
-    hEta_hcalIso2->Fill(eta, hcalIso);
     hPt_Iso2->Fill(pt, Iso);
+    Iso_EovP2->Fill(Iso, EovP);
+    Iso_HovE2->Fill(Iso, HovE);
  }
 
  void Fill4d(double pt, double eta, double EovP, double HovE, int nTrk, int nCal, float trkIso, float ecalIso, float hcalIso, double Iso ) {
-    hPt_EovP->Fill(pt, EovP);
-    hPt_HovE->Fill(pt, HovE);
+    hEta_Iso->Fill(eta, Iso);
     hPt_nTrk->Fill(pt, nTrk);
     hPt_nCal->Fill(pt, nCal);
     hPt_Iso->Fill(pt, Iso);
-    hEta_Iso->Fill(eta, Iso);
-    hEta_trkIso->Fill(eta, trkIso);
-    hEta_ecalIso->Fill(eta, ecalIso);
-    hEta_hcalIso->Fill(eta, hcalIso);
+    Pt_tkIso->Fill(pt, trkIso);
+    Pt_emIso->Fill(pt, ecalIso);
+    Pt_hdIso->Fill(pt, hcalIso);
+    Iso_EovP->Fill(Iso, EovP);
+    Iso_HovE->Fill(Iso, HovE);
  }
 
  void Fill4f(double eta, double pt) {
@@ -1123,38 +1186,36 @@ public:
     hPt1b->Write();
     hPt1c->Write();
  
-    hPt_em1->Write();
-    hPt_hd1->Write();
-    hPt_tk1->Write();
+    Pt_emIso1->Write();
+    Pt_hdIso1->Write();
+    Pt_tkIso1->Write();
     hPt_sum1->Write();
     hPt_Cal1->Write();
     hPt_Trk1->Write();
     hPt_Iso1->Write();
     hEta_Iso1->Write();
-    hEta_trkIso1->Write();
-    hEta_ecalIso1->Write();
-    hEta_hcalIso1->Write();
+    Iso_EovP1->Write();
+    Iso_HovE1->Write();
 
-    hPt_em2->Write();
-    hPt_hd2->Write();
-    hPt_tk2->Write();
+    Pt_emIso2->Write();
+    Pt_hdIso2->Write();
+    Pt_tkIso2->Write();
     hPt_sum2->Write();
     hPt_Cal2->Write();
     hPt_Trk2->Write();
     hPt_Iso2->Write();
-    hEta_trkIso2->Write();
-    hEta_ecalIso2->Write();
-    hEta_hcalIso2->Write();
+    Iso_EovP2->Write();
+    Iso_HovE2->Write();
 
-    hPt_EovP->Write();
-    hPt_HovE->Write();
+    Iso_EovP->Write();
+    Iso_HovE->Write();
     hPt_nTrk->Write();
     hPt_nCal->Write();
     hPt_Iso->Write();
     hEta_Iso->Write();
-    hEta_trkIso->Write();
-    hEta_ecalIso->Write();
-    hEta_hcalIso->Write();
+    Pt_tkIso->Write();
+    Pt_emIso->Write();
+    Pt_hdIso->Write();
 
  }
 
@@ -1167,38 +1228,36 @@ public:
   TH2F *hPt1b;
   TH2F *hPt1c;
 
-  TH2F *hPt_em1;
-  TH2F *hPt_hd1;
-  TH2F *hPt_tk1;
+  TH2F *Pt_emIso1;
+  TH2F *Pt_hdIso1;
+  TH2F *Pt_tkIso1;
   TH2F *hPt_sum1;
   TH2F *hPt_Cal1;
   TH2F *hPt_Trk1;
   TH2F *hPt_Iso1;
   TH2F *hEta_Iso1;
-  TH2F *hEta_trkIso1;
-  TH2F *hEta_ecalIso1;
-  TH2F *hEta_hcalIso1;
+  TH2F *Iso_EovP1;
+  TH2F *Iso_HovE1;
 
-  TH2F *hPt_em2;
-  TH2F *hPt_hd2;
-  TH2F *hPt_tk2;
+  TH2F *Pt_emIso2;
+  TH2F *Pt_hdIso2;
+  TH2F *Pt_tkIso2;
   TH2F *hPt_sum2;
   TH2F *hPt_Cal2;
   TH2F *hPt_Trk2;
   TH2F *hPt_Iso2;
-  TH2F *hEta_trkIso2;
-  TH2F *hEta_ecalIso2;
-  TH2F *hEta_hcalIso2;
+  TH2F *Iso_EovP2;
+  TH2F *Iso_HovE2;
 
-  TH2F *hPt_EovP;
-  TH2F *hPt_HovE;
+  TH2F *Iso_EovP;
+  TH2F *Iso_HovE;
   TH2F *hPt_nTrk;
   TH2F *hPt_nCal;
   TH2F *hPt_Iso;
   TH2F *hEta_Iso;
-  TH2F *hEta_trkIso;
-  TH2F *hEta_ecalIso;
-  TH2F *hEta_hcalIso;
+  TH2F *Pt_tkIso;
+  TH2F *Pt_emIso;
+  TH2F *Pt_hdIso;
 
  TString name;
 
@@ -1797,9 +1856,28 @@ public:
     name=N1;
 
    // reconstructed objects masses
-    hMCtt     = new TH1F("hMCtt","MCMatched top mass ",200,0,400);
-    hMCtt1    = new TH1F("hMCtt1","MCMatched top mass passing evt selection",200,0,400);
-    hRecott   = new TH1F("hRecott","Reco top mass ",200,0,400);
+    hMCtt     = new TH2F("hMCtt","MCMatched top mass ",200,0,400, 200,0,400);
+    hMCtt1    = new TH2F("hMCtt1","MCMatched top mass passing evt selection",200,0,400, 200,0,400);
+    hRecott0   = new TH2F("hRecott0","Reco top mass w/ <= 3j", 200,0,400, 200,0,400);
+    hRecott1   = new TH2F("hRecott1","Reco top mass w/ 4j", 200,0,400, 200,0,400);
+    hRecott2   = new TH2F("hRecott2","Reco top mass w/ 5j", 200,0,400, 200,0,400);
+    hRecott3   = new TH2F("hRecott3","Reco top mass w/ 6j", 200,0,400, 200,0,400);
+    hRecott4   = new TH2F("hRecott4","Reco top mass w/ >= 7j", 200,0,400, 200,0,400);
+
+    PtMCtt      = new TH1F("PtMCtt",  "Pt of MCMatched tt", 200,0,400);
+    PtRecott0   = new TH1F("PtRecott0","Pt of Reco top mass w/ <= 3j", 200,0,400);
+    PtRecott1   = new TH1F("PtRecott1","Pt of Reco top mass w/ 4j", 200,0,400);
+    PtRecott2   = new TH1F("PtRecott2","Pt of Reco top mass w/ 5j", 200,0,400);
+    PtRecott3   = new TH1F("PtRecott3","Pt of Reco top mass w/ 6j", 200,0,400);
+    PtRecott4   = new TH1F("PtRecott4","Pt of Reco top mass w/ >= 7j", 200,0,400);
+
+    WMCtt      = new TH2F("WMCtt",  "W of MCMatched tt", 400,0,800, 400,0,800);
+    WRecott0   = new TH2F("WRecott0","W of Reco top mass w/ <= 3j", 400,0,800, 400,0,800);
+    WRecott1   = new TH2F("WRecott1","W of Reco top mass w/ 4j", 400,0,800, 400,0,800);
+    WRecott2   = new TH2F("WRecott2","W of Reco top mass w/ 5j", 400,0,800, 400,0,800);
+    WRecott3   = new TH2F("WRecott3","W of Reco top mass w/ 6j", 400,0,800, 400,0,800);
+    WRecott4   = new TH2F("WRecott4","W of Reco top mass w/ >= 7j", 400,0,800, 400,0,800);
+
     hMClepW   = new TH1F("hMClepW",  " mt of leptonic W ",320,0,160.);
     hRecolepW = new TH1F("hRecolepW"," mt of leptonic W ",320,0,160.);
     hMChadW   = new TH1F("hMChadW","MC Hadronic W",320,0,160.);
@@ -1823,9 +1901,26 @@ public:
  HTOP9(TString name_, TFile* file) {
     name=name_;
 
-    hMCtt      = (TH1F *) file->Get("hMCtt");
-    hMCtt1     = (TH1F *) file->Get("hMCtt1");
-    hRecott    = (TH1F *) file->Get("hRecott");
+    hMCtt      = (TH2F *) file->Get("hMCtt");
+    hMCtt1     = (TH2F *) file->Get("hMCtt1");
+    hRecott0   = (TH2F *) file->Get("hRecott0");
+    hRecott1   = (TH2F *) file->Get("hRecott1");
+    hRecott2   = (TH2F *) file->Get("hRecott2");
+    hRecott3   = (TH2F *) file->Get("hRecott3");
+    hRecott4   = (TH2F *) file->Get("hRecott4");
+    PtMCtt     = (TH1F *) file->Get("PtMCtt");
+    PtRecott0  = (TH1F *) file->Get("PtRecott0");
+    PtRecott1  = (TH1F *) file->Get("PtRecott1");
+    PtRecott2  = (TH1F *) file->Get("PtRecott2");
+    PtRecott3  = (TH1F *) file->Get("PtRecott3");
+    PtRecott4  = (TH1F *) file->Get("PtRecott4");
+    WMCtt      = (TH2F *) file->Get("WMCtt");
+    WRecott0   = (TH2F *) file->Get("WRecott0");
+    WRecott1   = (TH2F *) file->Get("WRecott1");
+    WRecott2   = (TH2F *) file->Get("WRecott2");
+    WRecott3   = (TH2F *) file->Get("WRecott3");
+    WRecott4   = (TH2F *) file->Get("WRecott4");
+
     hMClepW    = (TH1F *) file->Get("hMClepW");
     hRecolepW  = (TH1F *) file->Get("hRecolepW");
     hMChadW    = (TH1F *) file->Get("hMChadW");
@@ -1850,7 +1945,24 @@ public:
 
     delete hMCtt;
     delete hMCtt1;
-    delete hRecott;
+    delete hRecott0;
+    delete hRecott1;
+    delete hRecott2;
+    delete hRecott3;
+    delete hRecott4;
+    delete PtMCtt;
+    delete PtRecott0;
+    delete PtRecott1;
+    delete PtRecott2;
+    delete PtRecott3;
+    delete PtRecott4;
+    delete WMCtt;
+    delete WRecott0;
+    delete WRecott1;
+    delete WRecott2;
+    delete WRecott3;
+    delete WRecott4;
+
     delete hMClepW;
     delete hRecolepW;
     delete hMChadW;
@@ -1870,14 +1982,38 @@ public:
     delete MRes_lepW;
  }
 
- void Fill9(double mt){
-    hMCtt->Fill(mt);
+ void Fill9(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hMCtt->Fill( lep_mt, had_mt );
+    PtMCtt->Fill( PtTt );
+    WMCtt->Fill( Wtt, Wt2 );
  }
- void Fill9h(double mt){
-    hMCtt1->Fill(mt);
+ void Fill9h(double lep_mt, double had_mt){
+    hMCtt1->Fill( lep_mt, had_mt );
  }
- void Fill9a(double mt){
-    hRecott->Fill(mt);
+ void Fill9a0(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott0->Fill( lep_mt, had_mt );
+    PtRecott0->Fill( PtTt );
+    WRecott0->Fill( Wtt, Wt2 );
+ }
+ void Fill9a1(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott1->Fill( lep_mt, had_mt );
+    PtRecott1->Fill( PtTt );
+    WRecott1->Fill( Wtt, Wt2 );
+ }
+ void Fill9a2(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott2->Fill( lep_mt, had_mt );
+    PtRecott2->Fill( PtTt );
+    WRecott2->Fill( Wtt, Wt2 );
+ }
+ void Fill9a3(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott3->Fill( lep_mt, had_mt );
+    PtRecott3->Fill( PtTt );
+    WRecott3->Fill( Wtt, Wt2 );
+ }
+ void Fill9a4(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott4->Fill( lep_mt, had_mt );
+    PtRecott4->Fill( PtTt );
+    WRecott4->Fill( Wtt, Wt2 );
  }
  void Fill9b(double mw) {
     hMClepW->Fill(mw) ; 
@@ -1922,7 +2058,24 @@ public:
 
     hMCtt->Write();
     hMCtt1->Write();
-    hRecott->Write();
+    hRecott0->Write();
+    hRecott1->Write();
+    hRecott2->Write();
+    hRecott3->Write();
+    hRecott4->Write();
+    PtMCtt->Write();
+    PtRecott0->Write();
+    PtRecott1->Write();
+    PtRecott2->Write();
+    PtRecott3->Write();
+    PtRecott4->Write();
+    WMCtt->Write();
+    WRecott0->Write();
+    WRecott1->Write();
+    WRecott2->Write();
+    WRecott3->Write();
+    WRecott4->Write();
+
     hMClepW->Write();
     hMChadW->Write();
     hRecolepW->Write();
@@ -1943,9 +2096,27 @@ public:
 
  }
 
-  TH1F *hMCtt;
-  TH1F *hMCtt1;
-  TH1F *hRecott;
+  TH2F *hMCtt;
+  TH2F *hMCtt1;
+  TH2F *hRecott0;
+  TH2F *hRecott1;
+  TH2F *hRecott2;
+  TH2F *hRecott3;
+  TH2F *hRecott4;
+
+  TH1F *PtMCtt;
+  TH1F *PtRecott0;
+  TH1F *PtRecott1;
+  TH1F *PtRecott2;
+  TH1F *PtRecott3;
+  TH1F *PtRecott4;
+  TH2F *WMCtt;
+  TH2F *WRecott0;
+  TH2F *WRecott1;
+  TH2F *WRecott2;
+  TH2F *WRecott3;
+  TH2F *WRecott4;
+
   TH1F *hMClepW;
   TH1F *hMChadW;
   TH1F *hRecolepW;

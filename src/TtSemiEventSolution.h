@@ -59,8 +59,6 @@
 //#include "DataFormates/TrackReco/interface/Track.h"
 //#include "DataFormates/TrackReco/interface/TrackFwd.h"
 
-//#include "AnalysisDataFormats/TopObjects/interface/TtGenEvent.h"
-//#include "AnalysisDataFormats/TopObjects/interface/TtSemiEvtSolution.h"
 
 #include "TtAnalysisHisto.h"
 #include "TtEvtSelector.h"
@@ -91,22 +89,6 @@ class TtMET;
 class TtJet;
 class TtEfficiency; 
 
-/// Lorentz vector
-/*
-typedef math::XYZTLorentzVector LorentzVector;
-typedef std::pair<int, LorentzVector> iParton;
-
-//
-struct iReco{
-    LorentzVector p4;
-    std::pair<int,int> from;
-    std::pair<const reco::Candidate*, const reco::Candidate*> ptr;
-    //std::pair<LorentzVector, LorentzVector> q4;
-    std::vector<iParton> q4v ;
-    double dm;
-    double mt; // only filled for leptonic W
-};
-*/
 
 class TtSemiEventSolution {
    public:
@@ -123,13 +105,20 @@ class TtSemiEventSolution {
     bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate  );
     bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
                 std::vector<iReco>& wCandidate );
-    bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate );
+    bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate, bool btagging );
 
+    // with 2b tagging
     std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theWJets,
                   std::vector<const pat::Jet*> thebJets, std::vector<const reco::Candidate*> mcMuons,
                   std::vector<const reco::Candidate*> mcElectrons, edm::Handle<std::vector<pat::MET> > met, HTOP9* histo9  );
  
+    // no b-tagging
+    std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theJets,
+                  std::vector<const reco::Candidate*> mcMuons, std::vector<const reco::Candidate*> mcElectrons, 
+                  edm::Handle<std::vector<pat::MET> > met, HTOP9* histo9  );
+ 
     double getInvMass( LorentzVector lv );
+    double getInvMass( LorentzVector lv1, LorentzVector lv2 );
 
     void dmSortRecoObjects( std::vector<iReco>& objCand );
 
@@ -150,6 +139,7 @@ class TtSemiEventSolution {
 
     // Switch for debug output
     bool debug;
+    bool btag;
 
     edm::InputTag muonSrc;
     std::string recoMuon;

@@ -56,15 +56,15 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
 
   //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
 
-  evtSelected = new TtEvtSelector();
   MCMatching  = new TtMCMatching();
+  evtSelected = new TtEvtSelector( iConfig );
   ttMuon      = new TtMuon();
   ttEle       = new TtElectron();
   ttGam       = new TtPhoton();
   ttMET       = new TtMET( iConfig );
   ttJet       = new TtJet( iConfig );
-  ttEff       = new TtEfficiency();
   semiSol     = new TtSemiEventSolution( iConfig );
+  ttEff       = new TtEfficiency();
 
   evtIt = 0;
   // Create the root file
@@ -110,8 +110,8 @@ TtAnalysis::~TtAnalysis()
    // (e.g. close files, deallocate resources etc.)
    if (debug) cout << "[TtAnalysis Analysis] Destructor called" << endl;
 
-   delete evtSelected;
    delete MCMatching;
+   delete evtSelected;
    delete ttMuon;
    delete ttEle;
    delete ttGam;
@@ -237,7 +237,7 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    HTOP8 *histo8 = 0;
    HTOP9 *histo9 = 0;
 
-   cout<<" ***** new Event start ***** "<<endl;
+   //cout<<" ***** new Event start ***** "<<endl;
 
    evtIt++;
    int eventId = evtIt + (iEvent.id().run()*100000) ;
@@ -255,9 +255,8 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    }
 
    // 0. select the semi-lep events and objects
-   bool pass = evtSelected->eventSelection(muons, electrons, jets);
-   int  topo = evtSelected->MCEvtSelection(genParticles);
-
+   int pass = evtSelected->eventSelection(muons, electrons, jets, 20.);
+   int topo = evtSelected->MCEvtSelection(genParticles);
 
    histo1 = h_Jet;
    histo3 = h_Muon;
@@ -284,11 +283,10 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
  
    //3. W+Jets analysis
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
-   //double minMET = ((*mets)[0]).et() ;
 
-   if ( isoMu.size() == 1  ) {
+   if ( pass > 3  ) {
 
-      std::vector<pat::Jet> theJets = ttJet->JetSelection( jets, isoMu[0]->p4() ) ;
+      std::vector<pat::Jet> theJets = ttJet->JetSelection( jets, isoMu ) ;
 
       ttJet->thirdETJetSpectrum( theJets, histo1 );
       //ttJet->thirdETJetSpectrum( genJets, histo1 );
@@ -332,18 +330,19 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    if ( topo == 1) {
       ttJet->genJetInfo(genJets,genParticles, histo1, histo7, histo8);
    } 
-   if ( pass && topo == 1) {
+   if ( pass >= 4 && topo == 1) {
       ttJet->selectedWJetsAnalysis(jets,histo8);
    }
 
    //5. MET from PAT
    histo2 = h_MET;
    ttMET->metAnalysis(mets, iEvent, histo2);
-
+   if ( pass > -1 ) ttMET->MetAndMuon(mets, isoMu, histo2, pass );
+   
    //6. Electron Studies
-   std::vector<const reco::Candidate*> tempEle; 
-   std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, electrons, tempEle, histo4, false);  
-   ttEle->matchedElectronAnalysis( mcElectrons, histo4 );
+   //std::vector<const reco::Candidate*> tempEle; 
+   //std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, electrons, tempEle, histo4, true);  
+   //ttEle->matchedElectronAnalysis( mcElectrons, histo4 );
 
    //7. photon studies
    histo5 = h_Gam;

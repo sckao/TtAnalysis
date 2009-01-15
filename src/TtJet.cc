@@ -57,7 +57,6 @@ TtJet::TtJet(const edm::ParameterSet& iConfig)
 
   fromTtMuon      = new TtMuon();
   JetMatching     = new TtMCMatching();
-  evtSelected     = new TtEvtSelector();
 }
 
 
@@ -68,7 +67,6 @@ TtJet::~TtJet()
    //if (debug) cout << "[TtJet Analysis] Destructor called" << endl;
    delete fromTtMuon;
    delete JetMatching;
-   delete evtSelected;
 }
 
 //
@@ -78,6 +76,7 @@ TtJet::~TtJet()
 
 // ------------ method called to for each event  ------------
 static bool EtDecreasing(const pat::Jet s1, const pat::Jet s2) { return ( s1.et() > s2.et() ); }
+static bool EtDecreasing1(const pat::Jet* s1, const pat::Jet* s2) { return ( s1->et() > s2->et() ); }
 
 void TtJet::JetTreeFeeder(Handle<std::vector<pat::Jet> > patJet, NJet* jtree, int eventId ) {
 
@@ -144,40 +143,26 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1){
 
 }
 
-void TtJet::thirdETJetSpectrum( std::vector<pat::Jet> patJet, HTOP1* histo1){
+void TtJet::thirdETJetSpectrum( std::vector<pat::Jet> jet_temp, HTOP1* histo1){
 
-   std::vector<pat::Jet> jet_temp ;
-   for (std::vector<pat::Jet>::const_iterator j1 = patJet.begin(); j1 != patJet.end(); j1++)
-   {
-       double EovH = EoverH(*j1);
-       if ( EovH == -1. ) continue;
-       double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
-                     j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
-                     j1->hadEnergyInHO();
-       double calEt = calE * sin( j1->theta() );
-       if ( calEt < 5. ) continue;
 
-       jet_temp.push_back( *j1 );
-   }
+   if ( jet_temp.size() > 2) {
+      //sort(jet_temp.begin(), jet_temp.end(), EtDecreasing );
 
-   if ( jet_temp.size() > 0) {
-      sort(jet_temp.begin(), jet_temp.end(), EtDecreasing );
-      if ( jet_temp.size() > 2 ) { 
-         double calE = jet_temp[2].emEnergyInEB()  + jet_temp[2].emEnergyInEE()  + jet_temp[2].emEnergyInHF() +
-                       jet_temp[2].hadEnergyInHB() + jet_temp[2].hadEnergyInHE() + jet_temp[2].hadEnergyInHF()+ 
-                       jet_temp[2].hadEnergyInHO();
-         double calEt = calE * sin( jet_temp[2].theta() );
-         // get m3
-         std::vector<LorentzVector> vlist;
-         vlist.push_back( jet_temp[0].p4() );
-         vlist.push_back( jet_temp[1].p4() );
-         vlist.push_back( jet_temp[2].p4() );
-         double m3 = getInvMass( vlist );
+      double calE = jet_temp[2].emEnergyInEB()  + jet_temp[2].emEnergyInEE()  + jet_temp[2].emEnergyInHF() +
+                    jet_temp[2].hadEnergyInHB() + jet_temp[2].hadEnergyInHE() + jet_temp[2].hadEnergyInHF()+ 
+                    jet_temp[2].hadEnergyInHO();
+      double calEt = calE * sin( jet_temp[2].theta() );
+      // get m3
+      std::vector<LorentzVector> vlist;
+      vlist.push_back( jet_temp[0].p4() );
+      vlist.push_back( jet_temp[1].p4() );
+      vlist.push_back( jet_temp[2].p4() );
+      double m3 = getInvMass( vlist );
 
-         histo1->Fill1l( jet_temp[2].et(), calEt, jet_temp[2].towersArea(), jet_temp[0].et(), jet_temp[0].towersArea(), m3 ) ;
-         if ( m3 < 150. && jet_temp[2].et() < 20. ) histo1->Fill1e( m3, calEt );
+      histo1->Fill1l( jet_temp[2].et(), calEt, jet_temp[2].towersArea(), jet_temp[0].et(), jet_temp[0].towersArea(), m3 ) ;
+      if ( m3 < 150. && jet_temp[2].et() < 20. ) histo1->Fill1e( m3, calEt );
 
-      }
    }
 
 }
@@ -211,22 +196,9 @@ void TtJet::thirdETJetSpectrum(Handle<std::vector<reco::GenJet> > genJet, HTOP1*
 }
 
 // isolated muon and jets
-void TtJet::dPhiMuJet( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* histo1){
+void TtJet::dPhiMuJet( std::vector<pat::Jet> jet_temp,  LorentzVector p1, HTOP1* histo1){
 
-   int njet = 0;
-   std::vector<pat::Jet> jet_temp ;
-   for (std::vector<pat::Jet>::const_iterator j1 = patJet.begin(); j1 != patJet.end(); j1++)
-   {
-       double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
-                     j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
-                     j1->hadEnergyInHO();
-       double calEt = calE * sin( j1->theta() );
-       if ( calEt < 5. ) continue;
-       double EovH = EoverH(*j1);
-       if ( EovH == -1. ) continue;
-       jet_temp.push_back( *j1 );
-       if ( j1->et() > 20. ) njet++ ;
-   }
+   int njet = static_cast<int>( jet_temp.size() );
 
    double muEta    = getEta( p1.Px(), p1.Py(), p1.Pz() );
    histo1->Fill1m( njet, muEta );
@@ -521,7 +493,7 @@ void TtJet::bTagAnalysis(Handle<std::vector<pat::Jet> > Jets, HTOP7* histo7  ) {
 
 void TtJet::selectedWJetsAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP8* histo8  ) {
 
-   std::vector<const pat::Jet*> wjets = evtSelected->WJetSelection( patJet );
+   std::vector<const pat::Jet*> wjets = WJetSelection( patJet );
 
    // jets selection
    double jPt[2]  = {0.0, 0.0};
@@ -683,9 +655,9 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
 	      //cout<<"    JetTower"<<i<<" Id:"<< (*jcaloRef).id()  <<" E:"<< (*jcaloRef).energy() <<endl;
               if ( caloId != (*jcaloPtr).id() ) continue;
               if (isoMuon) {
-                 histo3->Fill3d( (*jcaloPtr).energy(), m1->p(), j1->energy() );
+                 histo3->Fill3j( (*jcaloPtr).energy(), m1->p(), j1->energy() );
               } else {
-                 histo3->Fill3e( (*jcaloPtr).energy(), m1->p(), j1->energy() );
+                 histo3->Fill3k( (*jcaloPtr).energy(), m1->p(), j1->energy() );
               }
            }
        }
@@ -782,9 +754,9 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
 
            jcaloRef = j1->getCaloConstituent( muonhit );
            if (isoMuon  ) {
-              histo3->Fill3d( (*jcaloRef).energy(), m1->p(), j1->energy() );
+              histo3->Fill3j( (*jcaloRef).energy(), m1->p(), j1->energy() );
            } else {
-              histo3->Fill3e( (*jcaloRef).energy(), m1->p(), j1->energy() );
+              histo3->Fill3k( (*jcaloRef).energy(), m1->p(), j1->energy() );
            }
 
        }
@@ -862,11 +834,15 @@ double TtJet::getInvMass( std::vector<LorentzVector> vlist ) {
 
 }
 
-std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, LorentzVector muP4 ) {
+//std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, LorentzVector muP4 ) {
+std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons ) {
 
    std::vector<pat::Jet> jet_temp ;
    for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
    {
+
+       if ( fabs(j1->eta()) > 2.7 ) continue; 
+
        double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
                      j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
                      j1->hadEnergyInHO();
@@ -876,10 +852,13 @@ std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, 
        double EovH = EoverH(*j1);
        if ( EovH == -1. ) continue;
 
-       double dR_mu = getdR( muP4, j1->p4() );  
-       if ( dR_mu < 0.1 ) continue ;
-       //double dR_el = getdR( eP4, j1->p4() );  
-       //if ( dR_el < 0.1 ) continue ;
+       bool fakeJet = false;
+       for ( size_t i =0; i < IsoMuons.size(); i++ ) {
+           LorentzVector muP4 = IsoMuons[i]->p4() ;
+           double dR_mu = getdR( muP4, j1->p4() );  
+           if ( dR_mu < 0.1 ) fakeJet = true ;
+       }
+       if ( fakeJet ) continue;
 
        jet_temp.push_back( *j1 );
    }
@@ -910,5 +889,94 @@ void TtJet::JetTrigger( Handle<std::vector<pat::Jet> > jets, Handle <edm::Trigge
        cout<<" trigName: "<< trigNames.triggerName(i)<<endl;
    }*/
 
+}
+
+std::vector<const pat::Jet* > TtJet::GoodJetSelection( Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons ) {
+
+   std::vector<const pat::Jet* > jet_temp ;
+   for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
+   {
+
+       if ( fabs(j1->eta()) > 2.7 ) continue; 
+
+       double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
+                     j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
+                     j1->hadEnergyInHO();
+       double calEt = calE * sin( j1->theta() );
+       if ( calEt < 4. ) continue;
+
+       double EovH = EoverH(*j1);
+       if ( EovH == -1. ) continue;
+
+       bool fakeJet = false;
+       for ( size_t i =0; i < IsoMuons.size(); i++ ) {
+           LorentzVector muP4 = IsoMuons[i]->p4() ;
+           double dR_mu = getdR( muP4, j1->p4() );  
+           if ( dR_mu < 0.1 ) fakeJet = true ;
+       }
+       if ( fakeJet ) continue;
+
+       jet_temp.push_back( &*j1 );
+   }
+
+   if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtDecreasing1 );
+   return jet_temp;
+
+}
+
+std::vector<const pat::Jet*> TtJet::WJetSelection( Handle<std::vector<pat::Jet> >  Jets ) {
+
+   std::vector<const pat::Jet* > jCollection;
+   jCollection.clear();
+   for (std::vector<pat::Jet>::const_iterator j1 = Jets->begin(); j1 != Jets->end(); j1++)
+   {
+       edm::RefVector<reco::TrackCollection>  assTk = (*j1).associatedTracks() ;
+       if (assTk.size() == 0) continue;
+       if ((*j1).pt() < 30. ) continue;
+
+       double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
+       double jProb        = j1->bDiscriminator("jetProbabilityBJetTags") ;
+       if (bDis_TkCount >=  2. && jProb >=0.2  ) continue;
+
+       if ( j1->towersArea() < 0.03 ) continue;
+
+       //double EovH1 = EoverH(*j1) ;
+       //if ((*j1).nConstituents() < 5 || EovH1 > 20 || EovH1 < 0.01) continue;
+       //if ((*j1).towersArea()/(*j1).pt() > 0.005 ) continue;
+
+       jCollection.push_back( &*j1 );
+   }
+
+   // sort the seeds by # of own segments
+   sort(jCollection.begin(), jCollection.end(), EtDecreasing1 ) ;
+
+   return jCollection;
+
+}
+
+std::vector<const pat::Jet*> TtJet::bJetSelection( Handle<std::vector<pat::Jet> >  Jets ) {
+
+   std::vector<const pat::Jet* > jCollection;
+   jCollection.clear();
+   for (std::vector<pat::Jet>::const_iterator j1 = Jets->begin(); j1 != Jets->end(); j1++)
+   {
+       edm::RefVector<reco::TrackCollection>  assTk = (*j1).associatedTracks() ;
+       if (assTk.size() == 0) continue;
+       if ((*j1).pt() < 30. ) continue;
+       double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
+       double jProb        = j1->bDiscriminator("jetProbabilityBJetTags") ;
+       if (bDis_TkCount < 2. || jProb < 0.2 ) continue;
+
+       //double EovH1 = EoverH(*j1) ;
+       //if ((*j1).nConstituents() < 5 || EovH1 > 20 || EovH1 < 0.01) continue;
+       //if ((*j1).towersArea()/(*j1).pt() > 0.005 ) continue;
+
+       jCollection.push_back( &*j1 );
+   }
+
+   // sort the seeds by # of own segments
+   sort(jCollection.begin(), jCollection.end(), EtDecreasing1 ) ;
+
+   return jCollection;
 }
 

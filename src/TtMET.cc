@@ -114,20 +114,22 @@ void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event&
      //float hdf = (*m1).etFractionHadronic() ;
      histo2->Fill2a( (*m1).et(), emf, emfCalo, (*m1).sumEt() );
 
-     // calculate the MET from Calo
+     // calculate the MET from CaloTowers
      std::vector<double> calo = CaloMET(caloTowers);
      // calculate the muon correction
      std::vector<double> muPtCorr = fromTtMuon->MuonEtCorrection(muons);
 
-     double calx = calo[0] + muPtCorr[0];
-     double caly = calo[1] + muPtCorr[1];
+     // the pure caloMET info
+     double calx = calo[0] ;
+     double caly = calo[1] ;
      double vsc =  sqrt( calx*calx + caly*caly );
-     double phic = atan2(-1.*caly, -1.*calx);
+     double phic = atan2(caly, calx);
 
-     double calx1 = calo[0] + muPtCorr[2];
-     double caly1 = calo[1] + muPtCorr[3];
+     // caloMET + over corrected muon
+     double calx1 = calo[0] + muPtCorr[0];
+     double caly1 = calo[1] + muPtCorr[1];
      double vsc1  =  sqrt( calx1*calx1 + caly1*caly1 );
-     double phic1 = atan2(-1.*caly1, -1*calx1);
+     double phic1 = atan2(caly1, calx1);
 
      // find neutrino from generator
      LorentzVector vP4 = findNeutrino(genParticles) ;
@@ -145,8 +147,8 @@ void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event&
 	Phi_Res[0] = (*m1).phi() - vPhi;
 	Phi_Res[1] =  phic  - vPhi;
         Phi_Res[2] =  phic1 - vPhi;
+        histo2->Fill2b( MET_Res[0],MET_Res[1],MET_Res[2],Phi_Res[0],Phi_Res[1],Phi_Res[2] );
      }
-     histo2->Fill2b( MET_Res[0],MET_Res[1],MET_Res[2],Phi_Res[0],Phi_Res[1],Phi_Res[2] );
  }
 
 }
@@ -157,11 +159,13 @@ std::vector<double> TtMET::CaloMET( Handle<CaloTowerCollection> calotowers ) {
    caloInfo.clear();
    double caloXY[2] = {0.0};
    for (CaloTowerCollection::const_iterator t1 = calotowers->begin(); t1 != calotowers->end(); t1++) {
-       caloXY[0] += t1->et()*cos(t1->phi());
-       caloXY[1] += t1->et()*sin(t1->phi());
+       caloXY[0] -= t1->et()*cos(t1->phi());
+       caloXY[1] -= t1->et()*sin(t1->phi());
    }
    double vsumEt = sqrt( caloXY[0]*caloXY[0] + caloXY[1]*caloXY[1] );
    double phi_sumEt = atan2(caloXY[1], caloXY[0]);
+
+   // output MET info
    caloInfo.push_back(caloXY[0]);
    caloInfo.push_back(caloXY[1]);
    caloInfo.push_back(vsumEt);
@@ -192,4 +196,26 @@ LorentzVector TtMET::findNeutrino( Handle<std::vector<reco::GenParticle> > genPa
    return vp4;
 }
 
+
+void TtMET::MetAndMuon(Handle<std::vector<pat::MET> > met, std::vector<const reco::Candidate*> isoMu, HTOP2* histo2, int njets ) {
+
+     if ( met->size() >  0 && isoMu.size() > 0) {
+
+        LorentzVector v1 = (*met)[0].p4();
+        LorentzVector v2 = isoMu[0]->p4();
+        double ab   = (v1.Px()*v2.Px()) + (v1.Py()*v2.Py()) ;
+	double al   = sqrt( v1.Px()*v1.Px() +  v1.Py()*v1.Py() );
+	double bl   = sqrt( v2.Px()*v2.Px() +  v2.Py()*v2.Py() );
+	double cosA = ab/(al*bl) ;
+	double df   = acos(cosA) ;
+
+        if ( njets >= 0 ) histo2->Fill2c0( (*met)[0].et(), df );
+        if ( njets >= 1 ) histo2->Fill2c1( (*met)[0].et(), df );
+        if ( njets >= 2 ) histo2->Fill2c2( (*met)[0].et(), df );
+        if ( njets >= 3 ) histo2->Fill2c3( (*met)[0].et(), df );
+        if ( njets >= 4 ) histo2->Fill2c4( (*met)[0].et(), df );
+
+     }
+
+}
 

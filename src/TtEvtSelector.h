@@ -29,6 +29,7 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -56,6 +57,11 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TtAnalysisHisto.h"
+#include "TtMuon.h"
+#include "TtElectron.h"
+#include "TtMET.h"
+#include "TtJet.h"
+
 
 #include "TFile.h"
 #include <vector>
@@ -67,27 +73,33 @@
 //
 // class decleration
 //
+class TtMuon;
+class TtMET;
+class TtJet;
+class TtElectron;
 
 class TtEvtSelector {
    public:
     /// Constructor
-    explicit TtEvtSelector();
+    explicit TtEvtSelector(const edm::ParameterSet& );
+    //explicit TtEvtSelector();
     /// Destructor
     ~TtEvtSelector();
 
     /// Perform the real analysis
-    bool eventSelection(edm::Handle<std::vector<pat::Muon> > rMu, edm::Handle<std::vector<pat::Electron> > rE,
-                        edm::Handle<std::vector<pat::Jet> > rJet );
+    int eventSelection(edm::Handle<std::vector<pat::Muon> > rMu, edm::Handle<std::vector<pat::Electron> > rE,
+                        edm::Handle<std::vector<pat::Jet> > rJet, double jetEtThreshold );
     int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
-
-    std::vector< const pat::Jet* > WJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
-    std::vector< const pat::Jet* > bJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
 
     bool HLTSemiSelection( edm::Handle <edm::TriggerResults> triggers, int setup );
     void TriggerStudy( edm::Handle <edm::TriggerResults> triggers, int topo, int setup, HTOP9* histo9 );
 
-    //std::vector<pat::Muon> MuonSelection( edm::Handle<std::vector<pat::Muon> >  Muons );
    private:
+
+   TtMuon*     ttMuon;
+   TtElectron* ttEle;
+   TtJet*      ttJet;
+   TtMET*      ttMET;
 
 };
 

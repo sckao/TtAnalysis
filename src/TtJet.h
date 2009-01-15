@@ -78,6 +78,7 @@
 #include "TtMuon.h"
 #include "TtMCMatching.h"
 #include "TtEvtSelector.h"
+#include "TtFormat.h"
 
 #include "TFile.h"
 #include "TVector3.h"
@@ -90,7 +91,7 @@
 //
 // class decleration
 //
-typedef math::XYZTLorentzVector LorentzVector;
+//typedef math::XYZTLorentzVector LorentzVector;
 
 class TtMuon;
 class TtMCMatching;
@@ -125,6 +126,9 @@ class TtJet {
 
     void selectedWJetsAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP8* histo8 );
 
+    std::vector< const pat::Jet* > WJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
+    std::vector< const pat::Jet* > bJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );    
+
     double NofJetConstituents( pat::Jet theJet );
     double EoverH( pat::Jet theJet );
     //return W 4-momentum
@@ -143,7 +147,10 @@ class TtJet {
     double getdR(  LorentzVector v1, LorentzVector v2 );
     double getY( LorentzVector v1 );
     double getInvMass( std::vector<LorentzVector> vlist );
-    std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, LorentzVector muP4 );
+
+    //std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, LorentzVector muP4 );
+    std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons );
+    std::vector< const pat::Jet* > GoodJetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons );
 
     void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, HTOP7* histo7 );
 
@@ -153,7 +160,6 @@ class TtJet {
 
     TtMuon*        fromTtMuon;
     TtMCMatching*  JetMatching; 
-    TtEvtSelector* evtSelected;
 
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;

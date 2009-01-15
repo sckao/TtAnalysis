@@ -42,12 +42,11 @@
 // constructors and destructor
 using namespace edm;
 using namespace std;
-//TtEvtSelector::TtEvtSelector(const edm::ParameterSet& iConfig)
-TtEvtSelector::TtEvtSelector()
+TtEvtSelector::TtEvtSelector(const edm::ParameterSet& iConfig)
 {
+//TtEvtSelector::TtEvtSelector()
    //now do what ever initialization is needed
   /*
-  debug             = iConfig.getUntrackedParameter<bool>   ("debug");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   leptonFlavour     = iConfig.getParameter<std::string>   ("leptonFlavour");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
@@ -60,6 +59,10 @@ TtEvtSelector::TtEvtSelector()
   //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
 
    */
+  ttMuon    = new TtMuon();
+  ttEle     = new TtElectron();
+  ttJet     = new TtJet( iConfig );
+  ttMET     = new TtMET( iConfig );
 
 }
 
@@ -68,73 +71,50 @@ TtEvtSelector::~TtEvtSelector()
 {
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
-   //if (debug) cout << "[TtEvtSelector Analysis] Destructor called" << endl;
+   delete ttMuon;
+   delete ttEle;
+   delete ttJet;
+   delete ttMET;
+   
 }
 
 //
 // member functions
 //
 //typedef std::pair<double, pat::Jet> ptjet ;
-static bool PtDecreasing(const pat::Jet* s1, const pat::Jet* s2) { return ( s1->pt() > s2->pt() ); }
-static bool PtDecreasing1(const pat::Jet s1, const pat::Jet s2) { return ( s1.pt() > s2.pt() ); }
 
 // ------------ method called to for each event  ------------
-bool TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<std::vector<pat::Electron> > rE,
-                                Handle<std::vector<pat::Jet> >   rJet) {
+int TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<std::vector<pat::Electron> > rE,
+                                Handle<std::vector<pat::Jet> >   rJet, double jetEtThreshold ) {
 
- bool pass = false; 
+ int pass = -1 ; 
+ std::vector<const reco::Candidate*> IsoElecs = ttEle->IsoEleSelection( rE ) ;
+ int nEle = IsoElecs.size();
+ std::vector<const reco::Candidate*> IsoMuons = ttMuon->IsoMuonSelection( rMu ) ;
+ int nMu = IsoMuons.size();
 
- int nMu = 0;
- for (std::vector<pat::Muon>::const_iterator it = rMu->begin(); it != rMu->end(); it++ ) {
-     if ( (*it).pt() < 30.0 || fabs( it->eta() ) > 2.1 )  continue; 
+ std::vector<pat::Jet> goodJets = ttJet->JetSelection( rJet, IsoMuons );
+ 
+ //if ( goodJets.size() > 3 && goodJets[0].pt() > 60. && goodJets[3].pt() > 40. ) jetTightSelect = true ; 
+ /*
+ int njets = static_cast<int>(goodJets.size());
+ int jetSelect = -1 ; 
+ if ( njets > -1 ) jetSelect = 0 ; 
+ if ( njets > 0 && goodJets[0].pt() > jetEtThreshold ) jetSelect = 1 ; 
+ if ( njets > 1 && goodJets[1].pt() > jetEtThreshold ) jetSelect = 2 ; 
+ if ( njets > 2 && goodJets[2].pt() > jetEtThreshold ) jetSelect = 3 ; 
+ if ( njets > 3 && goodJets[3].pt() > jetEtThreshold ) jetSelect = 4 ; 
+ if ( njets > 4 && goodJets[4].pt() > jetEtThreshold ) jetSelect = 5 ; 
+ if ( njets > 5 && goodJets[5].pt() > jetEtThreshold ) jetSelect = 6 ; 
+ if ( nMu == 1 && nEle == 0 && jetSelect > -1 ) pass = jetSelect ;
+ */
 
-     const reco::IsoDeposit* ecalIso  = it->ecalIsoDeposit();
-     const reco::IsoDeposit* hcalIso  = it->hcalIsoDeposit();
-     const reco::IsoDeposit* trackIso = it->trackerIsoDeposit();
-     std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3);
-     std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3);
-     std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3);
-
-     double sumIso = emR.first + hdR.first + tkR.first ;
-     double RelIso = it->pt() / (it->pt() + sumIso );
-
-     if ( RelIso < 0.9 ) continue;
-
-     nMu++;
+ int nJetEvt = 0;
+ for (size_t i=0; i< goodJets.size(); i++) {
+     if ( goodJets[i].pt() > jetEtThreshold ) nJetEvt++ ;
  }
-  
- int nE = 0;
- for (std::vector<pat::Electron>::const_iterator it = rE->begin(); it != rE->end(); it++ ) {
-     if ( (*it).pt() < 30.0 || fabs( it->eta() ) > 2.4 )  continue ; 
 
-     const reco::IsoDeposit* ecalIso  = it->ecalIsoDeposit();
-     const reco::IsoDeposit* hcalIso  = it->hcalIsoDeposit();
-     const reco::IsoDeposit* trackIso = it->trackerIsoDeposit();
-     std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3);
-     std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3);
-     std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3);
-
-     double sumIso = emR.first + hdR.first + tkR.first ;
-     double RelIso = it->pt() / (it->pt() + sumIso );
-
-     if ( RelIso < 0.3 ) continue;
-
-     nE++;
- }
-  
- bool jetPreSelect = false;
- std::vector<pat::Jet> jet_temp ;
- for (std::vector<pat::Jet>::const_iterator it = rJet->begin(); it != rJet->end(); it++ ) {
-     if ( (*it).pt()  < 40. ) continue;
-     jet_temp.push_back( *it );
- }
- if ( jet_temp.size() > 0) { 
-    sort(jet_temp.begin(), jet_temp.end(), PtDecreasing1 );
-    if ( jet_temp[0].pt() > 60. && jet_temp.size() > 3  ) jetPreSelect = true ; 
- }
- int nLep = nMu + nE ;
-
- if ( nLep > 0 && jetPreSelect ) pass = true;
+ if ( nMu == 1 && nEle == 0 ) pass = nJetEvt ;
 
  return pass;
 
@@ -189,63 +169,6 @@ int TtEvtSelector::MCEvtSelection( Handle<std::vector<reco::GenParticle> > genPa
    }
 
    return type;
-}
-
-std::vector<const pat::Jet*> TtEvtSelector::WJetSelection( Handle<std::vector<pat::Jet> >  Jets ) {
-
-   std::vector<const pat::Jet* > jCollection;
-   jCollection.clear();
-   for (std::vector<pat::Jet>::const_iterator j1 = Jets->begin(); j1 != Jets->end(); j1++)
-   {
-       edm::RefVector<reco::TrackCollection>  assTk = (*j1).associatedTracks() ;
-       if (assTk.size() == 0) continue;
-       if ((*j1).pt() < 30. ) continue;
-
-       double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
-       double jProb        = j1->bDiscriminator("jetProbabilityBJetTags") ;
-       if (bDis_TkCount >=  2. && jProb >=0.2  ) continue;
-
-       if ( j1->towersArea() < 0.03 ) continue;
-       
-       //double EovH1 = EoverH(*j1) ;
-       //if ((*j1).nConstituents() < 5 || EovH1 > 20 || EovH1 < 0.01) continue;
-       //if ((*j1).towersArea()/(*j1).pt() > 0.005 ) continue;
-
-       jCollection.push_back( &*j1 );
-   }
-   
-   // sort the seeds by # of own segments
-   sort(jCollection.begin(), jCollection.end(), PtDecreasing ) ;
-
-   return jCollection;
-
-}
-
-
-std::vector<const pat::Jet*> TtEvtSelector::bJetSelection( Handle<std::vector<pat::Jet> >  Jets ) {
-
-   std::vector<const pat::Jet* > jCollection;
-   jCollection.clear();
-   for (std::vector<pat::Jet>::const_iterator j1 = Jets->begin(); j1 != Jets->end(); j1++)
-   {
-       edm::RefVector<reco::TrackCollection>  assTk = (*j1).associatedTracks() ;
-       if (assTk.size() == 0) continue;
-       if ((*j1).pt() < 30. ) continue;
-       double bDis_TkCount = j1->bDiscriminator("trackCountingHighEffBJetTags") ;
-       double jProb        = j1->bDiscriminator("jetProbabilityBJetTags") ;
-       if (bDis_TkCount < 2. || jProb < 0.2 ) continue;
-
-       //double EovH1 = EoverH(*j1) ;
-       //if ((*j1).nConstituents() < 5 || EovH1 > 20 || EovH1 < 0.01) continue;
-       //if ((*j1).towersArea()/(*j1).pt() > 0.005 ) continue;
-
-       jCollection.push_back( &*j1 );
-   }
-
-   // sort the seeds by # of own segments
-   sort(jCollection.begin(), jCollection.end(), PtDecreasing ) ;
-
-   return jCollection;
 }
 
 bool  TtEvtSelector::HLTSemiSelection( Handle <edm::TriggerResults> triggers, int setup ) {
@@ -325,4 +248,3 @@ void TtEvtSelector::TriggerStudy( Handle <edm::TriggerResults> triggers, int top
 }
 
 
-//define this as a plug-in
