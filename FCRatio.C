@@ -28,10 +28,9 @@ Double_t fitCb(Double_t *x, Double_t *par) {
 
 void FCRatio() {
 
- TFile *file = TFile::Open("WJ_11pb_Et20.root");
- TString hfolder = "wjets_test";
- TFile *file1 = TFile::Open("tt_11pb_Et20.root");
- //TString hfolder = "tt_test";
+ TFile *file = TFile::Open("qcd_10pb_Et20.root");
+ TFile *file1 = TFile::Open("ttj_100pb_Et20.root");
+ TString hfolder = "tt_test";
 
  TString name1 = "eta_njets";
  TString name2 = "wEta_njets";
@@ -41,9 +40,6 @@ void FCRatio() {
  TString name6 = "njets_dPhi0";
  TString name7 = "njets_dPhi1";
  TString name8 = "njets_dPhi2";
- //TString name9 = "thirdJetEt";
- TString name9 = "thirdCalEt";
- TString name10 = "m3_dR";
 
  TString plot1 = "njet_fcRatio.gif";
  TString plot2 = "eta_njets.gif";
@@ -53,8 +49,6 @@ void FCRatio() {
  TString plot6 = "dPhi_W_1j.gif";
  TString plot7 = "dPhi_Mu_3j.gif";
  TString plot8 = "dPhi_Mu_1j.gif";
- TString plot9 = "3rdJetEt.gif";
- TString plot10 = "m3.gif";
 
 
  heta_njets  = (TH2F *) file->Get("Jets/"+name1); 
@@ -66,10 +60,6 @@ void FCRatio() {
  njets_dPhi0  = (TH2F *) file->Get("Jets/"+name6); 
  njets_dPhi1  = (TH2F *) file->Get("Jets/"+name7); 
  njets_dPhi2  = (TH2F *) file->Get("Jets/"+name8); 
- thirdJetEt   = (TH1F *) file->Get("Jets/"+name9); 
- thirdJetEt1  = (TH1F *) file1->Get("Jets/"+name9); 
- m3_dR        = (TH2F *) file->Get("Jets/"+name10); 
- m3_dR1       = (TH2F *) file1->Get("Jets/"+name10); 
 
 
  gSystem->mkdir(hfolder);
@@ -90,13 +80,12 @@ void FCRatio() {
  wEta_njets->ProjectionY("weta_njets_pyb",59,91,"");
  TH1F *wnjets_F = new TH1F("wnjets_F","",25 , -0.5, 24.5);
  wnjets_F->Add(weta_njets_pyf, weta_njets_pyb, 1., 1.);
- 
 
- Float_t x1[8] = {0.0};
+ Float_t x1[8]  = {0.0};
  Float_t ex1[8] = {0.0};
- Float_t y1[8] = {0.0};
+ Float_t y1[8]  = {0.0};
  Float_t ey1[8] = {0.0};
- Float_t y2[8] = {0.0};
+ Float_t y2[8]  = {0.0};
  Float_t ey2[8] = {0.0};
 
  for (int i=0; i<8; i++) {
@@ -392,105 +381,6 @@ void FCRatio() {
  c8->Update();
  c8->Print(plot8);
  
- gStyle->SetOptStat("nimou");
- gStyle->SetOptFit(0111);  
- TCanvas *c9 = new TCanvas("c9","");
- c9->SetFillColor(10);
- c9->SetFillColor(10);
- c9->SetLogy();
-
- thirdJetEt->SetTitle(" 3rd Jet Et ");
- thirdJetEt->SetAxisRange(0.0, 100, "X");
- thirdJetEt->SetAxisRange(0.1, 5000, "Y");
- 
- TF1 *func0 = new TF1("fitf",fitf,8,48,3);
- func0->SetParLimits(1,0.1,1000000.);
- func0->SetParLimits(2,0.1,1000000.);
- thirdJetEt->Fit("fitf","R","",8,48);
- thirdJetEt->Draw(); 
-
- float nSoup[100] ={0.0} ;
- float et[100] = {0.0};
- for (i=0; i<100; i++) {
-    float nWj = thirdJetEt->GetBinContent(i+1);
-    float nTt = thirdJetEt1->GetBinContent(i+1);
-    nSoup[i] = nWj+nTt ;
-    et[i]= i;
- }	 
- 
- SoupEt = new TGraph(100, et, nSoup);
- SoupEt->SetMarkerSize(0.5);
- SoupEt->SetMarkerColor(4);
- SoupEt->SetMarkerStyle(21);
-
- func0->SetLineColor(2);
- SoupEt->Fit("fitf","R","",8,15);
- func0->Draw("SAME");
- 
- TF1 *func1 = new TF1("fitc",fitCb,8,60,6);
- func1->SetParLimits(1,0.1,1000000.);
- func1->SetParLimits(2,1.1,10.);
- func1->SetParLimits(3,21.,38.);
- func1->SetParLimits(4,41.,58.);
- func1->SetParLimits(5,10.,999.);
- SoupEt->Draw("P");
-
- //func1->SetLineColor(3);
- //SoupEt->Fit("fitc","R","",8,60);
- //func1->Draw("SAME");
-
- c9->Update();
- c9->Print(plot9);
-
-
- gStyle->SetOptStat("nimou");
- gStyle->SetOptFit(0111);  
- TCanvas *c10 = new TCanvas("c10","");
- c10->SetFillColor(10);
- c10->SetFillColor(10);
- c10->SetLogy();
-
- TF1 *func2 = new TF1("fitm",fitf,50,450,3);
- func2->SetParLimits(1,0.1,1000000.);
- func2->SetParameter(2,0.);
-
- m3_dR->ProjectionX("m3_wj0");
- m3_wj0->Rebin(5,"m3_wj");
- m3_dR1->ProjectionX("m3_tt0");
- m3_tt0->Rebin(5,"m3_tt");
- m3_wj->SetAxisRange(0.5, 500, "Y");
- m3_wj->Fit("fitm","R","",50,450);
- m3_wj->Draw(); 
-
- double mp0 = func2->GetParameter(0);
- double mp1 = func2->GetParameter(1);
- double mp2 = func2->GetParameter(2);
-
- float mSoup[100] ={0.0} ;
- float m3[100] = {0.0};
- for (i=0; i<100; i++) {
-    float nWj = m3_wj->GetBinContent(i+1);
-    float nTt = m3_tt->GetBinContent(i+1);
-    mSoup[i] = nWj+nTt ;
-    m3[i]= (i*5.) + 2.5;
- }	 
- 
- SoupM3 = new TGraph(100, m3, mSoup);
- SoupM3->SetMarkerSize(0.5);
- SoupM3->SetMarkerColor(4);
- SoupM3->SetMarkerStyle(21);
-
- func2->SetLineColor(3);
- func2->SetParameter(0,mp0);
- func2->SetParameter(1,mp1);
- func2->SetParameter(2,mp2);
- SoupM3->Fit("fitm","R","",50,120);
- func2->Draw("SAME");
- SoupM3->Draw("P");
- 
- c10->Update();
- c10->Print(plot10);
-
  gSystem->cd("../");
  file1->Close();
  file->Close();

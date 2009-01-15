@@ -25,7 +25,7 @@ Double_t fitG(Double_t *x, Double_t *par) {
 Double_t fitP(Double_t *x, Double_t *par) {
 
       Double_t fitV = par[0] + (par[1]*x[0]) + (par[2]*x[0]*x[0]) 
-	              + (par[3]*x[0]*x[0]*x[0]) + (par[4]*x[0]*x[0]*x[0]*x[0]) ;
+	            + (par[3]*x[0]*x[0]*x[0]) + (par[4]*x[0]*x[0]*x[0]*x[0]) ;
       return fitV;
 }
 
@@ -53,8 +53,8 @@ void ThirdJetEt() {
  thirdJetEt1  = (TH1F *) file1->Get("Jets/"+name1); 
  thirdJetEt2  = (TH1F *) file2->Get("Jets/"+name1); 
 
- thirdJetEt1->Scale(10);
- thirdJetEt2->Scale(10);
+ thirdJetEt1->Scale(10.);
+ thirdJetEt2->Scale(10.);
 
  gSystem->mkdir(hfolder);
  gSystem->cd(hfolder);

@@ -4,76 +4,64 @@
 #include <iostream>
 #include <fstream>
 
+// define the fitting function
+Double_t fitf(Double_t *x, Double_t *par) {
+
+	 Double_t A0 = par[0] + 0.01 ;
+         Double_t A1 = (x[0])/ A0 ;
+	 Double_t A2 = pow( (x[0]-par[3]), par[1]) ;
+         Double_t fitval =  par[2] / ( exp(A1) * A2 );
+         return fitval;
+}
+
+Double_t fitG(Double_t *x, Double_t *par) {
+
+	Double_t chi = (x[0]-par[1])/par[2] ;
+	Double_t A3  = -0.5*chi*chi ;
+	Double_t fitgau = par[0]*exp( A3 ) ;
+	return fitgau ;
+}
+
+Double_t fitCb(Double_t *x, Double_t *par) {
+
+        return fitf(x,par) + fitG(x, &par[3] );
+}
+
 void M3() {
 
- TFile *file  = TFile::Open("ttj_2Jskim.root");
- TFile *file1 = TFile::Open("wjets_2Jskim.root");
- TFile *file2 = TFile::Open("qcd_2Jskim.root");
- //TString hfolder = "wjets_test";
- TString hfolder = "tt_test";
+ TFile *file  = TFile::Open("ttj_100pb_Et20a.root");
+ TFile *file1 = TFile::Open("wjets_10pb_Et20a.root");
+ TFile *file2 = TFile::Open("qcd_10pb_Et20a.root");
+ TString hfolder = "wjets_test";
+ //TString hfolder = "tt_test";
 
- TString name1 = "m3_j3";
+ TString name10 = "m3_j3";
 
  TString plot3 = "m3_j3.gif";
 
- m3_j3   = (TH2F *) file->Get("Jets/"+name1); 
- m3_j3a  = (TH2F *) file1->Get("Jets/"+name1); 
- m3_j3b  = (TH2F *) file2->Get("Jets/"+name1); 
+ m3_j3   = (TH1F *) file->Get("Jets/"+name10); 
+ m3_j3a  = (TH1F *) file1->Get("Jets/"+name10); 
+ m3_j3b  = (TH1F *) file2->Get("Jets/"+name10); 
 
  gSystem->mkdir(hfolder);
  gSystem->cd(hfolder);
 
- TCanvas *c3 = new TCanvas("c3","",800,600);
+ TCanvas *c3 = new TCanvas("c3","");
  c3->SetFillColor(10);
  c3->SetFillColor(10);
  c3->Divide(2,2);
 
- gStyle->SetStatY(0.95); 
- gStyle->SetStatTextColor(1);
-
  c3->cd(1);
- gPad->SetGrid();
- m3_j3->RebinX(4);
- m3_j3->RebinY(4);
  m3_j3->SetAxisRange(1,150,"Y");
- m3_j3->DrawCopy("BOX");
+ m3_j3->DrawCopy();
 
  c3->cd(2);
- gPad->SetGrid();
- m3_j3a->RebinX(4);
- m3_j3a->RebinY(4);
  m3_j3a->SetAxisRange(1,150,"Y");
- m3_j3a->DrawCopy("BOX");
+ m3_j3a->DrawCopy();
 
  c3->cd(3);
- gPad->SetGrid();
- m3_j3b->RebinX(4);
- m3_j3b->RebinY(4);
  m3_j3b->SetAxisRange(1,150,"Y");
- m3_j3b->DrawCopy("BOX");
-
- c3->cd(4);
- m3_j3->ProjectionX("m3_ttjets",1,500,"");
- m3_j3a->ProjectionX("m3_wjets",1,500,"");
- m3_j3b->ProjectionX("m3_qcd",1,500,"");
-
- c3->Update();
- gStyle->SetStatY(0.95); 
- gStyle->SetStatTextColor(1);
- m3_ttjets->SetTitle(" M3 distribution ");
- m3_ttjets->SetLineColor(1);
- m3_ttjets->DrawCopy();
- c3->Update();
- gStyle->SetStatY(0.78); 
- gStyle->SetStatTextColor(2);
- m3_wjets->SetLineColor(2);
- m3_wjets->DrawCopy("sames");
- c3->Update();
- gStyle->SetStatY(0.61); 
- gStyle->SetStatTextColor(4);
- m3_qcd->SetLineColor(4);
- m3_qcd->DrawCopy("sames");
-
+ m3_j3b->DrawCopy();
 
  c3->Update();
  c3->Print(plot3);
