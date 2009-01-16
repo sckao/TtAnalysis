@@ -25,8 +25,8 @@ void TtMass( TString name1 ) {
  c1->SetFillColor(10);
  c1->Divide(2,2);
 
- THStack *ttallx = new THStack("ttall", " Leptonic Top (projectX) ");
- THStack *ttally = new THStack("ttall", " Hadronic Top (projectY) ");
+ THStack *ttstkx = new THStack("ttstk", " Leptonic Top (projectX) ");
+ THStack *ttstky = new THStack("ttstk", " Hadronic Top (projectY) ");
  TH1F * ttaddx = new TH1F("ttaddx","", 100, 0., 400.);
  TH1F * ttaddy = new TH1F("ttaddy","", 100, 0., 400.);
 
@@ -37,8 +37,8 @@ void TtMass( TString name1 ) {
  ttmass1_px->SetFillColor(2);
  ttmass1_py->SetFillColor(2);
  //ttmass1->Scale(1);
- ttallx->Add(ttmass1_px);
- ttally->Add(ttmass1_py);
+ ttstkx->Add(ttmass1_px);
+ ttstky->Add(ttmass1_py);
  ttaddx->Add(ttmass1_px);
  ttaddy->Add(ttmass1_py);
 
@@ -49,8 +49,8 @@ void TtMass( TString name1 ) {
  ttmass2_px->SetFillColor(4);
  ttmass2_py->SetFillColor(4);
  //ttmass2->Scale(1);
- ttallx->Add(ttmass2_px);
- ttally->Add(ttmass2_py);
+ ttstkx->Add(ttmass2_px);
+ ttstky->Add(ttmass2_py);
  ttaddx->Add(ttmass2_px);
  ttaddy->Add(ttmass2_py);
 
@@ -61,14 +61,14 @@ void TtMass( TString name1 ) {
  ttmass_px->SetFillColor(3);
  ttmass_py->SetFillColor(3);
  //ttmass_py->Rebin(2);
- ttallx->Add(ttmass_px);
- ttally->Add(ttmass_py);
+ ttstkx->Add(ttmass_px);
+ ttstky->Add(ttmass_py);
  ttaddx->Add(ttmass_px);
  ttaddy->Add(ttmass_py);
 
  c1->cd(1);
  gStyle->SetStatY(0.95); 
- gStyle->SetStatTextColor(1);
+ gStyle->SetStatTextColor(3);
  ttmass->RebinX(4);
  ttmass->RebinY(4);
  ttmass->SetFillColor(3);
@@ -93,52 +93,76 @@ void TtMass( TString name1 ) {
  gStyle->SetStatTextColor(1);
 
  c1->cd(2);
- ttally->Draw();
- c1->cd(3);
- ttallx->Draw();
- ttaddx->SetStats(kTRUE);
 
- c1->cd(4);
+ gStyle->SetOptStat(kTRUE);
+ gStyle->SetOptFit(111);
+
+ ttstky->Draw();
+
+ ttaddy->SetMarkerStyle(21);
+ ttaddy->SetMarkerColor(1);
+ ttaddy->SetMarkerSize(0.7);
+ ttaddy->SetLineColor(1);
+ ttaddy->SetTitle(" Fitting of Top Mass ");
+ ttaddy->Fit("gaus","N0R","",120,220);
+ gaus->SetLineColor(1);
+ ttaddy->Fit("gaus","R","sames",100,250);
+
+ c1->cd(3);
+
+ gStyle->SetOptStat(kTRUE);
+ gStyle->SetOptFit(111);
+
+ ttstkx->Draw();
+
+ ttaddx->SetMarkerStyle(21);
+ ttaddx->SetMarkerColor(1);
+ ttaddx->SetMarkerSize(0.7);
+ ttaddx->SetLineColor(1);
+ ttaddx->SetTitle(" Fitting of Top Mass ");
+ ttaddx->Fit("gaus","N0R","",120,220);
+ gaus->SetLineColor(1);
+ ttaddx->Fit("gaus","R","sames",100,250);
+ //ttaddx->DrawCopy("samesP");
+
+
+ //c1->cd(4);
 
  /*
- TCanvas *c2 = new TCanvas("c2","");
- c2->SetFillColor(10);
- c2->SetFillColor(10);
- c2->Update();
- c2->Print(plot2);
- */
 
  c1->Update();
- gStyle->SetStatY(0.95); 
- gStyle->SetStatTextColor(2);
+ gStyle->SetStatY(0.99); 
+ gStyle->SetStatTextColor(1);
 
  gStyle->SetOptStat(kTRUE);
  gStyle->SetOptFit(111);
  ttaddx->SetMarkerStyle(21);
- ttaddx->SetMarkerColor(6);
+ ttaddx->SetMarkerColor(1);
  ttaddx->SetMarkerSize(0.7);
- ttaddx->SetLineColor(6);
+ ttaddx->SetLineColor(1);
  ttaddx->SetTitle(" Fitting of Top Mass ");
  ttaddx->Fit("gaus","N0R","",120,220);
- gaus->SetLineColor(2);
+ gaus->SetLineColor(1);
  ttaddx->Fit("gaus","R","",120,220);
  ttaddx->DrawCopy("samesP");
 
  c1->Update();
- gStyle->SetStatY(0.58); 
- gStyle->SetStatTextColor(8);
+ gStyle->SetStatY(0.62); 
+ gStyle->SetStatTextColor(14);
 
  gStyle->SetOptStat(kTRUE);
  ttaddy->SetMarkerStyle(22);
- ttaddy->SetMarkerColor(8);
+ ttaddy->SetMarkerColor(14);
  ttaddy->SetMarkerSize(0.7);
- ttaddy->SetLineColor(8);
+ ttaddy->SetLineColor(14);
  ttaddy->SetTitle(" Reco Hadronic Top Mass ");
  ttaddy->Fit("gaus","N0R","",120,220);
- gaus->SetLineColor(3);
+ gaus->SetLineColor(14);
  ttaddy->Fit("gaus","R","sames",120,220);
 
  ttaddy->DrawCopy("sameP");
+
+ */
 
  c1->Update();
  c1->Print(plot1);
