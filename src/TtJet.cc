@@ -100,9 +100,6 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1){
    {
        // Uncorrect Information
        // uncorrected pt from reco jet 
-       reco::Jet recj = j1->recJet();
-       double uncorrPt = recj.pt() ;
-       double uncorrEt = recj.et() ;
        // raw energy deposite in ECal and HCal
        float  emE0 = (*j1).emEnergyInEB() + (*j1).emEnergyInEE() + (*j1).emEnergyInHF() ;
        float  hdE0 = (*j1).hadEnergyInHB()+(*j1).hadEnergyInHE() + (*j1).hadEnergyInHF() + (*j1).hadEnergyInHO();
@@ -121,7 +118,7 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1){
 
        if ( nCon == 0 || totalEt < 5. ) continue;
 
-       histo1->Fill1a(  corrPt, (*j1).et(), EovH, nCon,(*j1).n60()/nCon, uncorrPt, uncorrEt, rCon, (*j1).towersArea(), assTk.size(), emF, emF0 ) ;
+       histo1->Fill1a(  corrPt, (*j1).et(), EovH, nCon,(*j1).n60()/nCon, rCon, (*j1).towersArea(), assTk.size(), emF, emF0 ) ;
 
        if ( (*j1).pt() > 20.0 )  {
           histo1->Fill1h( EovH, (*j1).towersArea(), nCon, assTk.size() ,rCon, (*j1).n60()/nCon );

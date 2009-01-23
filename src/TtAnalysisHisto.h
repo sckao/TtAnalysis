@@ -36,7 +36,6 @@ public:
     hemF    = new TH2F("hemF", " emF(x) vs emFCalo(y)", 150, -0.2, 1.3, 150, -0.2, 1.3);
 
     Et_Pt        = new TH2F("Et_Pt", " PAT Et vs Pt (all jets)", 500, 0, 500, 500, 0., 500);
-    Uncorr_Et_Pt = new TH2F("Uncorr_Et_Pt", "Uncorr Et vs Pt (all jets)", 500, 0., 500., 500, 0., 500);
     
     hWmass = new TH1F("hWmass"," W mass from gen-reco matching jets",240,30.,150.);
     hWp    = new TH1F("hWp", " momentum of W ",500,0.,500.);
@@ -120,7 +119,6 @@ public:
     hEovH_r  = (TH2F *) file->Get("hEovH_r");
     hEovH_A  = (TH2F *) file->Get("hEovH_A");
     Et_Pt  = (TH2F *) file->Get("Et_Pt");
-    Uncorr_Et_Pt  = (TH2F *) file->Get("Uncorr_Et_Pt");
     hemF     = (TH2F *) file->Get("hemF");
 
     hWmass = (TH1F *) file->Get("hWmass");
@@ -202,7 +200,6 @@ public:
     delete hEovH_r;
     delete hEovH_A;
     delete Et_Pt;
-    delete Uncorr_Et_Pt;
     delete hemF;
 
     delete hWmass;
@@ -272,7 +269,7 @@ public:
 
  }
 
- void Fill1a( double pt, double et, double EovH, int nCont, double r60, double uncorrPt, double uncorrEt, double r , double area, int nTk, double emF, double emFCalo ){
+ void Fill1a( double pt, double et, double EovH, int nCont, double r60, double r , double area, int nTk, double emF, double emFCalo ){
     hEt->Fill(et);
     hEovH->Fill(EovH);
     hNCont->Fill(nCont);
@@ -285,7 +282,6 @@ public:
     hemF->Fill(emF, emFCalo);
 
     Et_Pt->Fill(et, pt);
-    Uncorr_Et_Pt->Fill(uncorrEt, uncorrPt);
  } 
  void Fill1b( double wmass, double wp ){
     hWmass->Fill(wmass);
@@ -388,7 +384,6 @@ public:
     hEovH_r->Write();
     hEovH_A->Write();
     Et_Pt->Write();
-    Uncorr_Et_Pt->Write();
     hemF->Write();
 
     hWmass->Write();
@@ -467,7 +462,6 @@ public:
   TH2F *hEovH_r;
   TH2F *hEovH_A;
   TH2F *Et_Pt;
-  TH2F *Uncorr_Et_Pt;
   TH2F *hemF;
 
   TH1F *hWmass;
