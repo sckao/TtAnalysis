@@ -101,9 +101,7 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
                                Handle<std::vector<pat::Jet> > jets, std::vector<const pat::Jet*> selectedWJets,
                                HTOP8* histo8, bool fillhisto ) {
 
-
    // Accumulate the hadronic dauaghters from W
-   
    std::vector<reco::Particle> jetMom ;
    for (int i=1; i<5; i++) {
        std::vector<reco::Particle> tmpMom = ttPartons(genParticles, i) ;
@@ -121,22 +119,18 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
    std::vector<int> q3; // q+ from w-
    std::vector<int> q4; // q- from w-
    for (size_t i=0; i < jets->size(); i++){ 
-       // exclude the jet with no charged track
-       //edm::RefVector<reco::TrackCollection>  assTk = (*jets)[i].associatedTracks() ;
-       //if ( assTk.size()== 0  ) continue;
        
-       double dR0 = 99.;
-       double ptRes0 =99.;
-       int wj = -1;
+       double dR0 = 99. ;
+       double ptRes0 =99. ;
+       int wj = -1 ;
        for (size_t j=0; j < jetMom.size(); j++ ) {
-           bool matched = matchingGeneral( jetMom[j].p4() , (*jets)[i].p4() , dR0 , ptRes0 );
+           bool matched = matchingGeneral( jetMom[j].p4() , (*jets)[i].p4() , dR0 , ptRes0 ) ;
            if ( matched )  wj = static_cast<int>(j) ;
        }
        if ( wj!= -1 && (jetMom[wj].pdgId()== 2 || jetMom[wj].pdgId()== 4) ) q1.push_back( static_cast<int>(i) ) ;
        if ( wj!= -1 && (jetMom[wj].pdgId()==-1 || jetMom[wj].pdgId()==-3) ) q2.push_back( static_cast<int>(i) ) ;
        if ( wj!= -1 && (jetMom[wj].pdgId()== 1 || jetMom[wj].pdgId()== 3) ) q3.push_back( static_cast<int>(i) ) ;
        if ( wj!= -1 && (jetMom[wj].pdgId()==-2 || jetMom[wj].pdgId()==-4) ) q4.push_back( static_cast<int>(i) ) ;
-    
    }
   
    // loop 2or4 collections to find the best matched jet 
@@ -585,16 +579,16 @@ std::vector<reco::Particle> TtMCMatching::ttPartons( Handle<std::vector<reco::Ge
    bool fromW =  ( abs(targetId)  < 5 || (abs(targetId) > 10 && abs(targetId) < 19) )  ? true:false ;
 
    for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       // looking for object from W 
+       // looking for objects from W 
        if ( abs((*it).pdgId()) == 24 && fromW ) {
   
-         /// make sure the W from proton
+         /// make sure the W from Top
          bool WfromT = false;
          for (size_t q=0; q< (*it).numberOfMothers(); q++) {
              const reco::Candidate *mom = (*it).mother(q) ;
              // allow w+jets event pass
-             //if ( abs(mom->pdgId()) != 6 ) continue;
-             if ( abs(mom->pdgId()) > 6 ) continue;
+             if ( abs(mom->pdgId()) != 6 ) continue;
+             //if ( abs(mom->pdgId()) > 6 ) continue;
              WfromT = true ;
          }
          if ( !WfromT ) continue;  

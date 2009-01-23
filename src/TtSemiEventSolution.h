@@ -124,6 +124,12 @@ class TtSemiEventSolution {
 
     void accuracySemiTt( std::vector<iReco> ttMC, std::vector<iReco> ttReco, HTOP9* histo9 ) ;
 
+    //void MCTruthCheckB( std::vector<iReco> mcTt, std::vector<iReco> rcTt, std::vector<const pat::Jet*> mcBJets,
+    //                   std::vector<const pat::Jet*> rcBJets, HTOP9* histo9 ) ;
+    void MCTruthCheck( std::vector<iReco> mcTt, std::vector<iReco> rcTt, std::vector<const pat::Jet*> mcWJets,
+                       std::vector<const pat::Jet*> rcWJets, std::vector<const pat::Jet*> mcBJets,
+                       std::vector<const pat::Jet*> rcBJets, HTOP9* histo9 ) ;
+
    private:
       // ----------member data ---------------------------
 

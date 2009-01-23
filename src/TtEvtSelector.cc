@@ -96,22 +96,10 @@ int TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<st
  std::vector<pat::Jet> goodJets = ttJet->JetSelection( rJet, IsoMuons );
  
  //if ( goodJets.size() > 3 && goodJets[0].pt() > 60. && goodJets[3].pt() > 40. ) jetTightSelect = true ; 
- /*
- int njets = static_cast<int>(goodJets.size());
- int jetSelect = -1 ; 
- if ( njets > -1 ) jetSelect = 0 ; 
- if ( njets > 0 && goodJets[0].pt() > jetEtThreshold ) jetSelect = 1 ; 
- if ( njets > 1 && goodJets[1].pt() > jetEtThreshold ) jetSelect = 2 ; 
- if ( njets > 2 && goodJets[2].pt() > jetEtThreshold ) jetSelect = 3 ; 
- if ( njets > 3 && goodJets[3].pt() > jetEtThreshold ) jetSelect = 4 ; 
- if ( njets > 4 && goodJets[4].pt() > jetEtThreshold ) jetSelect = 5 ; 
- if ( njets > 5 && goodJets[5].pt() > jetEtThreshold ) jetSelect = 6 ; 
- if ( nMu == 1 && nEle == 0 && jetSelect > -1 ) pass = jetSelect ;
- */
 
  int nJetEvt = 0;
  for (size_t i=0; i< goodJets.size(); i++) {
-     if ( goodJets[i].pt() > jetEtThreshold ) nJetEvt++ ;
+     if ( goodJets[i].pt() >= jetEtThreshold ) nJetEvt++ ;
  }
 
  if ( nMu == 1 && nEle == 0 ) pass = nJetEvt ;

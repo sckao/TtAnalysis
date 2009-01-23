@@ -108,11 +108,12 @@ class TtJet {
     void JetTreeFeeder(edm::Handle<std::vector<pat::Jet> > patJet, NJet* jtree, int eventId );
 
     void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
+    void JetdRAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
 
     void thirdETJetSpectrum( edm::Handle<std::vector<reco::GenJet> > genJet, HTOP1* histo1);
     void thirdETJetSpectrum( std::vector<pat::Jet> patJet, HTOP1* histo1);
 
-    void dPhiMuJet( std::vector<pat::Jet> patJet, LorentzVector p1, HTOP1* histo1 );
+    void MuonAndJet( std::vector<pat::Jet> patJet, LorentzVector p1, HTOP1* histo1 );
     void JetAndLepW( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* histo1 );
 
     void genJetInfo(edm::Handle<std::vector<reco::GenJet> > genJet,
@@ -150,7 +151,7 @@ class TtJet {
 
     //std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, LorentzVector muP4 );
     std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons );
-    std::vector< const pat::Jet* > GoodJetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons );
+    std::vector< const pat::Jet* > JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
 
     void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, HTOP7* histo7 );
 
