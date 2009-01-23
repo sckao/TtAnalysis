@@ -284,20 +284,21 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //3. W+Jets analysis
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
 
-   if ( pass > 3  ) {
-
+   if ( pass >= 0 ) {
       std::vector<pat::Jet> theJets = ttJet->JetSelection( jets, isoMu ) ;
+      ttJet->MuonAndJet( theJets, isoMu[0]->p4() , histo1 );
+      if ( pass > 3  ) {
 
-      ttJet->thirdETJetSpectrum( theJets, histo1 );
-      //ttJet->thirdETJetSpectrum( genJets, histo1 );
-      ttJet->dPhiMuJet( theJets, isoMu[0]->p4() , histo1 );
+         ttJet->thirdETJetSpectrum( theJets, histo1 );
+         //ttJet->thirdETJetSpectrum( genJets, histo1 );
       
-      std::vector<iReco> lepW;
-      semiSol->recoW( isoMu, mets, lepW );
-      if ( lepW.size() > 0 ) {
-         int wl = MCMatching->matchLeptonicW( genParticles, lepW, histo9 );
-         if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
-         //ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
+         std::vector<iReco> lepW;
+         semiSol->recoW( isoMu, mets, lepW );
+         if ( lepW.size() > 0 ) {
+            int wl = MCMatching->matchLeptonicW( genParticles, lepW, histo9 );
+            if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
+            //ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
+         }
       }
    }
 
@@ -323,12 +324,13 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    std::vector<const pat::Jet*> tmpJets;
    std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets, tmpJets, histo8, false);
    std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets, tmpJets, histo7, false);
-   ttJet->matchedWJetsAnalysis( mcwjets, isoMuons, histo8 );
-   ttJet->matchedbJetsAnalysis( mcbjets, mcwjets, isoMuons, histo7 );
    ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true );
-   ttJet->bTagAnalysis(jets, histo7);
-   if ( topo == 1) {
+   ttJet->bTagAnalysis( jets, histo7 );
+   ttJet->JetdRAnalysis( jets, histo1 );
+   if ( topo == 3) {
       ttJet->genJetInfo(genJets,genParticles, histo1, histo7, histo8);
+      ttJet->matchedWJetsAnalysis( mcwjets, isoMuons, histo8 );
+      ttJet->matchedbJetsAnalysis( mcbjets, mcwjets, isoMuons, histo7 );
    } 
    if ( pass >= 4 && topo == 1) {
       ttJet->selectedWJetsAnalysis(jets,histo8);
