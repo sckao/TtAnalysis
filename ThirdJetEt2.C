@@ -7,10 +7,10 @@
 // define the fitting function
 void ThirdJetEt2() {
 
- TFile *file  = TFile::Open("ttj_2Jskim.root");
- TFile *file1 = TFile::Open("wjets_2Jskim.root");
- TFile *file2 = TFile::Open("qcd_2Jskim.root");
- TString hfolder = "tt_test";
+ TFile *file  = TFile::Open("ttj_fall08.root");
+ TFile *file1 = TFile::Open("wjets_fall08.root");
+ TFile *file2 = TFile::Open("qcd_fall08.root");
+ TString hfolder = "tt_fall08";
 
  TString name1 = "thirdJetEt";
  //TString name1 = "thirdCalEt";

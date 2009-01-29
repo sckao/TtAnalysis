@@ -6,11 +6,11 @@
 
 void M3() {
 
- TFile *file  = TFile::Open("ttj_1Jskim.root");
- TFile *file1 = TFile::Open("wjets_1Jskim.root");
- TFile *file2 = TFile::Open("qcd_1Jskim.root");
+ TFile *file  = TFile::Open("ttj_fall08.root");
+ TFile *file1 = TFile::Open("wjets_fall08.root");
+ TFile *file2 = TFile::Open("qcd_fall08.root");
  //TString hfolder = "wjets_test";
- TString hfolder = "tt_test";
+ TString hfolder = "tt_fall08";
 
  TString name1 = "m3_j3";
 
@@ -64,18 +64,21 @@ void M3() {
  m3_ttjets->SetLineColor(1);
  m3_ttjets->DrawCopy();
  c3->Update();
- gStyle->SetStatY(0.78); 
+ gStyle->SetStatY(0.70); 
  gStyle->SetStatTextColor(2);
  m3_wjets->SetLineColor(2);
  m3_wjets->DrawCopy("sames");
  c3->Update();
- gStyle->SetStatY(0.61); 
+ gStyle->SetStatY(0.45); 
  gStyle->SetStatTextColor(4);
  m3_qcd->SetLineColor(4);
  m3_qcd->DrawCopy("sames");
 
  c3->Update();
  c3->Print(plot3);
+
+ gStyle->SetStatY(0.95); 
+ gStyle->SetStatTextColor(1);
 
  gSystem->cd("../");
  file2->Close();

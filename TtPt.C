@@ -1,9 +1,9 @@
 void TtPt() {
 
- TFile *file  = TFile::Open("ttj_1Jskim_NoBTag.root");
- TFile *file1 = TFile::Open("wjets_1Jskim_NoBTag.root");
- TFile *file2 = TFile::Open("qcd_1Jskim_NoBTag.root");
- TString hfolder = "tt_test";
+ TFile *file  = TFile::Open("ttj_fall08.root");
+ TFile *file1 = TFile::Open("wjets_fall08.root");
+ TFile *file2 = TFile::Open("qcd_fall08.root");
+ TString hfolder = "tt_fall08";
 
  TString plot1 = "SysPt.gif";
 
@@ -26,6 +26,7 @@ void TtPt() {
 
  // re-bin value for top mass plot
  int rbin = 4;
+ int nbin = 200./rbin ;
 
  gSystem->mkdir(hfolder);
  gSystem->cd(hfolder);
@@ -43,6 +44,9 @@ void TtPt() {
  tRecPt3->Rebin(rbin);
  tRecPt4->Rebin(rbin);
 
+ TH1F * tRecPt = new TH1F("tMCPt0","", nbin, 0., 400.);
+ TH1F * tRecPt = new TH1F("tRecPt","", nbin, 0., 400.);
+
  gStyle->SetStatY(0.99); 
  gStyle->SetStatX(0.77); 
  gStyle->SetStatTextColor(1);
@@ -51,12 +55,14 @@ void TtPt() {
  tMCPt->SetLineColor(1);
  tMCPt->SetTitle("Pt of Tt system in Tt+Jets Events");
  tMCPt->Draw();
+ tMCPt0->Add(tMCPt);
  c1->Update();
 
  gStyle->SetStatY(0.75); 
  gStyle->SetStatTextColor(2);
  tRecPt1->SetLineColor(2);
  tRecPt1->Draw("SAMES");
+ tRecPt->Add(tRecPt1);
  c1->Update();
 
  gStyle->SetStatY(0.99); 
@@ -64,18 +70,21 @@ void TtPt() {
  gStyle->SetStatTextColor(4);
  tRecPt2->SetLineColor(4);
  tRecPt2->Draw("SAMES");
+ tRecPt->Add(tRecPt2);
  c1->Update();
 
  gStyle->SetStatY(0.75); 
  gStyle->SetStatTextColor(8);
  tRecPt3->SetLineColor(8);
  tRecPt3->Draw("SAMES");
+ tRecPt->Add(tRecPt3);
  c1->Update();
 
  gStyle->SetStatY(0.51); 
  gStyle->SetStatTextColor(5);
  tRecPt4->SetLineColor(5);
  tRecPt4->Draw("SAMES");
+ tRecPt->Add(tRecPt4);
  c1->Update();
 
  gStyle->SetStatY(0.99); 
@@ -155,13 +164,35 @@ void TtPt() {
  qRecPt4->Draw("SAMES");
  c1->Update();
 
- gStyle->SetStatY(0.99); 
+ c1->cd(4);
+ 
+
+ gStyle->SetStatY(0.95); 
+ gStyle->SetStatX(0.99); 
+ gStyle->SetStatTextColor(1);
+
+ double nMC = tMCPt0->Integral(1,nbin);
+ cout<<" nMC = "<<nMC << endl; 
+ tMCPt0->SetLineWidth(1);
+ tMCPt0->SetLineColor(1);
+ tMCPt0->DrawCopy();
+ c1->Update();
+
+ gStyle->SetStatY(0.75); 
+ gStyle->SetStatTextColor(2);
+ double nRec = tRecPt->Integral(1,nbin);
+ double norV = nMC/nRec ;
+ cout<<" nRec = "<<nRec << endl; 
+ cout<<" norv = " << norV <<endl;
+ tRecPt->Scale( norV ) ;
+ tRecPt->SetLineColor(2);
+ tRecPt->DrawCopy("SAMES");
+ c1->Update();
+
+ gStyle->SetStatY(0.95); 
  gStyle->SetStatX(0.99); 
  gStyle->SetStatTextColor(1);
  
- //c1->cd(4);
- 
-
  c1->cd();
 
  c1->Update();

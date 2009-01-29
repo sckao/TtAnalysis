@@ -1,21 +1,24 @@
 void TtMass( TString name1 ) {
 
- TFile *file  = TFile::Open("ttj_1Jskim_NoBTag.root");
- TFile *file1 = TFile::Open("wjets_1Jskim_NoBTag.root");
- TFile *file2 = TFile::Open("qcd_1Jskim_NoBTag.root");
- //TFile *file  = TFile::Open("ttj_1Jskim.root");
- //TFile *file1 = TFile::Open("wjets_1Jskim.root");
- //TFile *file2 = TFile::Open("qcd_1Jskim.root");
- TString hfolder = "tt_test";
+ //TFile *file  = TFile::Open("ttj_1Jskim_NoBTag.root");
+ //TFile *file1 = TFile::Open("wjets_1Jskim_NoBTag.root");
+ //TFile *file2 = TFile::Open("qcd_1Jskim_NoBTag.root");
+ TFile *file  = TFile::Open("ttj_fall08.root");
+ TFile *file1 = TFile::Open("wjets_fall08.root");
+ TFile *file2 = TFile::Open("qcd_fall08.root");
+ TString hfolder = "tt_fall08";
 
  //TString name1 = "hRecott0";
 
  TString plot1 = name1+".gif";
- TString plot2 = "TtMassFit.gif";
 
  ttmass   = (TH2F *) file->Get("Tops/"+name1); 
  ttmass1  = (TH2F *) file1->Get("Tops/"+name1); 
  ttmass2  = (TH2F *) file2->Get("Tops/"+name1);
+
+ // re-bin value for top mass plot
+ int rbin = 4;
+ int nbin = 200./rbin ; 
 
  gSystem->mkdir(hfolder);
  gSystem->cd(hfolder);
@@ -27,13 +30,13 @@ void TtMass( TString name1 ) {
 
  THStack *ttstkx = new THStack("ttstk", " Leptonic Top (projectX) ");
  THStack *ttstky = new THStack("ttstk", " Hadronic Top (projectY) ");
- TH1F * ttaddx = new TH1F("ttaddx","", 100, 0., 400.);
- TH1F * ttaddy = new TH1F("ttaddy","", 100, 0., 400.);
+ TH1F * ttaddx = new TH1F("ttaddx","", nbin, 0., 400.);
+ TH1F * ttaddy = new TH1F("ttaddy","", nbin, 0., 400.);
 
  ttmass1->ProjectionY("ttmass1_py",1,200,"");
  ttmass1->ProjectionX("ttmass1_px",1,200,"");
- ttmass1_px->Rebin(2);
- ttmass1_py->Rebin(2);
+ ttmass1_px->Rebin(rbin);
+ ttmass1_py->Rebin(rbin);
  ttmass1_px->SetFillColor(2);
  ttmass1_py->SetFillColor(2);
  //ttmass1->Scale(1);
@@ -44,8 +47,8 @@ void TtMass( TString name1 ) {
 
  ttmass2->ProjectionY("ttmass2_py",1,200,"");
  ttmass2->ProjectionX("ttmass2_px",1,200,"");
- ttmass2_px->Rebin(2);
- ttmass2_py->Rebin(2);
+ ttmass2_px->Rebin(rbin);
+ ttmass2_py->Rebin(rbin);
  ttmass2_px->SetFillColor(4);
  ttmass2_py->SetFillColor(4);
  //ttmass2->Scale(1);
@@ -56,11 +59,10 @@ void TtMass( TString name1 ) {
 
  ttmass->ProjectionY("ttmass_py",1,200,"");
  ttmass->ProjectionX("ttmass_px",1,200,"");
- ttmass_px->Rebin(2);
- ttmass_py->Rebin(2);
+ ttmass_px->Rebin(rbin);
+ ttmass_py->Rebin(rbin);
  ttmass_px->SetFillColor(3);
  ttmass_py->SetFillColor(3);
- //ttmass_py->Rebin(2);
  ttstkx->Add(ttmass_px);
  ttstky->Add(ttmass_py);
  ttaddx->Add(ttmass_px);
@@ -125,48 +127,31 @@ void TtMass( TString name1 ) {
  ttaddx->Fit("gaus","R","sames",100,250);
  //ttaddx->DrawCopy("samesP");
 
-
- //c1->cd(4);
-
- /*
-
  c1->Update();
+
+ c1->cd(4);
+
  gStyle->SetStatY(0.99); 
  gStyle->SetStatTextColor(1);
-
- gStyle->SetOptStat(kTRUE);
- gStyle->SetOptFit(111);
- ttaddx->SetMarkerStyle(21);
- ttaddx->SetMarkerColor(1);
- ttaddx->SetMarkerSize(0.7);
- ttaddx->SetLineColor(1);
- ttaddx->SetTitle(" Fitting of Top Mass ");
- ttaddx->Fit("gaus","N0R","",120,220);
+ ttmass_px->SetTitle(" Fitting of Tt Events only ");
+ ttmass_px->SetFillColor(0);
+ ttmass_px->SetLineColor(1);
+ ttmass_px->Fit("gaus","N0R","",100,250);
  gaus->SetLineColor(1);
- ttaddx->Fit("gaus","R","",120,220);
- ttaddx->DrawCopy("samesP");
-
+ ttmass_px->Fit("gaus","R","",100,250);
  c1->Update();
  gStyle->SetStatY(0.62); 
- gStyle->SetStatTextColor(14);
-
- gStyle->SetOptStat(kTRUE);
- ttaddy->SetMarkerStyle(22);
- ttaddy->SetMarkerColor(14);
- ttaddy->SetMarkerSize(0.7);
- ttaddy->SetLineColor(14);
- ttaddy->SetTitle(" Reco Hadronic Top Mass ");
- ttaddy->Fit("gaus","N0R","",120,220);
- gaus->SetLineColor(14);
- ttaddy->Fit("gaus","R","sames",120,220);
-
- ttaddy->DrawCopy("sameP");
-
- */
+ gStyle->SetStatTextColor(8);
+ ttmass_py->SetFillColor(0);
+ ttmass_py->SetLineColor(8);
+ ttmass_py->Fit("gaus","N0R","",100,250);
+ gaus->SetLineColor(8);
+ ttmass_py->Fit("gaus","R","sames",100,250);
 
  c1->Update();
  c1->Print(plot1);
 
+ // Reset gStyle
  gStyle->SetStatY(0.95); 
  gStyle->SetStatTextColor(1);
 
