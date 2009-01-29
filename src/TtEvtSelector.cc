@@ -99,7 +99,7 @@ int TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<st
 
  int nJetEvt = 0;
  for (size_t i=0; i< goodJets.size(); i++) {
-     if ( goodJets[i].pt() >= jetEtThreshold ) nJetEvt++ ;
+     if ( goodJets[i].et() >= jetEtThreshold ) nJetEvt++ ;
  }
 
  if ( nMu == 1 && nEle == 0 ) pass = nJetEvt ;

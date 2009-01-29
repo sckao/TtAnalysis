@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtFormat.h,v 1.2 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -67,8 +67,9 @@ struct iReco{
     std::pair<const reco::Candidate*, const reco::Candidate*> ptr;
     //std::pair<LorentzVector, LorentzVector> q4;
     std::vector<iParton> q4v ;
-    double dm;
+    double dm; // fill pt for letponic W
     double mt; // only filled for leptonic W
+    double pt; 
 };
 
 // information of matched jets 

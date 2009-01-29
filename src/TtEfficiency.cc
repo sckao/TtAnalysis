@@ -75,24 +75,6 @@ void TtEfficiency::EventEfficiency( int topo , bool pass , HTOP9* histo9 ) {
 
 }
 
-void TtEfficiency::EventShape( int topo, size_t isoMu, size_t isoE , size_t nBJ, size_t nWJ, HTOP9* histo9 ){
-
-    int  Channel = 0;
-    int nBJets =  static_cast<int>(nBJ) ;
-    int nWJets =  static_cast<int>(nWJ) ;
-    if( isoE  > 1 && isoMu == 0 )  Channel = 1;
-    if( isoE == 0 && isoMu  > 1 )  Channel = 2;
-    if( isoE  > 0 && isoMu  > 0 )  Channel = 3;
-    if( isoE == 0 && isoMu == 1 )  Channel = 5; 
-    if( isoE == 1 && isoMu == 0 )  Channel = 7; 
-    if( isoE == 0 && isoMu == 0 )  Channel = 9;
-
-    int id = (topo*10) + Channel ;
-
-    if( topo > 2) id = -1 ;
-
-    histo9->Fill9g( id, nBJets, nWJets );
-}
 
 void TtEfficiency::IsoLeptonEfficiency(std::vector<const reco::Candidate*> isolep, std::vector<const reco::Candidate*> mclep, HTOP9* histo9 ){ 
 

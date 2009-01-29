@@ -360,7 +360,6 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
 
   // look at matched jet properties
  
-  cout<<" mcwjet size "<< mcwjets.size() <<endl;
   std::vector<LorentzVector> wpjj;
   std::vector<LorentzVector> wnjj;
   double dR_wjj = -1. ; 
@@ -911,7 +910,7 @@ std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, 
 
 }
 
-std::vector<const pat::Jet* > TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold ) {
+std::vector<const pat::Jet* > TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, HTOP1* histo1 ) {
 
    std::vector<const pat::Jet* > jet_temp ;
    for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
@@ -940,6 +939,10 @@ std::vector<const pat::Jet* > TtJet::JetSelection( Handle<std::vector<pat::Jet> 
 
        jet_temp.push_back( &*j1 );
    }
+   int jetSize = static_cast<int>( jets->size() );
+   if (jetSize > 20) jetSize = 20 ;
+
+   histo1->Fill1s( jetSize, jet_temp.size() );
 
    if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtDecreasing1 );
    return jet_temp;

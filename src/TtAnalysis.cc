@@ -279,7 +279,7 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
       iEvent.getByLabel(triggerSrc, triggers);
       evtSelected->TriggerStudy( triggers, topo, 3 ,histo9 );
    }
-   semiSol->BuildSemiTt(iEvent, iSetup, histo3, histo4, histo7, histo8, histo9 );
+   semiSol->BuildSemiTt(iEvent, iSetup, histo1, histo3, histo4, histo7, histo8, histo9 );
  
    //3. W+Jets analysis
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
@@ -302,25 +302,11 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
       }
    }
 
-   // looking for muon decay W
-   /*
-   LorentzVector wP4(0.,0.,0.,0.);
-   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       if ( abs((*it).pdgId()) != 24 ) continue;
-       for (size_t q=0; q< (*it).numberOfDaughters(); q++) {
-           const reco::Candidate *dau = (*it).daughter(q) ;
-           if ( abs(dau->pdgId()) ==  13 && it->status() == 3 ) wP4 = it->p4() ;
-       }
-       LorentzVector zero(0.,0.,0.,0.);
-       if ( wP4 != zero ) ttJet->JetAndLepW( jets, wP4, histo1 );
-   }        
-   */
-
    //4. Jet Studies
    ttJet->jetAnalysis(jets, histo1);
    //ttJet->JetTrigger( jets, triggers );
 
-   std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection(muons, histo3);
+   std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection(muons);
    std::vector<const pat::Jet*> tmpJets;
    std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets, tmpJets, histo8, false);
    std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets, tmpJets, histo7, false);

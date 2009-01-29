@@ -131,7 +131,13 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
 
      isoMuons.push_back( &*it );
  }
+ int muSize = static_cast<int>(  patMu->size() );
+ if ( muSize > 20 ) muSize = 20;
+
+ histo3->Fill3e( muSize, isoMuons.size() );
+
  if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing );
+
  return isoMuons ;
 }
 
@@ -146,7 +152,6 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
 
      if ( isolated && it->pt() > 20. && fabs(it->eta()) < 2.1) isoMuons.push_back( &*it );
  }
- 
  if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing );
  return isoMuons ;
 

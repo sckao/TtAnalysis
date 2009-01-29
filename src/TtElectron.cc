@@ -158,6 +158,11 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
      isoEle.push_back( &*it );
 
  }
+ int elSize = static_cast<int>(  patEle->size() );
+ if ( elSize > 20 ) elSize = 20;
+
+ histo4->Fill4e( elSize, isoEle.size() ); 
+
  return isoEle ;
 
 }

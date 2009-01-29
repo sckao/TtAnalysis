@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtEfficiency.h,v 1.5 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -75,7 +75,6 @@ class TtEfficiency {
 
     /// Perform the real analysis
     void EventEfficiency(int topo, bool pass, HTOP9* histo9 );
-    void EventShape(int topo, size_t isoMu, size_t isoE , size_t nBJ, size_t wJ, HTOP9* histo9 );
     void JetEfficiency(std::vector<const pat::Jet*> recojets, std::vector<const pat::Jet*> mcjets, HTOP9* histo9 );
     void IsoLeptonEfficiency(std::vector<const reco::Candidate*> isolep, std::vector<const reco::Candidate*> mclep, HTOP9* histo9 );
 

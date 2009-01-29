@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtSemiEventSolution.h,v 1.4 2009/01/23 16:08:16 sckao Exp $
 //
 //
 
@@ -100,11 +100,13 @@ class TtSemiEventSolution {
     ~TtSemiEventSolution();
 
     /// Perform the real analysis
-    void BuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup, HTOP3* histo3, HTOP4* histo4,  HTOP7* histo7, HTOP8* histo8, HTOP9* histo9 );
+    void BuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup, HTOP1* histo1, HTOP3* histo3, HTOP4* histo4,  HTOP7* histo7, HTOP8* histo8, HTOP9* histo9 );
 
     bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate  );
     bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
                 std::vector<iReco>& wCandidate );
+    bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
+                std::vector<iReco>& wCandidates, bool FoundWSolution );
     bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate, bool btagging );
 
     // with 2b tagging
