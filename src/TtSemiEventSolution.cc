@@ -349,6 +349,7 @@ bool TtSemiEventSolution::recoW( std::vector<const reco::Candidate*> lepton, Han
  
    if ( FoundWSolution ) return FoundWSolution;
    bool findW = false;
+   if (  lepton.size() != 1 || met->size() != 1 ) return findW ;
 
    // Test the MT of lepton + MET
    double xW = lepton[0]->p4().Px() + (*met)[0].p4().Px() ;
