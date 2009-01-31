@@ -267,6 +267,56 @@ bool TtSemiEventSolution::recoW( std::vector<const pat::Jet*> wjets, std::vector
     return findW;
 }
 
+// leptonic channel -- calculation only!
+std::vector<double> TtSemiEventSolution::recoW(const pat::Muon lepton, const pat::MET met ){
+    
+    std::vector<double> findW ; 
+
+    // use w mass constrain to solve 4 momentum of W
+    double xW  = lepton.p4().Px() + met.p4().Px() ;
+    double yW  = lepton.p4().Py() + met.p4().Py() ;
+    double nuPt2 = (met.p4().Px()*met.p4().Px()) + (met.p4().Py()*met.p4().Py()); 
+ 
+    double zl = lepton.p4().Pz() ;
+    double El = lepton.p4().E()  ;
+
+    double D = (80.4*80.4) - (El*El) - nuPt2 + (xW*xW) + (yW*yW) + (zl*zl) ;
+
+    double A = 4.*( (zl*zl) - (El*El) ) ;
+    double B = 4.*D*zl ;
+    double C = (D*D) - (4.*El*El*nuPt2) ;
+
+    // EtW and PtW are only for mT of W calculation 
+    double EtW  = lepton.et() + met.et() ;
+    double PtW2 = (xW*xW) + (yW*yW);
+    double mtW2 = (EtW*EtW) - PtW2 ;
+    if ( mtW2 < 0. ) mtW2 = 0. ;
+
+    if ( (B*B) < (4.*A*C) ) return findW ;
+
+    // 2 solutions for  z momentum of neutrino
+    double nz1 = (-1.*B + sqrt(B*B - 4.*A*C )) / (2.*A) ;
+    double nz2 = (-1.*B - sqrt(B*B - 4.*A*C )) / (2.*A) ;
+   
+    // pick a better solution!
+    for (int i=1; i<3; i++ ) {
+       double nz = 0.0;  
+       if (i==1) nz =nz1;
+       if (i==2) nz =nz2;
+       double ENu2 = (met.p4().Px()*met.p4().Px()) + (met.p4().Py()*met.p4().Py()) + (nz*nz);
+       double zW = lepton.p4().Pz() + nz ;
+       double EW = lepton.p4().E() + sqrt(ENu2) ;
+       LorentzVector np4 = LorentzVector( met.p4().Px(), met.p4().Py(), nz, sqrt(ENu2) );
+       double massTest =  (EW*EW) - (xW*xW) - (yW*yW) - (zW*zW) ;
+
+       if (massTest > 0. ) {
+          findW.push_back( sqrt( massTest ) );
+       }
+    }
+
+    return findW;
+}
+
 // leptonic channel 
 bool TtSemiEventSolution::recoW( std::vector<const reco::Candidate*> lepton, 
                          Handle<std::vector<pat::MET> >  patMet, std::vector<iReco>& wCandidate ){
