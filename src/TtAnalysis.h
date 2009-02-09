@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtAnalysis.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -142,7 +142,7 @@ class TtAnalysis : public edm::EDAnalyzer {
     HTOP3 *h_Muon;
     HTOP4 *h_Ele;
     HTOP5 *h_Gam;
-    HTOP6 *h_MJet;
+    HTOP6 *h_MObj;
     HTOP7 *h_BJet;
     HTOP8 *h_WJet;
     HTOP9 *h_Top;

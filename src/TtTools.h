@@ -1,11 +1,11 @@
-#ifndef TtEvtSelector_H
-#define TtEvtSelector_H
+#ifndef TtTools_H
+#define TtTools_H
 // -*- C++ -*-
 //
-// Package:    TtEvtSelector
-// Class:      TtEvtSelector
+// Package:    TtTools
+// Class:      TtTools
 // 
-/**\class TtEvtSelector TtEvtSelector.cc PhysicsTools/TtAnalysis/src/TtEvtSelector.cc
+/**\class TtTools TtTools.cc PhysicsTools/TtAnalysis/src/TtTools.cc
 
  Description: <one line class summary>
 
@@ -15,13 +15,29 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtEvtSelector.h,v 1.7 2009/01/23 16:08:16 sckao Exp $
+// $Id: TtTools.h,v 1.7 2009/01/23 16:08:16 sckao Exp $
 //
 //
 
 
 // system include files
 #include <memory>
+
+// For propagation
+#include "TrackPropagation/SteppingHelixPropagator/interface/SteppingHelixPropagator.h"
+#include "TrackPropagation/SteppingHelixPropagator/interface/SteppingHelixStateInfo.h"
+#include "TrackingTools/Records/interface/TrackingComponentsRecord.h"
+#include "MagneticField/Engine/interface/MagneticField.h"
+#include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+//#include "Geometry/Records/interface/IdealGeometryRecord.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+
+// Track Calo Mapping!
+#include "TrackingTools/TrackAssociator/interface/TrackDetectorAssociator.h"
+#include "TrackingTools/TrackAssociator/interface/TrackAssociatorParameters.h"
+
+//#include "TrackingTools/TrackAssociator/interface/TrackDetMatchInfo.h"
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -56,15 +72,10 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
-#include "TtAnalysisHisto.h"
-#include "TtMuon.h"
-#include "TtElectron.h"
-#include "TtMET.h"
-#include "TtJet.h"
-#include "TtMCMatching.h"
-
+#include "TtFormat.h"
 
 #include "TFile.h"
+#include "TVector3.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -73,36 +84,32 @@
 
 //
 // class decleration
-/*
-class TtMuon;
-class TtMET;
-class TtElectron;
-*/
-class TtJet;
+//
 
-class TtEvtSelector {
+class TtTools {
    public:
     /// Constructor
-    explicit TtEvtSelector(const edm::ParameterSet& );
-    //explicit TtEvtSelector();
+    explicit TtTools();
     /// Destructor
-    ~TtEvtSelector();
+    ~TtTools();
 
     /// Perform the real analysis
-    int eventSelection(edm::Handle<std::vector<pat::Muon> > rMu, edm::Handle<std::vector<pat::Electron> > rE,
-                        edm::Handle<std::vector<pat::Jet> > rJet, double jetEtThreshold );
-    int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
+    FreeTrajectoryState getFTS(GlobalPoint GP, GlobalVector GV, int charge,
+                               const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
-    bool HLTSemiSelection( edm::Handle <edm::TriggerResults> triggers, int setup );
-    void TriggerStudy( edm::Handle <edm::TriggerResults> triggers, int topo, int setup, HTOP9* histo9 );
+    double getEta(double vx, double vy, double vz );
+    double getdPhi(  LorentzVector v1, LorentzVector v2 );
+    double getdR(  LorentzVector v1, LorentzVector v2 );
+    double getdRy(  LorentzVector v1, LorentzVector v2 );
+    double getY( LorentzVector v1 );
+    double getRelPt( LorentzVector a, LorentzVector b );
+    double getBeta( LorentzVector a );
+    double getInvMass( std::vector<LorentzVector> vlist );
+    double getInvMass( LorentzVector lv );
+    double getInvMass( LorentzVector lv1, LorentzVector lv2 );
 
    private:
 
-   TtMuon*       ttMuon;
-   TtElectron*   ttEle;
-   TtJet*        ttJet;
-   TtMET*        ttMET;
-   TtMCMatching* mcMatch;
 
 };
 

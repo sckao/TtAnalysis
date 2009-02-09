@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtMET.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -56,6 +56,7 @@
 #include "TtAnalysisNtuple.h"
 #include "TtMuon.h"
 #include "TtFormat.h"
+#include "TtTools.h"
 
 #include "TFile.h"
 #include <vector>
@@ -86,12 +87,14 @@ class TtMET {
     std::vector<double> CaloMET( edm::Handle<CaloTowerCollection> calotowers );
 
     void MetAndMuon( edm::Handle<std::vector<pat::MET> > patMet, std::vector<const reco::Candidate*> isoMuons, HTOP2* histo2, int njets  );
-
+    void MetAndJets( edm::Handle<std::vector<pat::MET> > met, std::vector<pat::Jet> theJets, HTOP2* histo2 );
 
 
    private:
 
     TtMuon*   fromTtMuon;
+    TtTools*  tools;
+
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;
     edm::InputTag genSrc;

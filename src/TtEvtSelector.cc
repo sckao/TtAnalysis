@@ -63,6 +63,7 @@ TtEvtSelector::TtEvtSelector(const edm::ParameterSet& iConfig)
   ttEle     = new TtElectron();
   ttJet     = new TtJet( iConfig );
   ttMET     = new TtMET( iConfig );
+  mcMatch   = new TtMCMatching();
 
 }
 
@@ -75,6 +76,7 @@ TtEvtSelector::~TtEvtSelector()
    delete ttEle;
    delete ttJet;
    delete ttMET;
+   delete mcMatch;
    
 }
 
@@ -93,14 +95,11 @@ int TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<st
  std::vector<const reco::Candidate*> IsoMuons = ttMuon->IsoMuonSelection( rMu ) ;
  int nMu = IsoMuons.size();
 
- std::vector<pat::Jet> goodJets = ttJet->JetSelection( rJet, IsoMuons );
+ std::vector<pat::Jet> goodJets = ttJet->JetSelection( rJet, IsoMuons, jetEtThreshold );
  
  //if ( goodJets.size() > 3 && goodJets[0].pt() > 60. && goodJets[3].pt() > 40. ) jetTightSelect = true ; 
 
- int nJetEvt = 0;
- for (size_t i=0; i< goodJets.size(); i++) {
-     if ( goodJets[i].et() >= jetEtThreshold ) nJetEvt++ ;
- }
+ int nJetEvt = static_cast<int>( goodJets.size() );
 
  if ( nMu == 1 && nEle == 0 ) pass = nJetEvt ;
 
@@ -110,51 +109,24 @@ int TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<st
 
 int TtEvtSelector::MCEvtSelection( Handle<std::vector<reco::GenParticle> > genParticles ) {
 
-   // type 4:semi-electron 3:semi-Muon 2: di-lep, 1:semi-lep, 0:hadron , -1:Non-Tt event
+   // type 3:semi-electron 2: di-lep, 1:semi-muon, 0:hadron , -1:Non-Tt event
    int type = -1;
+   std::vector<reco::Particle> tauColl = mcMatch->ttDecay(genParticles, 15);
+   std::vector<reco::Particle> muColl  = mcMatch->ttDecay(genParticles, 13);
+   std::vector<reco::Particle> eColl   = mcMatch->ttDecay(genParticles, 11);
 
-   int tt[2] = {0} ;
-   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       if ( (*it).pdgId() ==  6 && (*it).status() == 3 ) tt[0]++;
-       if ( (*it).pdgId() == -6 && (*it).status() == 3 ) tt[1]++;
-       /*  if ( abs((*it).pdgId()) == 6 ) {
-          cout<<" The Top status:" << (*it).status() << endl;
-       }*/ 
-   }
-   //cout<<" - - - - - - - - - - - - - "<<endl;
+   
+   int nTau = tauColl.size();
+   int nMu  = muColl.size();
+   int nEle = eColl.size();
+   int nlep = nMu + nEle + nTau ;
 
-   if ( tt[0] == 1 && tt[1] == 1 ) {
-
-      int nlep = 0;
-      int nMu  = 0;
-      int nEle = 0;
-      for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-          // find the W from t
-          bool Wfromt = false ;
-          if ( abs((*it).pdgId()) != 24) continue;
-          for (size_t q=0; q< (*it).numberOfMothers(); ++q) {
-              const reco::Candidate *mom = (*it).mother(q) ;
-              if ( abs(mom->pdgId()) == 6 ) Wfromt = true;
-              //cout <<" mom("<< mom->pdgId()<<")     status:"<<mom->status()<<endl;
-              //if ( abs(mom->pdgId()) == 6 && mom->status() == 1) continue;
-          }
-    
-          // tag the decay mode of W
-          if ( !Wfromt ) continue;
-          for (size_t q=0; q< (*it).numberOfDaughters(); ++q) {
-              const reco::Candidate *dau = (*it).daughter(q) ;
-              if ( abs(dau->pdgId()) == 11 || abs(dau->pdgId()) == 13 ) nlep++;
-              if ( abs(dau->pdgId()) == 11 ) nEle++ ;
-              if ( abs(dau->pdgId()) == 13 ) nMu++  ;
-	      //cout<<" daughter("<< dau->pdgId()<<") status:"<< dau->status()<<endl;
-          }
-      }
-      if (nlep == 1 ) type = 1;
-      if (nEle == 1 && nlep ==1 ) type = 4;
-      if (nMu  == 1 && nlep ==1 ) type = 3;
-      if (nlep == 2 ) type = 2;
-      if (nlep == 0 ) type = 0;
-   }
+   if (nTau == 1 && nlep ==1 ) type = 4;
+   if (nEle == 1 && nlep ==1 ) type = 3;
+   if (nMu  == 1 && nlep ==1 ) type = 1;
+   if (nlep == 2 ) type = 2;
+   if (nlep == 0 ) type = 0;
+   if (nlep > 2 ) type = -1;
 
    return type;
 }

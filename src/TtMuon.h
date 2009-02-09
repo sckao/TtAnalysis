@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtMuon.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -82,6 +82,7 @@ class TtMuon {
 
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 );
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
+    std::vector<const reco::Candidate*> nonIsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
 
     bool IsoMuonID( pat::Muon Mu, double isoCut );
 

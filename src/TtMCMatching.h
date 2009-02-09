@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtMCMatching.h,v 1.7 2009/01/23 16:08:16 sckao Exp $
 //
 //
 
@@ -55,6 +55,7 @@
 #include "TtAnalysisNtuple.h"
 #include "TtAnalysisHisto.h"
 #include "TtFormat.h"
+#include "TtTools.h"
 
 #include "TFile.h"
 #include <vector>
@@ -66,28 +67,7 @@
 //
 // class decleration
 //
-/*
-typedef math::XYZTLorentzVector LorentzVector;
 
-struct jmatch {
-       int MomIdx ;
-       double res_P;
-       LorentzVector sumP4 ;
-       std::vector<pat::Jet> assJets ;
-       pat::Jet leadingJet ;
-       const pat::Jet* trueJet ;
-       reco::Particle mom ;
-       bool hasMatched; 
-};
-
-struct iTt {
-    int pdgId;
-    int momId;
-    LorentzVector p4;
-    GlobalVector  gv; 
-    double pt;
-};
-*/
 class TtMCMatching {
    public:
     /// Constructor
@@ -115,7 +95,7 @@ class TtMCMatching {
                                         std::vector<const reco::Candidate*> isoEle, HTOP4* histo4, bool fillhisto);
 
     int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution );
-    int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution, HTOP9* histo9 );
+    int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution, HTOP6* histo6 );
 
     bool matchingGeneral( LorentzVector p4_1, iTt ttObject, double& dR0, double& ptRes0 );
 
@@ -124,9 +104,17 @@ class TtMCMatching {
     std::vector<iTt> TtObjects( edm::Handle<std::vector<reco::GenParticle> > genParticles ); 
 
     std::vector<reco::Particle> ttPartons( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
+    std::vector<reco::Particle> ttDecay( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
+    std::vector<reco::Particle> genMuonFromB( edm::Handle<std::vector<reco::GenParticle> > genParticles, reco::Particle genB ) ;
 
+    std::vector<const reco::Candidate*> matchMuonfromB( edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                std::vector<pat::Jet> jets, std::vector<const reco::Candidate*> isoMuons ,HTOP7* histo7, bool fillhisto ) ;
+
+    void CheckGenParticle(  edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
    private:
+
+    TtTools*       tools;
 
 
 };

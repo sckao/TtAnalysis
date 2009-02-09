@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtSemiEventSolution.h,v 1.5 2009/01/29 17:27:21 sckao Exp $
+// $Id: TtSemiEventSolution.h,v 1.4 2009/01/23 16:08:16 sckao Exp $
 //
 //
 
@@ -69,6 +69,7 @@
 #include "TtJet.h"
 #include "TtEfficiency.h"
 #include "TtFormat.h"
+#include "TtTools.h"
 
 #include "TFile.h"
 #include "TVector3.h"
@@ -100,10 +101,10 @@ class TtSemiEventSolution {
     ~TtSemiEventSolution();
 
     /// Perform the real analysis
-    void BuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup, HTOP1* histo1, HTOP3* histo3, HTOP4* histo4,  HTOP7* histo7, HTOP8* histo8, HTOP9* histo9 );
-   
-    //calulation only 
-    std::vector<double> recoW( const pat::Muon lepton, const pat::MET met );
+    void BuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup,
+                     HTOP1* histo1, HTOP3* histo3, HTOP4* histo4,  HTOP6* histo6, HTOP7* histo7, HTOP8* histo8, HTOP9* histo9 );
+
+    //std::vector<double> recoW( const pat::Muon lepton, const pat::MET Met );
 
     bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate  );
     bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
@@ -122,9 +123,6 @@ class TtSemiEventSolution {
                   std::vector<const reco::Candidate*> mcMuons, std::vector<const reco::Candidate*> mcElectrons, 
                   edm::Handle<std::vector<pat::MET> > met, HTOP9* histo9  );
  
-    double getInvMass( LorentzVector lv );
-    double getInvMass( LorentzVector lv1, LorentzVector lv2 );
-
     void dmSortRecoObjects( std::vector<iReco>& objCand );
 
     void accuracySemiTt( std::vector<iReco> ttMC, std::vector<iReco> ttReco, HTOP9* histo9 ) ;
@@ -133,7 +131,7 @@ class TtSemiEventSolution {
     //                   std::vector<const pat::Jet*> rcBJets, HTOP9* histo9 ) ;
     void MCTruthCheck( std::vector<iReco> mcTt, std::vector<iReco> rcTt, std::vector<const pat::Jet*> mcWJets,
                        std::vector<const pat::Jet*> rcWJets, std::vector<const pat::Jet*> mcBJets,
-                       std::vector<const pat::Jet*> rcBJets, HTOP9* histo9 ) ;
+                       std::vector<const pat::Jet*> rcBJets, HTOP6* histo6 ) ;
 
    private:
       // ----------member data ---------------------------
@@ -145,6 +143,7 @@ class TtSemiEventSolution {
     TtMET*         ttMET;
     TtJet*         ttJet;
     TtEfficiency*  ttEff;
+    TtTools*       tools;
 
     bool exclude;
 

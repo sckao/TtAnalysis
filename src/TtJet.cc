@@ -55,6 +55,7 @@ TtJet::TtJet(const edm::ParameterSet& iConfig)
   tkParas =  iConfig.getParameter<edm::ParameterSet>("TrackAssociatorParameters");
   theParameters.loadParameters( tkParas );
 
+  tools           = new TtTools();
   fromTtMuon      = new TtMuon();
   JetMatching     = new TtMCMatching();
 }
@@ -65,6 +66,7 @@ TtJet::~TtJet()
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
    //if (debug) cout << "[TtJet Analysis] Destructor called" << endl;
+   delete tools;
    delete fromTtMuon;
    delete JetMatching;
 }
@@ -138,31 +140,30 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1){
 
 }
 
-void TtJet::thirdETJetSpectrum( std::vector<pat::Jet> jet_temp, HTOP1* histo1){
+void TtJet::JetEtSpectrum( std::vector<pat::Jet> jet_temp, HTOP1* histo1){
 
 
-   if ( jet_temp.size() > 2) {
+   if ( jet_temp.size() > 3) {
       //sort(jet_temp.begin(), jet_temp.end(), EtDecreasing );
 
-      double calE = jet_temp[2].emEnergyInEB()  + jet_temp[2].emEnergyInEE()  + jet_temp[2].emEnergyInHF() +
+      double calE3 = jet_temp[2].emEnergyInEB()  + jet_temp[2].emEnergyInEE()  + jet_temp[2].emEnergyInHF() +
                     jet_temp[2].hadEnergyInHB() + jet_temp[2].hadEnergyInHE() + jet_temp[2].hadEnergyInHF()+ 
                     jet_temp[2].hadEnergyInHO();
-      double calEt = calE * sin( jet_temp[2].theta() );
+      double calEt3 = calE3 * sin( jet_temp[2].theta() );
       // get m3
       std::vector<LorentzVector> vlist;
       vlist.push_back( jet_temp[0].p4() );
       vlist.push_back( jet_temp[1].p4() );
       vlist.push_back( jet_temp[2].p4() );
-      double m3 = getInvMass( vlist );
+      double m3 = tools->getInvMass( vlist );
 
-      histo1->Fill1l( jet_temp[2].et(), calEt, jet_temp[2].towersArea(), jet_temp[0].et(), jet_temp[0].towersArea(), m3 ) ;
-      if ( m3 < 150. && jet_temp[2].et() < 20. ) histo1->Fill1e( m3, calEt );
+      histo1->Fill1l(jet_temp[0].et(), jet_temp[1].et(), jet_temp[2].et(), jet_temp[3].et(), calEt3,  m3 ) ;
 
    }
 
 }
 
-void TtJet::thirdETJetSpectrum(Handle<std::vector<reco::GenJet> > genJet, HTOP1* histo1){
+void TtJet::JetEtSpectrum(Handle<std::vector<reco::GenJet> > genJet, HTOP1* histo1){
 
    std::vector<reco::GenJet> jet_temp ;
    for (std::vector<reco::GenJet>::const_iterator j1 = genJet->begin(); j1 != genJet->end(); j1++)
@@ -170,51 +171,57 @@ void TtJet::thirdETJetSpectrum(Handle<std::vector<reco::GenJet> > genJet, HTOP1*
        jet_temp.push_back( *j1 );
    }
 
-   if ( jet_temp.size() > 0) {
+   if ( jet_temp.size() > 3) {
       sort(jet_temp.begin(), jet_temp.end(), EtDecreasing );
       if ( jet_temp.size() > 2 ) {
          double emE = jet_temp[2].emEnergy() ;
 	 double hdE = jet_temp[2].hadEnergy() ;
-	 double genEt = ( emE + hdE )*sin( jet_temp[2].theta() );
+	 double genEt3 = ( emE + hdE )*sin( jet_temp[2].theta() );
          // get m3
          std::vector<LorentzVector> vlist;
          vlist.push_back( jet_temp[0].p4() );
          vlist.push_back( jet_temp[1].p4() );
          vlist.push_back( jet_temp[2].p4() );
-         double m3 = getInvMass( vlist );
+         double m3 = tools->getInvMass( vlist );
 
-         histo1->Fill1l( jet_temp[2].et(), genEt, jet_temp[2].jetArea(), jet_temp[0].et(), jet_temp[0].jetArea(), m3 ) ;
-         if ( m3 < 150. && jet_temp[2].et() < 20. ) histo1->Fill1e( m3, genEt );
+         histo1->Fill1l(jet_temp[0].et(), jet_temp[1].et(), jet_temp[2].et(), jet_temp[3].et(), genEt3,  m3 ) ;
       }
    }
 
 }
 
 // isolated muon and jets
-void TtJet::MuonAndJet( std::vector<pat::Jet> jet_temp,  LorentzVector p1, HTOP1* histo1){
+//void TtJet::MuonAndJet( std::vector<pat::Jet> jet_temp,  LorentzVector p1, HTOP1* histo1){
+void TtJet::MuonAndJet( std::vector<pat::Jet> jet_temp,  const reco::Candidate* isoMu, HTOP1* histo1){
 
    int njet = static_cast<int>( jet_temp.size() );
-   double muEta    = getEta( p1.Px(), p1.Py(), p1.Pz() );
+   //double muEta    = tools->getEta( p1.Px(), p1.Py(), p1.Pz() );
+   double muEta     = isoMu->eta() ;
+   LorentzVector p1 = isoMu->p4() ;
 
    // njets vs eta of muon 
    histo1->Fill1m( njet, muEta );
 
-   double dR = 999. ;
+   double dR = 9. ;
+   double relPt = -1;
    for (int i= 0; i < njet ; i++) {
        LorentzVector p2 = jet_temp[i].p4() ;
 
-       double dR1 = getdR( p1, p2 );
-       if ( dR1 < dR ) dR = dR1; 
+       double dR1    = tools->getdR( p1, p2 );
+       double relPt1 = tools->getRelPt(p1, p2);
+       if ( dR1 < dR ) {
+          dR = dR1; 
+          relPt = relPt1 ;
+       }
 
-       double dPhi[3] = {-1.};
-       if ( jet_temp.size() > 2) {
-          dPhi[i] = getdPhi(p1, p2);
-          // 
+       double dPhi[3] = { -1. };
+       if ( jet_temp.size() > 2 ) {
+          dPhi[i] = tools->getdPhi(p1, p2);
           histo1->Fill1o(njet, dPhi[0], dPhi[1], dPhi[2]);
        }
    }
    // min dR(muon, jet)
-   histo1->Fill1i( njet, dR );
+   histo1->Fill1i( njet, dR, relPt );
 
 }
 
@@ -236,8 +243,8 @@ void TtJet::JetAndLepW( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* 
        if ( j1->et() > 20. ) njet++ ;
    }
 
-   //double wEta    = getEta( p1.Px(), p1.Py(), p1.Pz() );
-   double wEta    = getY( p1 );
+   //double wEta    = tools->getEta( p1.Px(), p1.Py(), p1.Pz() );
+   double wEta    = tools->getY( p1 );
    histo1->Fill1p( njet, wEta );
 
    if ( jet_temp.size() > 2) {
@@ -251,9 +258,9 @@ void TtJet::JetAndLepW( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* 
       for (int i= 0; i<3; i++) {
           LorentzVector p2 = jet_temp[i].p4() ;
 
-          dPhi[i] = getdPhi( p1, p2 );
-          //double jEta = getEta( p2.Px(), p2.Py(), p2.Pz() );
-          double jEta = getY( p2 );
+          dPhi[i] = tools->getdPhi( p1, p2 );
+          //double jEta = tools->getEta( p2.Px(), p2.Py(), p2.Pz() );
+          double jEta = tools->getY( p2 );
           double dEta = jEta - wEta ;
 
           dR[i] = sqrt( (dEta*dEta) + (dPhi[i]*dPhi[i]) );
@@ -268,20 +275,11 @@ void TtJet::JetAndLepW( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* 
       LorentzVector J12( j3[1], j3[2], j3[3], j3[0] );
 
       double m3 = sqrt( (j3[0]*j3[0]) - (j3[1]*j3[1]) - (j3[2]*j3[2]) -  (j3[3]*j3[3]) );
-      double dRwj = getdR( p1, J12 );
-      double dFwj = getdPhi( p1, J12 );
+      double dRwj = tools->getdR( p1, J12 );
+      double dFwj = tools->getdPhi( p1, J12 );
 
       histo1->Fill1n( njet, wEta, dPhi[0], dPhi[1], dPhi[2], dR[0], dR[1], dR[2], dRwj, dFwj, m3 );
-      if ( njet > 2 ) histo1->Fill1r( dR[0], jet_temp[2].et() ) ;
   
-      double HT = 0. ;
-      for (size_t i= 0; i< jet_temp.size(); i++) {
-          if ( jet_temp[i].et() < 20. ) continue;
-          HT += jet_temp[i].et() ;
-      }
-      if ( njet <= 2 ) histo1->Fill1q2(dRwj, HT, dFwj );
-      if ( njet >= 3 ) histo1->Fill1q3(dRwj, HT, dFwj );
-
    }
 
 }
@@ -392,29 +390,25 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
       }
 
       if ( wpjj.size()==2 ) {
-         dR_wjj = getdR( wpjj[0], wpjj[1] );
-         dR_wqq = getdR( wpqq[0], wpqq[1] );
+         dR_wjj = tools->getdR( wpjj[0], wpjj[1] );
+         dR_wqq = tools->getdR( wpqq[0], wpqq[1] );
          histo8->Fill8j( dR_wjj , dR_wqq );
          wpjj.clear();
          wpqq.clear();
       }
       if ( wnjj.size()==2  ) {
-         dR_wjj = getdR( wnjj[0], wnjj[1] );
-         dR_wqq = getdR( wnjj[0], wnjj[1] );
+         dR_wjj = tools->getdR( wnjj[0], wnjj[1] );
+         dR_wqq = tools->getdR( wnjj[0], wnjj[1] );
          histo8->Fill8j( dR_wjj , dR_wqq );
          wnjj.clear();
          wnqq.clear();
       }
       double res_Pt  = (truth.pt() - jmom.pt()) / jmom.pt() ;
-      double res_Eta = (truth.eta() - jmom.eta()) / jmom.eta();
 
       double jProb   = truth.bDiscriminator("jetProbabilityBJetTags") ;
       double tkCount = truth.bDiscriminator("trackCountingHighEffBJetTags") ;
 
-      histo8->Fill8c( truth.pt(), truth.eta(), res_Pt, res_Eta, jProb, tkCount );
-      if ( !truth.isCaloJet() ) {
-         histo8->Fill8e(truth.pt(), truth.eta(),res_Pt);
-      }
+      histo8->Fill8c( res_Pt, jProb, tkCount );
 
      double dR_WjMu = 999.;
      for (std::vector<const reco::Candidate*>::const_iterator m1= isoMuons.begin(); m1 != isoMuons.end(); m1++) {
@@ -460,19 +454,18 @@ void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcbjets, std::vector<jmatc
       double tkCount = truth.bDiscriminator("trackCountingHighEffBJetTags") ;
 
       histo7->Fill7a( truth.pt(), truth.eta(), EovH, nCon, n60, n90, towerArea, nTracks, emEF, Res_Pt, jProb , tkCount );
-      if ( !truth.isCaloJet() ) {
-         histo7->Fill7e(truth.pt(), truth.eta(),Res_Pt);
-      }
-
 
       // dR(closest isoMu, matched bjet )
-      double dR_bmu = 999.;
+      double dR_bmu = 9.;
+      double RelPt_bmu = -1 ;
       for (std::vector<const reco::Candidate*>::const_iterator m1= isoMuons.begin(); m1 != isoMuons.end(); m1++) {
-          double dh = truth.eta() - (*m1)->eta();
-          double df = truth.phi() - (*m1)->phi();
-          double dR = sqrt( dh*dh + df*df );
+          //double dh = truth.eta() - (*m1)->eta();
+          //double df = truth.phi() - (*m1)->phi();
+          //double dR = sqrt( dh*dh + df*df );
+          double dR = tools->getdR( truth.p4(), (*m1)->p4() );
           if (dR < dR_bmu ) {
              dR_bmu = dR ;
+             RelPt_bmu = tools->getRelPt( truth.p4(), (*m1)->p4() );
           }               
       } 
       double dR_bwj = 999.;
@@ -484,7 +477,7 @@ void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcbjets, std::vector<jmatc
              dR_bwj = dR ;
           }               
       }
-      if ( dR_bmu != 999. ) {  histo7->Fill7b( dR_bmu );  }
+      if ( dR_bmu != 999. ) {  histo7->Fill7b( dR_bmu, RelPt_bmu );  }
       if ( dR_bwj != 999. ) {  histo7->Fill7c( dR_bwj );  }
 
   }
@@ -713,7 +706,7 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
        GlobalPoint gp = GlobalPoint(vx, vy, vz) ;
        GlobalVector gm = GlobalVector(mx, my, mz );
        AlgebraicSymMatrix66 covT;
-       FreeTrajectoryState ftsStart = getFTS(gp, gm, m1->charge(), covT, &*field);
+       FreeTrajectoryState ftsStart = tools->getFTS(gp, gm, m1->charge(), covT, &*field);
 
        // flag muon isolation
        bool isoMuon = false;
@@ -748,7 +741,7 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
               for(size_t k=0; k< (*jcaloRef).constituentsSize(); k++  ){ 
                  GlobalPoint caloGP = caloGeom.getPosition(  (*jcaloRef).constituent(k) );
                  //double R = sqrt( (caloGP.x()*caloGP.x()) + (caloGP.y()*caloGP.y()) );
-                 //cout<<"         GP:"<<caloGP<<"  R="<<R<<" h:"<<getEta(caloGP.x(), caloGP.y(), caloGP.z())<<endl;
+                 //cout<<"         GP:"<<caloGP<<"  R="<<R<<" h:"<<tools->getEta(caloGP.x(), caloGP.y(), caloGP.z())<<endl;
                 // setup the final destination 
 		 FreeTrajectoryState ftsDest1;
                  GlobalPoint pDest1 = caloGP;
@@ -760,7 +753,7 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
 		 float dz = fGP.z() - pDest1.z() ;
 		 double dl = sqrt( (dx*dx) + (dy*dy) + (dz*dz) ); 
 		 //cout<<"         final gp"<<gp<<"=> "<<ftsDest1.position();
-                 //cout<<" h:"<<getEta(fGP.x(), fGP.y(), fGP.z()) << endl;
+                 //cout<<" h:"<<tools->getEta(fGP.x(), fGP.y(), fGP.z()) << endl;
                  //cout<<"         muon E:"<< m1->p()<<endl;
 		 //cout<<"         *** dL = "<< dl <<endl;
                  if (dl < dl1 ) dl1 = dl;         
@@ -782,76 +775,6 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
        }
    }
    Done = true ;
-}
-
-FreeTrajectoryState TtJet::getFTS(GlobalPoint GP, GlobalVector GV, int charge, 
-                                  const AlgebraicSymMatrix66& cov, const MagneticField* field){
-
-
-  GlobalTrajectoryParameters tPars(GP, GV, charge, field);
-
-  CartesianTrajectoryError tCov(cov);
-  
-  return cov.kRows == 6 ? FreeTrajectoryState(tPars, tCov) : FreeTrajectoryState(tPars) ;
-}
-
-double TtJet::getEta(double vx, double vy, double vz ) {
-
-      double va = sqrt( vx*vx + vy*vy + vz*vz );
-
-      double theta = acos( vz/va );
-      double eta = (-1.0)*log( tan(theta/2.0) )  ;
-      return eta;
-}
-
-double TtJet::getdPhi( LorentzVector v1, LorentzVector v2 ) {
-
-  double ab = (v1.Px()*v2.Px()) + (v1.Py()*v2.Py()) ;
-  double al = sqrt( v1.Px()*v1.Px() +  v1.Py()*v1.Py() );
-  double bl = sqrt( v2.Px()*v2.Px() +  v2.Py()*v2.Py() );
-  double cosA = ab/(al*bl) ;
-  double df = acos(cosA) ;
-
-  return df;
-}
-
-double TtJet::getdR( LorentzVector v1, LorentzVector v2 ) {
-
-  double df = getdPhi(v1, v2);
-
-  double ah = getEta( v1.Px(), v1.Py(), v1.Pz() );
-  double bh = getEta( v2.Px(), v2.Py(), v2.Pz() );
-  double dh = ah - bh ;
-
-  double dR = sqrt( (dh*dh) + (df*df) );
-
-  return dR;
-}
-
-double TtJet::getY( LorentzVector v1 ){
-
-    double ep = (v1.E() + v1.Pz()) / (v1.E() - v1.Pz()) ;
-    double Y = -0.5*log( ep  ) ;
-    return Y;
-}
-
-double TtJet::getInvMass( std::vector<LorentzVector> vlist ) {
-
-    double cb[4] = {0.0};
-    for ( std::vector<LorentzVector>::const_iterator it = vlist.begin(); it!= vlist.end(); it++ ) {
-          cb[0] += it->E() ;
-          cb[1] += it->Px() ;
-          cb[2] += it->Py() ;
-          cb[3] += it->Pz() ;
-    }
-
-    LorentzVector J12( cb[1], cb[2], cb[3], cb[0] );
-    double mass2 =  (cb[0]*cb[0]) - (cb[1]*cb[1]) - (cb[2]*cb[2]) -  (cb[3]*cb[3]) ;
-    if ( mass2 < 0 ) mass2 =0 ; 
-    double mass = sqrt( mass2 );
-
-    return mass;
-
 }
 
 void TtJet::JetTrigger( Handle<std::vector<pat::Jet> > jets, Handle <edm::TriggerResults> triggers ) {
@@ -877,13 +800,14 @@ void TtJet::JetTrigger( Handle<std::vector<pat::Jet> > jets, Handle <edm::Trigge
 
 }
 
-std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons ) {
+std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold ) {
 
    std::vector<pat::Jet> jet_temp ;
    for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
    {
 
        if ( fabs(j1->eta()) > 2.7 ) continue; 
+       if ( j1->et() < EtThreshold ) continue; 
 
        double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
                      j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
@@ -897,7 +821,7 @@ std::vector<pat::Jet> TtJet::JetSelection( Handle<std::vector<pat::Jet> > jets, 
        bool fakeJet = false;
        for ( size_t i =0; i < IsoMuons.size(); i++ ) {
            LorentzVector muP4 = IsoMuons[i]->p4() ;
-           double dR_mu = getdR( muP4, j1->p4() );  
+           double dR_mu = tools->getdR( muP4, j1->p4() );  
            if ( dR_mu < 0.1 ) fakeJet = true ;
        }
        if ( fakeJet ) continue;
@@ -932,7 +856,7 @@ std::vector<const pat::Jet* > TtJet::JetSelection( Handle<std::vector<pat::Jet> 
        bool fakeJet = false;
        for ( size_t i =0; i < IsoMuons.size(); i++ ) {
            LorentzVector muP4 = IsoMuons[i]->p4() ;
-           double dR_mu = getdR( muP4, j1->p4() );  
+           double dR_mu = tools->getdR( muP4, j1->p4() );  
            if ( dR_mu < 0.1 ) fakeJet = true ;
        }
        if ( fakeJet ) continue;
@@ -1013,7 +937,7 @@ void TtJet::JetdRAnalysis( Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1 
        if ( i+1 >= jetSize  ) continue;
        for (int j=i+1; j< jetSize; j++) {
 
-           double dR = getdR( (*patJet)[i].p4(), (*patJet)[j].p4() );
+           double dR = tools->getdR( (*patJet)[i].p4(), (*patJet)[j].p4() );
            histo1->Fill1g( dR );
        }
     }

@@ -80,7 +80,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   theFile->cd();
   theFile->mkdir("Gam");
   theFile->cd();
-  theFile->mkdir("MJets");
+  theFile->mkdir("MObjs");
   theFile->cd();
   theFile->mkdir("BJets");
   theFile->cd();
@@ -94,7 +94,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   h_Muon  = new HTOP3("Muons_");
   h_Ele   = new HTOP4("Ele_");
   h_Gam   = new HTOP5("Gam_");
-  h_MJet  = new HTOP6("MJets_");
+  h_MObj  = new HTOP6("MObjs_");
   h_BJet  = new HTOP7("BJets_");
   h_WJet  = new HTOP8("WJets_");
   h_Top   = new HTOP9("Tops_");
@@ -141,8 +141,8 @@ TtAnalysis::~TtAnalysis()
    h_Gam->Write();
 
    theFile->cd();
-   theFile->cd("MJets");
-   h_MJet->Write();
+   theFile->cd("MObjs");
+   h_MObj->Write();
 
    theFile->cd();
    theFile->cd("BJets");
@@ -162,7 +162,7 @@ TtAnalysis::~TtAnalysis()
    delete h_Muon;
    delete h_Ele;
    delete h_Gam;
-   delete h_MJet;
+   delete h_MObj;
    delete h_BJet;
    delete h_WJet;
    delete h_Top;
@@ -255,13 +255,15 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    }
 
    // 0. select the semi-lep events and objects
-   int pass = evtSelected->eventSelection(muons, electrons, jets, 20.);
+   int pass = evtSelected->eventSelection(muons, electrons, jets, 25.);
    int topo = evtSelected->MCEvtSelection(genParticles);
+   // check generator process 
+   //MCMatching->CheckGenParticle( genParticles );
 
    histo1 = h_Jet;
    histo3 = h_Muon;
    histo4 = h_Ele;
-   histo6 = h_MJet;
+   histo6 = h_MObj;
    histo7 = h_BJet;
    histo8 = h_WJet;
    histo9 = h_Top;
@@ -273,32 +275,26 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    ttEle->ElectronAnalysis(electrons, histo4);
 
    //2. build semi-Tt events
-
    if ( trigOn ) {
       Handle<edm::TriggerResults>  triggers;
       iEvent.getByLabel(triggerSrc, triggers);
       evtSelected->TriggerStudy( triggers, topo, 3 ,histo9 );
    }
-   semiSol->BuildSemiTt(iEvent, iSetup, histo1, histo3, histo4, histo7, histo8, histo9 );
+   semiSol->BuildSemiTt(iEvent, iSetup, histo1, histo3, histo4, histo6, histo7, histo8, histo9 );
  
-   //3. W+Jets analysis
+   //3. Jet Et threshold analysis
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
+   std::vector<pat::Jet> theJets = ttJet->JetSelection( jets, isoMu, 25 ) ;
+   if ( theJets.size() > 3 && pass > -1) {
+      ttJet->MuonAndJet( theJets, isoMu[0] , histo1 );
+      ttJet->JetEtSpectrum( theJets, histo1 );
+      //ttJet->JetEtSpectrum( genJets, histo1 );
 
-   if ( pass >= 0 ) {
-      std::vector<pat::Jet> theJets = ttJet->JetSelection( jets, isoMu ) ;
-      ttJet->MuonAndJet( theJets, isoMu[0]->p4() , histo1 );
-      if ( pass > 3  ) {
-
-         ttJet->thirdETJetSpectrum( theJets, histo1 );
-         //ttJet->thirdETJetSpectrum( genJets, histo1 );
-      
-         std::vector<iReco> lepW;
-         semiSol->recoW( isoMu, mets, lepW );
-         if ( lepW.size() > 0 ) {
-            int wl = MCMatching->matchLeptonicW( genParticles, lepW, histo9 );
-            if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
-            //ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
-         }
+      std::vector<iReco> lepW;
+      semiSol->recoW( isoMu, mets, lepW );
+      if ( lepW.size() > 0 ) {
+         int wl = MCMatching->matchLeptonicW( genParticles, lepW, histo6 );
+         if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
       }
    }
 
@@ -306,26 +302,34 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    ttJet->jetAnalysis(jets, histo1);
    //ttJet->JetTrigger( jets, triggers );
 
-   std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection(muons);
+   std::vector<const reco::Candidate*> nonIsoMu = ttMuon->nonIsoMuonSelection(muons);
    std::vector<const pat::Jet*> tmpJets;
    std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets, tmpJets, histo8, false);
    std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets, tmpJets, histo7, false);
    ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true );
    ttJet->bTagAnalysis( jets, histo7 );
    ttJet->JetdRAnalysis( jets, histo1 );
-   if ( topo == 3) {
+
+   if ( topo == 1) {
       ttJet->genJetInfo(genJets,genParticles, histo1, histo7, histo8);
-      ttJet->matchedWJetsAnalysis( mcwjets, isoMuons, histo8 );
-      ttJet->matchedbJetsAnalysis( mcbjets, mcwjets, isoMuons, histo7 );
+      ttJet->matchedWJetsAnalysis( mcwjets, isoMu, histo8 );
    } 
-   if ( pass >= 4 && topo == 1) {
+   if ( pass > 3 && topo == 1 ) {
       ttJet->selectedWJetsAnalysis(jets,histo8);
+   }
+   // looking for the leptonic b jet effect 
+   if ( pass > 3 ) {
+      ttJet->matchedbJetsAnalysis( mcbjets, mcwjets, isoMu, histo7 );
+      std::vector<const reco::Candidate*> isoMufromB = MCMatching->matchMuonfromB( genParticles, theJets, nonIsoMu, histo7,true );     
    }
 
    //5. MET from PAT
    histo2 = h_MET;
    ttMET->metAnalysis(mets, iEvent, histo2);
-   if ( pass > -1 ) ttMET->MetAndMuon(mets, isoMu, histo2, pass );
+   if ( pass > 3 ) {
+      ttMET->MetAndMuon(mets, isoMu, histo2, pass );
+      ttMET->MetAndJets(mets, theJets, histo2 );
+   }
    
    //6. Electron Studies
    //std::vector<const reco::Candidate*> tempEle; 

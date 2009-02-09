@@ -72,7 +72,7 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
-
+#include "TtTools.h"
 #include "TtAnalysisHisto.h"
 #include "TtAnalysisNtuple.h"
 #include "TtMuon.h"
@@ -110,10 +110,10 @@ class TtJet {
     void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
     void JetdRAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
 
-    void thirdETJetSpectrum( edm::Handle<std::vector<reco::GenJet> > genJet, HTOP1* histo1);
-    void thirdETJetSpectrum( std::vector<pat::Jet> patJet, HTOP1* histo1);
+    void JetEtSpectrum( edm::Handle<std::vector<reco::GenJet> > genJet, HTOP1* histo1);
+    void JetEtSpectrum( std::vector<pat::Jet> patJet, HTOP1* histo1);
 
-    void MuonAndJet( std::vector<pat::Jet> patJet, LorentzVector p1, HTOP1* histo1 );
+    void MuonAndJet( std::vector<pat::Jet> patJet, const reco::Candidate* isoMu, HTOP1* histo1 );
     void JetAndLepW( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* histo1 );
 
     void genJetInfo(edm::Handle<std::vector<reco::GenJet> > genJet,
@@ -143,14 +143,8 @@ class TtJet {
     FreeTrajectoryState getFTS(GlobalPoint GP, GlobalVector GV, int charge,
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
-    double getEta(double vx, double vy, double vz );
-    double getdPhi(  LorentzVector v1, LorentzVector v2 );
-    double getdR(  LorentzVector v1, LorentzVector v2 );
-    double getY( LorentzVector v1 );
-    double getInvMass( std::vector<LorentzVector> vlist );
-
     //std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, LorentzVector muP4 );
-    std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons );
+    std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
     std::vector< const pat::Jet* > JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HTOP1* histo1 );
 
     void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, HTOP7* histo7 );
@@ -159,6 +153,7 @@ class TtJet {
 
    private:
 
+    TtTools*       tools;
     TtMuon*        fromTtMuon;
     TtMCMatching*  JetMatching; 
 

@@ -65,13 +65,11 @@ public:
     gNjet40  = new TH1F("gNjet40"," # of genJets, pt > 40 GeV ",65,-0.5,64.5);
     gNjeth35 = new TH1F("gNjeth35"," # of genJets, |h| > 3.5 GeV ",65,-0.5,64.5);
 
-    thirdJetEt = new TH1F("thirdJetEt", " ET of the 3rd highest Et jet ", 500,0.,500. ); 
+    Jet1Et = new TH1F("Jet1Et", " ET of the 1st highest Et jet ", 500,0.,500. ); 
+    Jet2Et = new TH1F("Jet2Et", " ET of the 2nd highest Et jet ", 500,0.,500. ); 
+    Jet3Et = new TH1F("Jet3Et", " ET of the 3rd highest Et jet ", 500,0.,500. ); 
+    Jet4Et = new TH1F("Jet4Et", " ET of the 4th highest Et jet ", 500,0.,500. ); 
     thirdCalEt = new TH1F("thirdCalEt", " ET of the 3rd highest Et jet ", 500,0.,500. ); 
-    j1Et_Area  = new TH2F("j1Et_Area", " 1st Jet Et vs towerArea ", 500, 0., 500., 100, 0., 1.);
-    j3Et_Area  = new TH2F("j3Et_Area", " 3rd Jet Et vs towerArea ", 500, 0., 500., 100, 0., 1.);
-    j3Cal_Area = new TH2F("j3Cal_Area", " 3rd Jet CalEt vs towerArea ", 500, 0., 500., 100, 0., 1.);
-    m3cutEt    = new TH1F("m3cutEt", " 3rd highest Et jet w/ m3 < 150 ", 500,0.,500. );
-    etcutM3    = new TH1F("etcutM3", " m3 w/ 3rd Jet Et < 20 ", 500, 0., 500. );
 
     eta_njets  = new TH2F("eta_njets", " eta vs njets ", 91, -4.55, 4.55, 25, -0.5, 24.5);
     wEta_njets = new TH2F("wEta_njets", "w eta vs njets ", 91, -4.55, 4.55, 25, -0.5, 24.5);
@@ -84,6 +82,7 @@ public:
     njets_dPhi2= new TH2F("njets_dPhi2", " njets vs dPhi(w,jet3)  ", 20, -0.5, 19.5, 160, -0.05, 3.15);
     
     njets_dRMuJ  = new TH2F("njets_dRMuJ", " njets vs min_dR(mu,jet)  ", 20, -0.5, 19.5, 100, -0.05, 9.95);
+    dRMuJ_RelPt  = new TH2F("dRMuJ_RelPt", " min_dR(mu,jet), RelPt  ", 200, 0., 5., 100, 0., 200 );
     muNjets_dPhi0= new TH2F("muNjets_dPhi0"," njets vs dPhi(mu,jet1)  ", 20, -0.5, 19.5, 160, -0.05, 3.15);
     muNjets_dPhi1= new TH2F("muNjets_dPhi1"," njets vs dPhi(mu,jet2)  ", 20, -0.5, 19.5, 160, -0.05, 3.15);
     muNjets_dPhi2= new TH2F("muNjets_dPhi2"," njets vs dPhi(mu,jet3)  ", 20, -0.5, 19.5, 160, -0.05, 3.15);
@@ -96,14 +95,6 @@ public:
     njets_m3 = new TH2F("njets_m3", " njets vs m3 of Jet1,2,3", 20, -0.5, 19.5, 500,0.,500. );
     m3_dR    = new TH2F("m3_dR", " m3 vs dR(w,jet1+2+3)", 500, 0., 500., 100, -0.05, 9.95);
     m3_j3    = new TH2F("m3_j3", " m3 vs J3 ET ", 500, 0., 500., 500, 0., 500. );
-
-    dR_Ht2  = new TH2F("dR_Ht2", " dR(w,jet1+2+3) vs Ht for Nj<=2", 100, -0.05, 9.95, 500, 0., 500.);
-    dR_Ht3  = new TH2F("dR_Ht3", " dR(w,jet1+2+3) vs Ht for Nj>=3", 100, -0.05, 9.95, 500, 0., 500.);
-
-    dF_Ht2  = new TH2F("dF_Ht2", " dF(w,jet1+2+3) vs Ht for Nj<=2", 40, -0.05, 3.95, 500, 0., 500.);
-    dF_Ht3  = new TH2F("dF_Ht3", " dF(w,jet1+2+3) vs Ht for Nj>=3", 40, -0.05, 3.95, 500, 0., 500.);
-
-    dR0_et3 = new TH2F("dR0_et3", " dR(w,jet1) vs J3Et for Nj > 2 ", 100, -0.05, 9.95, 500, 0., 500.);
 
     allJ_selJ = new TH2F("allJ_selJ", "N of All jets vs N of selected jets in a event", 21, -0.5, 20.5, 21, -0.5, 20.5);
  } 
@@ -150,13 +141,11 @@ public:
     gNjet40 = (TH1F *) file->Get("gNjet40");
     gNjeth35= (TH1F *) file->Get("gNjeth35");
 
-    thirdJetEt = (TH1F *) file->Get("thirdJetEt");
+    Jet1Et = (TH1F *) file->Get("Jet1Et");
+    Jet2Et = (TH1F *) file->Get("Jet2Et");
+    Jet3Et = (TH1F *) file->Get("Jet3Et");
+    Jet4Et = (TH1F *) file->Get("Jet4Et");
     thirdCalEt = (TH1F *) file->Get("thirdCalEt");
-    j3Et_Area  = (TH2F *) file->Get("j3Et_Area");
-    j1Et_Area  = (TH2F *) file->Get("j1Et_Area");
-    m3cutEt    = (TH1F *) file->Get("m3cutEt");
-    etcutM3    = (TH1F *) file->Get("etcutM3");
-    j3Cal_Area = (TH2F *) file->Get("j3Cal_Area");
     eta_njets  = (TH2F *) file->Get("eta_njets");
     wEta_njets  = (TH2F *) file->Get("wEta_njets");
 
@@ -168,6 +157,7 @@ public:
     njets_dPhi2= (TH2F *) file->Get("njets_dPhi2");
  
     njets_dRMuJ  = (TH2F *) file->Get("njets_dRMuJ");
+    dRMuJ_RelPt  = (TH2F *) file->Get("dRMuJ_RelPt");
     muNjets_dPhi0= (TH2F *) file->Get("muNjets_dPhi0");
     muNjets_dPhi1= (TH2F *) file->Get("muNjets_dPhi1");
     muNjets_dPhi2= (TH2F *) file->Get("muNjets_dPhi2");
@@ -181,12 +171,7 @@ public:
     m3_j3    = (TH2F *) file->Get("m3_j3");
     njets_m3 = (TH2F *) file->Get("njets_m3");
 
-    dR_Ht2 = (TH2F *) file->Get("dR_Ht2");
-    dR_Ht3 = (TH2F *) file->Get("dR_Ht3");
-    dF_Ht2 = (TH2F *) file->Get("dF_Ht2");
-    dF_Ht3 = (TH2F *) file->Get("dF_Ht3");
 
-    dR0_et3 = (TH2F *) file->Get("dR0_et3");
     allJ_selJ = (TH2F *) file->Get("allJ_selJ");
  }
 
@@ -232,13 +217,11 @@ public:
     delete gNjet40;
     delete gNjeth35;
 
-    delete thirdJetEt; 
+    delete Jet1Et; 
+    delete Jet2Et; 
+    delete Jet3Et; 
+    delete Jet4Et; 
     delete thirdCalEt;
-    delete m3cutEt;
-    delete etcutM3;
-    delete j3Et_Area;
-    delete j1Et_Area;
-    delete j3Cal_Area;
     delete eta_njets;
     delete wEta_njets;
 
@@ -250,6 +233,7 @@ public:
     delete njets_dPhi2;
 
     delete njets_dRMuJ;
+    delete dRMuJ_RelPt;
     delete muNjets_dPhi0;
     delete muNjets_dPhi1;
     delete muNjets_dPhi2;
@@ -263,12 +247,6 @@ public:
     delete m3_j3;
     delete njets_m3;
 
-    delete dR_Ht2;
-    delete dR_Ht3;
-    delete dF_Ht2;
-    delete dF_Ht3;
-
-    delete dR0_et3;
     delete allJ_selJ;
  }
 
@@ -297,10 +275,6 @@ public:
  void Fill1d( int nCon, int nTrk, double EovH) {
     Cont_Trk2->Fill(nCon, nTrk);
  }
- void Fill1e( double m3, double et ) {
-    etcutM3->Fill( m3 );
-    m3cutEt->Fill( et );
- }
  void Fill1f( int njets, int nj20, int nj40, int njh35 ){
     hNJets->Fill(njets);  
     hNjet20->Fill(nj20);  
@@ -317,8 +291,9 @@ public:
     hEovH_r1->Fill(r,EovH);
     hR60_1->Fill(r60);
  }
- void Fill1i( int njet, double dR ) {
+ void Fill1i( int njet, double dR, double relPt ) {
      njets_dRMuJ->Fill( njet, dR );
+     dRMuJ_RelPt->Fill( dR, relPt );
  }
  void Fill1j( double eta, double pt, double EovH) {
     gEta_Pt->Fill( eta, pt);
@@ -330,12 +305,12 @@ public:
     gNjet40->Fill(nj40);  
     gNjeth35->Fill(njh35);  
  }
- void Fill1l( double et3 , double calEt, double towerArea3, double et1, double towerArea1, double m3 ) {
-    thirdJetEt->Fill( et3 );
-    thirdCalEt->Fill( calEt );
-    j3Cal_Area->Fill( calEt, towerArea3);
-    j3Et_Area->Fill( et3, towerArea3);
-    j1Et_Area->Fill( et1, towerArea1);
+ void Fill1l( double et1, double et2, double et3, double et4, double calEt3, double m3 ) {
+    Jet1Et->Fill( et1 );
+    Jet2Et->Fill( et2 );
+    Jet3Et->Fill( et3 );
+    Jet4Et->Fill( et4 );
+    thirdCalEt->Fill( calEt3 );
     m3_j3->Fill( m3, et3 );
  }
  void Fill1m( double njets, double eta ) {
@@ -364,17 +339,6 @@ public:
     wEta_njets->Fill( eta, njets );
  }
 
- void Fill1q2( double dR, double HT, double dF ) {
-    dR_Ht2->Fill(dR, HT);
-    dF_Ht2->Fill(dF, HT);
- }
- void Fill1q3( double dR, double HT, double dF ) {
-    dR_Ht3->Fill(dR, HT);
-    dF_Ht3->Fill(dF, HT);
- }
- void Fill1r( double dR0 , double et3 ) {
-    dR0_et3->Fill(dR0, et3) ;
- }
  void Fill1s( int allJ, int selJ ) {
     allJ_selJ->Fill( allJ, selJ );
  }
@@ -419,13 +383,11 @@ public:
     gNjet40->Write();
     gNjeth35->Write();
 
-    thirdJetEt->Write();
+    Jet1Et->Write();
+    Jet2Et->Write();
+    Jet3Et->Write();
+    Jet4Et->Write();
     thirdCalEt->Write();
-    m3cutEt->Write();
-    etcutM3->Write();
-    j3Et_Area->Write();
-    j1Et_Area->Write();
-    j3Cal_Area->Write();
     eta_njets->Write();
     wEta_njets->Write();
 
@@ -437,6 +399,7 @@ public:
     njets_dPhi2->Write();
     
     njets_dRMuJ->Write();
+    dRMuJ_RelPt->Write();
     muNjets_dPhi0->Write();
     muNjets_dPhi1->Write();
     muNjets_dPhi2->Write();
@@ -450,12 +413,7 @@ public:
     m3_j3->Write();
     njets_m3->Write();
 
-    dR_Ht2->Write();
-    dR_Ht3->Write();
-    dF_Ht2->Write();
-    dF_Ht3->Write();
 
-    dR0_et3->Write();
     allJ_selJ->Write();
  }
 
@@ -498,13 +456,11 @@ public:
   TH1F *gNjet40;
   TH1F *gNjeth35;
 
-  TH1F *thirdJetEt;
+  TH1F *Jet1Et;
+  TH1F *Jet2Et;
+  TH1F *Jet3Et;
+  TH1F *Jet4Et;
   TH1F *thirdCalEt;
-  TH1F *m3cutEt;
-  TH1F *etcutM3;
-  TH2F *j3Et_Area;
-  TH2F *j1Et_Area;
-  TH2F *j3Cal_Area;
   TH2F *eta_njets;
   TH2F *wEta_njets;
 
@@ -516,6 +472,7 @@ public:
   TH2F *njets_dPhi2;
 
   TH2F *njets_dRMuJ;
+  TH2F *dRMuJ_RelPt;
   TH2F *muNjets_dPhi0;
   TH2F *muNjets_dPhi1;
   TH2F *muNjets_dPhi2;
@@ -528,12 +485,6 @@ public:
   TH2F *m3_j3;
   TH2F *njets_m3;
 
-  TH2F *dR_Ht2;
-  TH2F *dR_Ht3;
-  TH2F *dF_Ht2;
-  TH2F *dF_Ht3;
- 
-  TH2F *dR0_et3;
   TH2F *allJ_selJ;
 
  TString name;
@@ -558,12 +509,15 @@ public:
     hPhiCal = new TH1F("PhiCal","Cal Phi Resolution", 100, -5.,5.);
     hPhiCor = new TH1F("PhiCor","Cor Phi Resolution", 100, -5.,5.);
 
-    MET_dPhi0 = new TH2F("MET_dPhi0","MET vs dPhi(Mu,MET) 0j", 500, 0,500, 32, -0.05,3.15);
-    MET_dPhi1 = new TH2F("MET_dPhi1","MET vs dPhi(Mu,MET) 1j", 500, 0,500, 32, -0.05,3.15);
-    MET_dPhi2 = new TH2F("MET_dPhi2","MET vs dPhi(Mu,MET) 2j", 500, 0,500, 32, -0.05,3.15);
-    MET_dPhi3 = new TH2F("MET_dPhi3","MET vs dPhi(Mu,MET) 3j", 500, 0,500, 32, -0.05,3.15);
-    MET_dPhi4 = new TH2F("MET_dPhi4","MET vs dPhi(Mu,MET) 4j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi0 = new TH2F("MET_dPhi0","MET vs dPhi(Mu,MET) > 3j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi1 = new TH2F("MET_dPhi1","MET vs dPhi(Mu,MET) 4j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi2 = new TH2F("MET_dPhi2","MET vs dPhi(Mu,MET) 5j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi3 = new TH2F("MET_dPhi3","MET vs dPhi(Mu,MET) 6j", 500, 0,500, 32, -0.05,3.15);
+    MET_dPhi4 = new TH2F("MET_dPhi4","MET vs dPhi(Mu,MET) > 6j", 500, 0,500, 32, -0.05,3.15);
 
+    MET_muPt = new TH2F("MET_muPt"," MET vs IsoMuon Pt ",  400, 0,400, 400, 0,400);
+    dPhi_METJ1  = new TH2F("dPhi_METJ1"," MET vs 1st Jet ", 400, 0,400,32, -0.05,3.15);
+    dPhi_METJ12 = new TH2F("dPhi_METJ12"," MET vs 1st + 2nd Jet ", 400, 0,400,32, -0.05,3.15);
  } 
 
  HTOP2(TString name_, TFile* file) {
@@ -583,6 +537,10 @@ public:
     MET_dPhi2   = (TH2F *) file->Get("MET_dPhi2");
     MET_dPhi3   = (TH2F *) file->Get("MET_dPhi3");
     MET_dPhi4   = (TH2F *) file->Get("MET_dPhi4");
+
+    MET_muPt    = (TH2F *) file->Get("MET_muPt");
+    dPhi_METJ1  = (TH2F *) file->Get("dPhi_METJ1");
+    dPhi_METJ12 = (TH2F *) file->Get("dPhi_METJ12");
  }
 
  /// Destructor
@@ -602,6 +560,10 @@ public:
     delete MET_dPhi2;
     delete MET_dPhi3;
     delete MET_dPhi4;
+
+    delete MET_muPt;
+    delete dPhi_METJ1;
+    delete dPhi_METJ12;
  }
 
  void Fill2a(double met, double emf, double emfCalo, double sumEt){
@@ -634,6 +596,13 @@ public:
  void Fill2c4( double met, double dPhi) {
     MET_dPhi4->Fill(met, dPhi);
  }
+ void Fill2d(double met, double muPt) {
+    MET_muPt->Fill(met, muPt);
+ }
+ void Fill2e(double met, double df1, double df12) {
+    dPhi_METJ1->Fill(met, df1);
+    dPhi_METJ12->Fill(met, df12);
+ }
 
  void Write() {
 
@@ -652,6 +621,10 @@ public:
     MET_dPhi2->Write();
     MET_dPhi3->Write();
     MET_dPhi4->Write();
+
+    MET_muPt->Write();
+    dPhi_METJ1->Write();
+    dPhi_METJ12->Write();
  }
 
   TH2F *hemfMET;
@@ -669,6 +642,10 @@ public:
   TH2F *MET_dPhi2;
   TH2F *MET_dPhi3;
   TH2F *MET_dPhi4;
+
+  TH2F *MET_muPt;
+  TH2F *dPhi_METJ1;
+  TH2F *dPhi_METJ12;
 
  TString name;
 
@@ -728,6 +705,9 @@ public:
 
     allMu_isoMu = new TH2F("allMu_isoMu", " N of muons vs N IsoMuon in a event ", 21, -0.5, 20.5 , 21, -0.5, 20.5);
 
+    glb_trk_Pt = new TH2F("glb_trk_Pt"," global Pt vs tracker Pt ", 200,0.,200., 200, 0., 200. );
+    dPt_eta    = new TH2F("dPt_eta", " eta vs Glb Pt -trk Pt ", 61, -3.05,3.05 , 201, -1.005, 1.005 );
+
  } 
 
  HTOP3(TString name_, TFile* file) {
@@ -775,6 +755,9 @@ public:
     hJMu_caloE_jE = (TH2F *) file->Get("hJMu_caloE_jE");
 
     allMu_isoMu = (TH2F *) file->Get("allMu_isoMu");
+
+    glb_trk_Pt = (TH2F *) file->Get("glb_trk_Pt");
+    dPt_eta    = (TH2F *) file->Get("dPt_eta");
  }
 
  /// Destructor
@@ -822,6 +805,8 @@ public:
     delete hJMu_caloE_jE;
 
     delete allMu_isoMu;
+    delete glb_trk_Pt;
+    delete dPt_eta;
  }
 
  void Fill3a(double Pt,double Eta ){
@@ -893,7 +878,10 @@ public:
     hJMu_caloE->Fill(jetMuE, mu_p);
     hJMu_caloE_jE->Fill(jetMuE, jet_E);
  }
- 
+ void Fill3l(double glbPt, double trkPt, double dPt, double eta ) {
+    glb_trk_Pt->Fill(glbPt, trkPt);
+    dPt_eta->Fill( eta, dPt);
+ }
 
  void Write() {
 
@@ -938,6 +926,8 @@ public:
     hJMu_caloE_jE->Write();
 
     allMu_isoMu->Write();
+    glb_trk_Pt->Write();
+    dPt_eta->Write();
  }
 
   TH1F *hPt;
@@ -981,6 +971,9 @@ public:
   TH2F *hJMu_caloE_jE;
 
   TH2F *allMu_isoMu;
+
+  TH2F *glb_trk_Pt;
+  TH2F *dPt_eta;
 
  TString name;
 
@@ -1345,57 +1338,88 @@ public:
     TString N1 = name_.c_str();
     name=N1;
 
-    hNJets = new TH1F("hNJets"," # of selected W jets ",65,-0.5,64.5);
-    hWp_mass = new TH2F("hWp_mass"," W mass vs W momentum from selected reco jets", 500,0.,500.,240,30.,150.);
-    hdRWjj   = new TH1F("hdRWjj","dR for 2 W matched jets ",200, 0.,5. );  
-    hRes_dR  = new TH1F("hRes_dR","Resolutio  of dR of 2 W matched jets ",400, -2., 2. );  
+    dRb_dRw_lep = new TH2F("dRb_dRw_lep","leptonic T dR(mcB, recoB), dR(mcW, recoW) ", 200,-0.025,9.975, 200, -0.025, 9.975 );
+    dRb_dRw_had = new TH2F("dRb_dRw_had","hadronic T dR(mcB, recoB), dR(mcW, recoW) ", 200,-0.025,9.975, 200, -0.025, 9.975 );
+    dRtt        = new TH2F("dRtt"," dR(rec, mc)_lep, dR(rec, mc)_had", 200, -0.025, 9.975, 200, -0.025, 9.975 );
+
+    dRbw_had = new TH2F("dRbw_had","hadronic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
+    dRbw_lep = new TH2F("dRbw_lep","leptonic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
+
+    dR_lepW    = new TH1F("dR_lepW"," dR(reco - gen) ",200,0.,10.);
+    PtRes_lepW = new TH1F("PtRes_lepW"," Pt Res ",200,-1.005,0.995);
+    MRes_lepW  = new TH1F("MRes_lepW"," Mass Res ",200,-1.005,0.995);
 
  } 
 
  HTOP6(TString name_, TFile* file) {
     name=name_;
 
-    hNJets = (TH1F *) file->Get("hNJets");
-    hWp_mass   = (TH2F *) file->Get("hWp_mass");
-    hdRWjj  = (TH1F *) file->Get("hdRWjj");
-    hRes_dR = (TH1F *) file->Get("hRes_dR");
+    dRb_dRw_lep= (TH2F *) file->Get("dRb_dRw_lep");
+    dRb_dRw_had= (TH2F *) file->Get("dRb_dRw_had");
+    dRbw_had   = (TH2F *) file->Get("dRbw_had");
+    dRbw_lep   = (TH2F *) file->Get("dRbw_lep");
+    dRtt       = (TH2F *) file->Get("dRtt");
+
+    dR_lepW    = (TH1F *) file->Get("dR_lepW");
+    PtRes_lepW = (TH1F *) file->Get("PtRes_lepW");
+    MRes_lepW  = (TH1F *) file->Get("MRes_lepW");
 
  }
 
  /// Destructor
  virtual ~HTOP6() {
 
-    delete hNJets;
-    delete hWp_mass;
-    delete hdRWjj;
-    delete hRes_dR;
+    delete dRb_dRw_lep;
+    delete dRb_dRw_had;
+    delete dRbw_had;
+    delete dRbw_lep;
+    delete dRtt;
+
+    delete dR_lepW;
+    delete PtRes_lepW;
+    delete MRes_lepW;
 
  }
 
- void Fill6b( double wmass, double wp, double dRWjj, double Res_dR ){
-    hWp_mass->Fill(wp,wmass);
-    hdRWjj->Fill(dRWjj);
-    hRes_dR->Fill(Res_dR);
+ void Fill6a( double dRt0, double dRbj0, double dRw0, double dRt1, double dRbj1, double dRw1 ) {
+    dRb_dRw_lep->Fill( dRbj0, dRw0);
+    dRb_dRw_had->Fill( dRbj1, dRw1);
+    dRtt->Fill(dRt0,dRt1);
+ }
+ void Fill6b( double dRbw_mcl, double dRbw_rcl, double dRbw_mch, double dRbw_rch ){
+    dRbw_had->Fill( dRbw_mch, dRbw_rch );
+    dRbw_lep->Fill( dRbw_mcl, dRbw_rcl );
+ } 
+ void Fill6d( double dR, double PtRes, double MRes ) {
+    dR_lepW->Fill(dR);
+    PtRes_lepW->Fill(PtRes);
+    MRes_lepW->Fill(MRes);
  }
 
- void Fill6c( int njets){
-    hNJets->Fill(njets);
- }
 
  void Write() {
 
-    hNJets->Write();
-    hWp_mass->Write();
-    hdRWjj->Write();
-    hRes_dR->Write();
+    dRb_dRw_lep->Write();
+    dRb_dRw_had->Write();
+    dRbw_had->Write();
+    dRbw_lep->Write();
+    dRtt->Write();
 
+    dR_lepW->Write();
+    PtRes_lepW->Write();
+    MRes_lepW->Write();
+  
  }
 
-  TH1F *hNJets;
-  TH2F *hWp_mass;
-  TH1F *hdRWjj;
-  TH1F *hRes_dR;
+  TH2F *dRb_dRw_lep;
+  TH2F *dRb_dRw_had;
+  TH2F *dRbw_had;
+  TH2F *dRbw_lep;
+  TH2F *dRtt;
 
+  TH1F *dR_lepW;
+  TH1F *PtRes_lepW;
+  TH1F *MRes_lepW;
 
  TString name;
 
@@ -1409,7 +1433,7 @@ public:
     name=N1;
 
     hRes_Pt   = new TH1F("hRes_Pt","Resolutio  of b jet pt ",400, -2., 2. ); 
-    hdRbMu    = new TH1F("hdRbMu","dR for b and  iso muon ",300, 0.,15. );  
+    dR_RelPt_bmu = new TH2F("dR_RelPt_bmu","dRmin vs RelPt for b and  iso muon ",200, 0.,5., 100, 0.,200. );  
     hdRbWj    = new TH1F("hdRbWj","dR for b and  W matched jets ",300, 0.,15. );  
     hbDis_bCand  = new TH2F("hbDis_bCand","bCandidates jets JProb(x),TkCount(y)", 150,-0.1,1.4, 500,-20.,80.);
     hbDis_all   = new TH2F("hbDis_all","all jets bDis JProb(x),TkCount(y) ",150,-0.1,1.4, 500,-20.,80.);
@@ -1425,26 +1449,23 @@ public:
     hEovH_h_mc = new TH2F("hEovH_h_mc"," E/H vs eta of a bjet", 61, -3.05, 3.05, 500, -2., 23.);
     hPt_Eta_mc = new TH2F("hPt_Eta_mc", " eta vs pt (bjets)", 500, 0.,250, 71, -3.55, 3.55);
 
-    hPt_Eta_NoCalo = new TH2F("hPt_Eta_NoCalo", " not-caloJet, pt vs eta (b jets)", 500, 0., 250, 71, -3.55, 3.55);
-    hRes_Pt_NoCalo = new TH1F("hRes_Pt_NoCalo", " not-caloJet, Pt(jet) - Pt(q) / Pt(q)   ",400,-2.,2.);
-
     gbJpt_h   = new TH2F("gbJpt_h"," gen b jet pt vs eta", 500,0,250, 71,-3.55,3.55);
     gEovH     = new TH1F("gEovH"," E/H for gen Jets", 500, -2., 23.);
 
     // parton level
-    hEta1a  = new TH1F("hEta1a"," eta distribution for bjet of semi Tt(parton) ",71,-3.55,3.55);
-    hEta1b  = new TH1F("hEta1b"," eta distribution for bjet of semi Tt(mcMatched)",71,-3.55,3.55);
-    hEta1c  = new TH1F("hEta1c"," eta distribution for bjet of semi Tt(recoUsed)",71,-3.55,3.55);
     hPt1a   = new TH1F("hPt1a", " Pt distribution  for b of semi Tt(parton)",30,0,300 );
     hPt1b   = new TH2F("hPt1b", " Pt vs Pt_Resolution for b of semi Tt(mcMatched)",30,0,300, 31,-1.55,1.55 );
     hPt1c   = new TH2F("hPt1c", " Pt vs Pt_Resolution for b of semi Tt(recoUsed)",30,0,300, 31,-1.55,1.55 );
+    // 
+    dR_RelPtg = new TH2F("dR_RelPtg","dR vs RelPt for b and mu - gen ",200, 0.,5., 500, 0.,50. );  
+    dR_RelPtr = new TH2F("dR_RelPtr","dR vs RelPt for b and mu - reco after matching ",200, 0.,5., 500, 0.,50. );  
  } 
 
  HTOP7(TString name_, TFile* file) {
     name=name_;
 
     hRes_Pt = (TH1F *) file->Get("hRes_Pt");
-    hdRbMu = (TH1F *) file->Get("hdRbMu");
+    dR_RelPt_bmu = (TH2F *) file->Get("dR_RelPt_bmu");
     hdRbWj = (TH1F *) file->Get("hdRbWj");
     hbDis_bCand =(TH2F *) file->Get("hbDis_bCand");
     hbDis_all   =(TH2F *) file->Get("hbDis_all");
@@ -1460,25 +1481,23 @@ public:
     hEovH_h_mc  = (TH2F *) file->Get("hEovH_h_mc");
     hPt_Eta_mc  = (TH2F *) file->Get("hPt_Eta_mc");
 
-    hPt_Eta_NoCalo = (TH2F *) file->Get("hPt_Eta_NoCalo");
-    hRes_Pt_NoCalo = (TH1F *) file->Get("hRes_Pt_NoCalo");
-
     gbJpt_h = (TH2F *) file->Get("gbJpt_h");
     gEovH   = (TH1F *) file->Get("gEovH");
 
-    hEta1a = (TH1F *) file->Get("hEta1a");
-    hEta1b = (TH1F *) file->Get("hEta1b");
-    hEta1c = (TH1F *) file->Get("hEta1c");
     hPt1a  = (TH1F *) file->Get("hPt1a");
     hPt1b  = (TH2F *) file->Get("hPt1b");
     hPt1c  = (TH2F *) file->Get("hPt1c");
+
+    dR_RelPtg = (TH2F *) file->Get("dR_RelPtg");
+    dR_RelPtr = (TH2F *) file->Get("dR_RelPtr");
+
  }
 
  /// Destructor
  virtual ~HTOP7() {
 
     delete hRes_Pt;
-    delete hdRbMu;
+    delete dR_RelPt_bmu;
     delete hdRbWj;
     delete hbDis_bCand;
     delete hbDis_all;
@@ -1494,18 +1513,15 @@ public:
     delete hemE;
     delete hPt_Eta_mc;
 
-    delete hPt_Eta_NoCalo;
-    delete hRes_Pt_NoCalo;
-
     delete gbJpt_h;
     delete gEovH;
 
-    delete hEta1a;
-    delete hEta1b;
-    delete hEta1c;
     delete hPt1a;
     delete hPt1b;
     delete hPt1c;
+
+    delete dR_RelPtg;
+    delete dR_RelPtr;
  }
 
  void Fill7a(double pt, double eta, double EovH, int nCon, int n60, int n90, double area, size_t nTrk, double emE, double Res_pt, double bDisJProb, double bDisTkCount ){
@@ -1524,8 +1540,8 @@ public:
     hRes_Pt->Fill(Res_pt);
     hbDis_bCand->Fill(bDisJProb,bDisTkCount );
  }
- void Fill7b( double dR_bmu ){
-    hdRbMu->Fill(dR_bmu);
+ void Fill7b( double dR_bmu , double RelPt ){
+    dR_RelPt_bmu->Fill(dR_bmu, RelPt);
  }
  void Fill7c( double dR_bwj ){
     hdRbWj->Fill(dR_bwj);
@@ -1534,32 +1550,30 @@ public:
     hbDis_all->Fill(bDisJProb,bDisTkCount );
  }
 
- void Fill7e( double pt, double eta, double Res_Pt) { 
-    hPt_Eta_NoCalo->Fill(pt,eta);
-    hRes_Pt_NoCalo->Fill(Res_Pt);
+ void Fill7e( double dR, double RelPt, double gdR, double gRelPt) {
+    dR_RelPtr->Fill(dR, RelPt);
+    dR_RelPtg->Fill(gdR, gRelPt);
  }
+
  void Fill7f( double pt, double eta, double EovH) {
     gbJpt_h->Fill(pt, eta);
     gEovH->Fill(EovH);
  }
 
- void Fill7g(double eta, double pt ) {
-    hEta1a->Fill(eta);
+ void Fill7g( double pt ) {
     hPt1a->Fill(pt);
  }
- void Fill7h(double eta, double pt, double ptRes) {
-    hEta1b->Fill(eta);
+ void Fill7h( double pt, double ptRes) {
     hPt1b->Fill(pt, ptRes);
  }
- void Fill7i(double eta, double pt, double ptRes) {
-    hEta1c->Fill(eta);
+ void Fill7i( double pt, double ptRes) {
     hPt1c->Fill(pt, ptRes);
  }
 
  void Write() {
 
     hRes_Pt->Write();
-    hdRbMu->Write();
+    dR_RelPt_bmu->Write();
     hdRbWj->Write();
     hbDis_bCand->Write();
     hbDis_all->Write();
@@ -1575,23 +1589,19 @@ public:
     hEovH_h_mc->Write();
     hPt_Eta_mc->Write();
 
-    hPt_Eta_NoCalo->Write();
-    hRes_Pt_NoCalo->Write();
-
     gbJpt_h->Write();
     gEovH->Write();
 
-    hEta1a->Write();
-    hEta1b->Write();
-    hEta1c->Write();
     hPt1a->Write();
     hPt1b->Write();
     hPt1c->Write();
   
+    dR_RelPtg->Write();
+    dR_RelPtr->Write();
  }
 
   TH1F *hRes_Pt;
-  TH1F *hdRbMu;
+  TH2F *dR_RelPt_bmu;
   TH1F *hdRbWj;
   TH2F *hbDis_bCand;
   TH2F *hbDis_all;
@@ -1607,19 +1617,15 @@ public:
   TH2F *hEovH_h_mc;
   TH2F *hPt_Eta_mc;
 
-  TH2F *hPt_Eta_NoCalo;
-  TH1F *hRes_Pt_NoCalo;
-
   TH2F *gbJpt_h;
   TH1F *gEovH;
 
-  TH1F *hEta1a;
-  TH1F *hEta1b;
-  TH1F *hEta1c;
   TH1F *hPt1a;
   TH2F *hPt1b;
   TH2F *hPt1c;
 
+  TH2F *dR_RelPtg;
+  TH2F *dR_RelPtr;
  TString name;
 
 };
@@ -1633,19 +1639,13 @@ public:
 
     hEta_Pt1 = new TH2F("hEta_Pt1", " eta vs pt (selected W jets)", 59, -2.95, 2.95, 500, 0., 500 );
     hEta_Pt2 = new TH2F("hEta_Pt2", " eta vs pt (selected W jets)", 59, -2.95, 2.95, 500, 0., 500 );
-    hNJets = new TH1F("hNJets"," # of selected W jets ",65,-0.5,64.5);
+    hNJets   = new TH1F("hNJets"," # of selected W jets ",65,-0.5,64.5);
     hWp_mass = new TH2F("hWp_mass"," W mass vs W momentum from selected reco jets", 500,0.,500.,240,30.,150.);
 
-    hPt_Eta_mc = new TH2F("hPt_Eta_mc", " eta vs pt (W jets)", 500, 0., 250, 71, -3.55, 3.55);
-
     hRes_Pt    = new TH1F("hRes_Pt", " Pt(jet) - Pt(q) / Pt(q)   ",400,-2.,2.);
-    hRes_Eta   = new TH1F("hRes_Eta"," Eta(jet) - Eta(q) / Eta(q)",500,-5.,5.);
 
     hdRWjMu = new TH1F("hdRWjMu","dR for isoMuon and W matched jets ",200, -0.025,9.975 );  
     hdRWjj  = new TH2F("hdRWjj" ,"dR(Wq1, Wq2) , dR ( matched Wj1 , Wj2)  " ,200, -0.025,9.975 ,200, -0.025,9.975 );  
-
-    hPt_Eta_NoCalo = new TH2F("hPt_Eta_NoCalo", " not-caloJet, eta vs pt (W jets)", 500, 0., 500, 59, -2.95, 2.95);
-    hRes_Pt_NoCalo = new TH1F("hRes_Pt_NoCalo", " not-caloJet, Pt(jet) - Pt(q) / Pt(q)   ",400,-2.,2.);
 
     hbDis_WCand  = new TH2F("hbDis_WCand","bCandidates jets JProb(x),TkCount(y)", 150,-0.1,1.4, 500,-20.,80.);
 
@@ -1653,9 +1653,6 @@ public:
     gEovH    = new TH1F("gEovH"," E/H for gen Jets", 500, -2., 23.);
 
     // parton level
-    hEta1a  = new TH1F("hEta1a"," eta distribution for Wjet of semi Tt(parton) ",71,-3.55,3.55);
-    hEta1b  = new TH1F("hEta1b"," eta distribution for Wjet of semi Tt(mcMatched)",71,-3.55,3.55);
-    hEta1c  = new TH1F("hEta1c"," eta distribution for Wjet of semi Tt(recoUsed)",71,-3.55,3.55);
     hPt1a   = new TH1F("hPt1a", "Pt distribution for Wjets of semi Tt(parton)",30,0,300 );
     hPt1b   = new TH2F("hPt1b", "Pt vs Pt_Resolution for Wjets of semi Tt(mcMatched)",30,0,300, 31,-1.55,1.55);
     hPt1c   = new TH2F("hPt1c", "Pt vs Pt_Resolution for Wjets of semi Tt(recoUsed)",30,0,300, 31,-1.55,1.55);
@@ -1669,25 +1666,16 @@ public:
     hNJets = (TH1F *) file->Get("hNJets");
     hWp_mass   = (TH2F *) file->Get("hWp_mass");
 
-    hPt_Eta_mc  = (TH2F *) file->Get("hPt_Eta_mc");
-
     hRes_Pt     = (TH1F *) file->Get("hRes_Pt");
-    hRes_Eta    = (TH1F *) file->Get("hRes_Eta");
 
     hdRWjMu = (TH1F *) file->Get("hdRWjMu");
     hdRWjj  = (TH2F *) file->Get("hdRWjj");
-
-    hPt_Eta_NoCalo = (TH2F *) file->Get("hPt_Eta_NoCalo");
-    hRes_Pt_NoCalo = (TH1F *) file->Get("hRes_Pt_NoCalo");
 
     hbDis_WCand =(TH2F *) file->Get("hbDis_WCand");
 
     gwJpt_h = (TH2F *) file->Get("gwJpt_h");
     gEovH   = (TH1F *) file->Get("gEovH");
 
-    hEta1a = (TH1F *) file->Get("hEta1a");
-    hEta1b = (TH1F *) file->Get("hEta1b");
-    hEta1c = (TH1F *) file->Get("hEta1c");
     hPt1a  = (TH1F *) file->Get("hPt1a");
     hPt1b  = (TH2F *) file->Get("hPt1b");
     hPt1c  = (TH2F *) file->Get("hPt1c");
@@ -1701,24 +1689,15 @@ public:
     delete hNJets;
     delete hWp_mass;
 
-    delete hPt_Eta_mc;
-
     delete hRes_Pt;
-    delete hRes_Eta;
     delete hdRWjMu;
     delete hdRWjj;
-
-    delete hPt_Eta_NoCalo;
-    delete hRes_Pt_NoCalo;
 
     delete hbDis_WCand;
 
     delete gwJpt_h;
     delete gEovH;
 
-    delete hEta1a;
-    delete hEta1b;
-    delete hEta1c;
     delete hPt1a;
     delete hPt1b;
     delete hPt1c;
@@ -1734,12 +1713,8 @@ public:
     hWp_mass->Fill(wp,wmass);
  }
 
- void Fill8c( double pt, double eta, double Res_Pt, double Res_Eta , double bDisJProb, double bDisTkCount ){
-
-    hPt_Eta_mc->Fill(pt,eta);
+ void Fill8c( double Res_Pt,  double bDisJProb, double bDisTkCount ){
     hRes_Pt->Fill(Res_Pt);
-    hRes_Eta->Fill(Res_Eta);
-
     hbDis_WCand->Fill(bDisJProb,bDisTkCount );
  }
 
@@ -1747,25 +1722,18 @@ public:
     hdRWjMu->Fill(dR_WjMu);
  }
 
- void Fill8e( double pt, double eta, double Res_Pt) { 
-    hPt_Eta_NoCalo->Fill(pt,eta);
-    hRes_Pt_NoCalo->Fill(Res_Pt);
- }
  void Fill8f( double pt, double eta, double EovH) {
     gwJpt_h->Fill(pt, eta);
     gEovH->Fill(EovH);
  }
 
- void Fill8g(double eta, double pt ) {
-    hEta1a->Fill(eta);
+ void Fill8g( double pt ) {
     hPt1a->Fill(pt );
  }
- void Fill8h(double eta, double pt, double ptRes) {
-    hEta1b->Fill(eta);
+ void Fill8h( double pt, double ptRes) {
     hPt1b->Fill(pt, ptRes);
  }
- void Fill8i(double eta, double pt, double ptRes) {
-    hEta1c->Fill(eta);
+ void Fill8i( double pt, double ptRes) {
     hPt1c->Fill(pt, ptRes);
  }
  void Fill8j( double dRjj, double dRqq ) {
@@ -1778,24 +1746,15 @@ public:
     hNJets->Write();
     hWp_mass->Write();
 
-    hPt_Eta_mc->Write();
-
     hRes_Pt->Write();
-    hRes_Eta->Write();
     hdRWjMu->Write();
     hdRWjj->Write();
-
-    hPt_Eta_NoCalo->Write();
-    hRes_Pt_NoCalo->Write();
 
     hbDis_WCand->Write();
 
     gwJpt_h->Write();
     gEovH->Write();
 
-    hEta1a->Write();
-    hEta1b->Write();
-    hEta1c->Write();
     hPt1a->Write();
     hPt1b->Write();
     hPt1c->Write();
@@ -1806,23 +1765,14 @@ public:
   TH1F *hNJets;
   TH2F *hWp_mass;
 
-  TH2F *hPt_Eta_mc;
-
   TH1F *hRes_Pt;
-  TH1F *hRes_Eta;
   TH1F *hdRWjMu;
   TH2F *hdRWjj;
-
-  TH2F *hPt_Eta_NoCalo;
-  TH1F *hRes_Pt_NoCalo;
 
   TH2F *hbDis_WCand;
   TH2F *gwJpt_h;
   TH1F *gEovH;
 
-  TH1F *hEta1a;
-  TH1F *hEta1b;
-  TH1F *hEta1c;
   TH1F *hPt1a;
   TH2F *hPt1b;
   TH2F *hPt1c;
@@ -1862,11 +1812,23 @@ public:
     WRecott3   = new TH2F("WRecott3","W vs Mt1+Mt2 of Reco top mass w/ 6j", 500,0,1000, 400,0,800);
     WRecott4   = new TH2F("WRecott4","W vs Mt1+Mt2of Reco top mass w/ >= 7j", 500,0,1000, 400,0,800);
 
-    hMClepW   = new TH1F("hMClepW",  " mt of leptonic W ",320,0,160.);
-    hRecolepW = new TH1F("hRecolepW"," mt of leptonic W ",320,0,160.);
-    hMChadW   = new TH1F("hMChadW","MC Hadronic W",320,0,160.);
-    hRecohadW = new TH1F("hRecohadW","Reco Hadronic W ",320,0,160.);
-    hEvtEff   = new TH1F("hEvtEff"," event pre-selection Eff", 10,-1.25,3.75 );
+    MClepW   = new TH1F("MClepW",  " mt of leptonic W w/ highest Pt"   ,320,0,160.);
+    MChadW   = new TH1F("MChadW",  " MC hadronic W  w/ closest w mass"  ,320,0,160.);
+    RecolepW = new TH1F("RecolepW"," mt of leptonic W w/ highest Pt"    ,320,0,160.);
+    RecohadW = new TH1F("RecohadW"," Reco hadronic W w/ closest w mass" ,320,0,160.);
+    allMClepW   = new TH1F("allMClepW",  " all mt of leptonic W ",320,0,160.);
+    allMChadW   = new TH1F("allMChadW",  " all MC hadronic W "   ,320,0,160.);
+    allRecolepW = new TH1F("allRecolepW"," all mt of leptonic W ",320,0,160.);
+    allRecohadW = new TH1F("allRecohadW"," all Reco hadronic W " ,320,0,160.);
+
+    selMCW   = new TH2F("selMCW",  " MC  : mt of chosen lepW , hadW ",320,0,160.,320,0,160.);
+    selRecoW = new TH2F("selRecoW"," Reco: mt of chosen lepW , hadW ",320,0,160.,320,0,160.);
+    lRelPtMC  = new TH2F("lRelPtMC", " MC  : RelPt of W w.r.t LepTop ",32,-0.06,1.22,320,0,160.);
+    hRelPtMC  = new TH2F("hRelPtMC", " MC  : RelPt of W w.r.t HadTop ",32,-0.06,1.22,320,0,160.);
+    lRelPtRC  = new TH2F("lRelPtRC", " Reco: RelPt of W w.r.t LepTop ",32,-0.06,1.22,320,0,160.);
+    hRelPtRC  = new TH2F("hRelPtRC", " Reco: RelPt of W w.r.t HadTop ",32,-0.06,1.22,320,0,160.);
+
+    hEvtEff   = new TH1F("hEvtEff","(pass,fail)=> had(0,0.5) Mu(1,1.5) dilep(2,2.5) Ele(3,3.5), Tau(4,4.5), other(5,5.5)", 12,-0.25,5.75 );
     hObjEff   = new TH1F("hObjEff"," object selection Eff", 10, -0.5,9.5 );
     hbJetEff   = new TH2F("hbJetEff"," # of correctly matched bjet ", 4,-0.5,3.5, 120,-3.5,116.5 );
     hWJetEff   = new TH2F("hWJetEff"," # of correctly matched Wjet ", 4,-0.5,3.5, 120,-3.5,116.5 );
@@ -1874,26 +1836,15 @@ public:
     hHLTBits   = new TH2F("hHLTBits","HLT Trigger bits(names) for hadronic tt", 166, -0.5, 165.5, 6,-0.5,5.5 );
     hHLTSelect = new TH1F("hHLTSelect","HLT Trigger Selected result "  , 15, -7.5, 7.5 );
 
-    dR_lepW    = new TH1F("dR_lepW"," dR(reco - gen) ",200,0.,10.);
-    PtRes_lepW = new TH1F("PtRes_lepW"," Pt Res ",200,-1.005,0.995);
-    MRes_lepW  = new TH1F("MRes_lepW"," Mass Res ",200,-1.005,0.995);
+    lepRCTMass = new TH1F("lepRCTMass",  " mass of Reco leptonic T w/ highest Pt " ,200,0,400.);
+    lepMCTMass = new TH1F("lepMCTMass",  " mass of MC   leptonic T w/ highest Pt " ,200,0,400.);
+    hadRCTMass = new TH1F("hadRCTMass",  " mass of Reco hadronic T w/ highest Pt " ,200,0,400.);
+    hadMCTMass = new TH1F("hadMCTMass",  " mass of MCi  hadronic T w/ highest Pt " ,200,0,400.);
 
-    lMCdR_bjet0 = new TH2F("lMCdR_bjet0","leptonic T dM(mcTop, recoTop), dR( mcBjet, recoBjet )", 400,-100., 100, 200, -0.025, 9.975 );
-    lMCdR_bjet1 = new TH2F("lMCdR_bjet1","leptonic T dR(mcTop, recoTop), dR( mcBjet, recoBjet )", 200,-0.025,9.975, 200, -0.025, 9.975 );
-    hMCdR_bjet0 = new TH2F("hMCdR_bjet0","hadronic T dM(mcTop, recoTop), dR( mcBjet, recoBjet )", 400,-100., 100, 200, -0.025, 9.975 );
-    hMCdR_bjet1 = new TH2F("hMCdR_bjet1","hadronic T dR(mcTop, recoTop), dR( mcBjet, recoBjet )", 200,-0.025,9.975,200,-0.025, 9.975 );
-    dRWjj_rc    = new TH1F("dRWjj_rc","hadronic Top, dR( wj1, wj2 )", 200, -0.025, 9.975 );
-
-    hMCdR_W0 = new TH2F("hMCdR_W0","hadronic T dM(mcTop, recoTop), dR( mcW, recoW )", 400,-100.,100, 200, -0.025, 9.975 );
-    hMCdR_W1 = new TH2F("hMCdR_W1","hadronic T dR(mcTop, recoTop), dR( mcW, recoW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
-    dRbw_had = new TH2F("dRbw_had","hadronic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
-    dRbw_lep = new TH2F("dRbw_lep","leptonic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
-    dRbb     = new TH2F("dRbb"," dR(lepb, hadb)_mc, dR(lepb, hadb)_rc", 200, -0.025, 9.975, 200, -0.025, 9.975 );
-
-    lepRCTMass = new TH1F("lepRCTMass",  " mass of Reco leptonic T ",200,0,400.);
-    lepMCTMass = new TH1F("lepMCTMass",  " mass of MC   leptonic T ",200,0,400.);
-    hadRCTMass = new TH1F("hadRCTMass",  " mass of Reco hadronic T ",200,0,400.);
-    hadMCTMass = new TH1F("hadMCTMass",  " mass of MCi  hadronic T ",200,0,400.);
+    alepRCTMass = new TH1F("alepRCTMass",  " mass of all Reco leptonic T " ,200,0,400.);
+    alepMCTMass = new TH1F("alepMCTMass",  " mass of all MC   leptonic T " ,200,0,400.);
+    ahadRCTMass = new TH1F("ahadRCTMass",  " mass of all Reco hadronic T " ,200,0,400.);
+    ahadMCTMass = new TH1F("ahadMCTMass",  " mass of all MC   hadronic T " ,200,0,400.);
 
  } 
 
@@ -1920,10 +1871,21 @@ public:
     WRecott3   = (TH2F *) file->Get("WRecott3");
     WRecott4   = (TH2F *) file->Get("WRecott4");
 
-    hMClepW    = (TH1F *) file->Get("hMClepW");
-    hRecolepW  = (TH1F *) file->Get("hRecolepW");
-    hMChadW    = (TH1F *) file->Get("hMChadW");
-    hRecohadW  = (TH1F *) file->Get("hRecohadW");
+    MClepW    = (TH1F *) file->Get("MClepW");
+    MChadW    = (TH1F *) file->Get("MChadW");
+    RecolepW  = (TH1F *) file->Get("RecolepW");
+    RecohadW  = (TH1F *) file->Get("RecohadW");
+    allMClepW    = (TH1F *) file->Get("allMClepW");
+    allMChadW    = (TH1F *) file->Get("allMChadW");
+    allRecolepW  = (TH1F *) file->Get("allRecolepW");
+    allRecohadW  = (TH1F *) file->Get("allRecohadW");
+    selMCW    = (TH2F *) file->Get("selMCW");
+    selRecoW  = (TH2F *) file->Get("selRecoW");
+    lRelPtMC   = (TH2F *) file->Get("lRelPtMC");
+    hRelPtMC   = (TH2F *) file->Get("hRelPtMC");
+    lRelPtRC   = (TH2F *) file->Get("lRelPtRC");
+    hRelPtRC   = (TH2F *) file->Get("hRelPtRC");
+
     hEvtEff    = (TH1F *) file->Get("hEvtEff");
     hObjEff    = (TH1F *) file->Get("hObjEff");
     hbJetEff   = (TH2F *) file->Get("hbJetEff");
@@ -1932,26 +1894,15 @@ public:
     hHLTBits   = (TH2F *) file->Get("hHLTBits");
     hHLTSelect = (TH1F *) file->Get("hHLTSelect");
 
-    dR_lepW    = (TH1F *) file->Get("dR_lepW");
-    PtRes_lepW = (TH1F *) file->Get("PtRes_lepW");
-    MRes_lepW  = (TH1F *) file->Get("MRes_lepW");
-
-    lMCdR_bjet0= (TH2F *) file->Get("lMCdR_bjet0");
-    lMCdR_bjet1= (TH2F *) file->Get("lMCdR_bjet1");
-    hMCdR_bjet0= (TH2F *) file->Get("hMCdR_bjet0");
-    hMCdR_bjet1= (TH2F *) file->Get("hMCdR_bjet1");
-    hMCdR_W0   = (TH2F *) file->Get("hMCdR_W0");
-    hMCdR_W1   = (TH2F *) file->Get("hMCdR_W1");
-    dRbw_had   = (TH2F *) file->Get("dRbw_had");
-    dRbw_lep   = (TH2F *) file->Get("dRbw_lep");
-    dRWjj_rc   = (TH1F *) file->Get("dRWjj_rc");
-    dRbb       = (TH2F *) file->Get("dRbb");
-
     lepRCTMass  = (TH1F *) file->Get("lepRCTMass");
     lepMCTMass  = (TH1F *) file->Get("lepMCTMass");
     hadRCTMass  = (TH1F *) file->Get("hadRCTMass");
     hadMCTMass  = (TH1F *) file->Get("hadMCTMass");
 
+    alepRCTMass  = (TH1F *) file->Get("alepRCTMass");
+    alepMCTMass  = (TH1F *) file->Get("alepMCTMass");
+    ahadRCTMass  = (TH1F *) file->Get("ahadRCTMass");
+    ahadMCTMass  = (TH1F *) file->Get("ahadMCTMass");
  }
 
  /// Destructor
@@ -1977,10 +1928,21 @@ public:
     delete WRecott3;
     delete WRecott4;
 
-    delete hMClepW;
-    delete hRecolepW;
-    delete hMChadW;
-    delete hRecohadW;
+    delete MClepW;
+    delete MChadW;
+    delete RecolepW;
+    delete RecohadW;
+    delete allMClepW;
+    delete allMChadW;
+    delete allRecolepW;
+    delete allRecohadW;
+    delete selMCW;
+    delete selRecoW;
+    delete lRelPtMC;
+    delete hRelPtMC;
+    delete lRelPtRC;
+    delete hRelPtRC;
+
     delete hEvtEff;
     delete hObjEff;
     delete hbJetEff;
@@ -1989,25 +1951,15 @@ public:
     delete hHLTBits;
     delete hHLTSelect;
    
-    delete dR_lepW;
-    delete PtRes_lepW;
-    delete MRes_lepW;
-
-    delete lMCdR_bjet0;
-    delete lMCdR_bjet1;
-    delete hMCdR_bjet0;
-    delete hMCdR_bjet1;
-    delete hMCdR_W0;
-    delete hMCdR_W1;
-    delete dRbw_had;
-    delete dRbw_lep;
-    delete dRWjj_rc;
-    delete dRbb;
-
     delete lepRCTMass;
     delete lepMCTMass;
     delete hadRCTMass;
     delete hadMCTMass;
+
+    delete alepRCTMass;
+    delete alepMCTMass;
+    delete ahadRCTMass;
+    delete ahadMCTMass;
  }
 
  void Fill9(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
@@ -2015,7 +1967,7 @@ public:
     PtMCtt->Fill( PtTt );
     WMCtt->Fill( Wtt, Wt2 );
  }
- void Fill9h(double lep_mt, double had_mt){
+ void Fill9g(double lep_mt, double had_mt){
     hMCtt1->Fill( lep_mt, had_mt );
  }
  void Fill9a0(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
@@ -2044,16 +1996,16 @@ public:
     WRecott4->Fill( Wtt, Wt2 );
  }
  void Fill9b(double mw) {
-    hMClepW->Fill(mw) ; 
+    MClepW->Fill(mw) ; 
  }
  void Fill9c(double mtw) {
-    hRecolepW->Fill(mtw) ; 
+    RecolepW->Fill(mtw) ; 
  }
  void Fill9d(double mw) {
-    hMChadW->Fill(mw) ; 
+    MChadW->Fill(mw) ; 
  }
  void Fill9e(double mw) {
-    hRecohadW->Fill(mw) ; 
+    RecohadW->Fill(mw) ; 
  }
  void Fill9f(float count ) {
     hEvtEff->Fill( count );
@@ -2066,33 +2018,37 @@ public:
     hWJetEff->Fill( nw , dm );
     hWLepEff->Fill( nl , dm );
  }
+
  void Fill9k( int hlt, int topo ) {
     hHLTBits->Fill( hlt, topo );
  }
  void Fill9l( int hlt ) {
     hHLTSelect->Fill( hlt );
  }
- void Fill9m( double dR, double PtRes, double MRes ) {
-    dR_lepW->Fill(dR);
-    PtRes_lepW->Fill(PtRes);
-    MRes_lepW->Fill(MRes);
+ void Fill9m( double wmt, double wmass, double lRelPt, double hRelPt, double ltbeta, double htbeta ) {
+    selMCW->Fill(wmt, wmass);
+    lRelPtMC->Fill(ltbeta, lRelPt);
+    hRelPtMC->Fill(htbeta, hRelPt);
  }
- void Fill9n( double dm0, double dRt0, double dRbj0, double dm1, double dRt1, double dRbj1 ) {
-    lMCdR_bjet0->Fill( dm0, dRbj0);
-    lMCdR_bjet1->Fill( dRt0, dRbj0);
-    hMCdR_bjet0->Fill( dm1, dRbj1);
-    hMCdR_bjet1->Fill( dRt1, dRbj1);
+ void Fill9n( double wmt, double wmass, double lRelPt, double hRelPt, double ltbeta, double htbeta ) {
+    selRecoW->Fill(wmt, wmass);
+    lRelPtRC->Fill(ltbeta, lRelPt);
+    hRelPtRC->Fill(htbeta, hRelPt);
  }
- void Fill9o( double dRw, double dRt, double dm, double dRwjj ){
-    hMCdR_W0->Fill( dm, dRw );
-    hMCdR_W1->Fill( dRt, dRw );
-    dRWjj_rc->Fill( dRwjj );
+
+ void Fill9p1(double mtw) {
+    allMClepW->Fill(mtw) ; 
  }
- void Fill9p( double dRbw_mcl, double dRbw_rcl, double dRbw_mch, double dRbw_rch, double dRbb_mc, double dRbb_rc ){
-    dRbw_had->Fill( dRbw_mch, dRbw_rch );
-    dRbw_lep->Fill( dRbw_mcl, dRbw_rcl );
-    dRbb->Fill( dRbb_mc, dRbb_rc );
- } 
+ void Fill9p2(double mtw) {
+    allRecolepW->Fill(mtw) ; 
+ }
+ void Fill9p3(double mw) {
+    allMChadW->Fill(mw) ; 
+ }
+ void Fill9p4(double mw) {
+    allRecohadW->Fill(mw) ; 
+ }
+
  void Fill9q1( double mass ){
      lepRCTMass->Fill(mass) ; 
  }
@@ -2104,6 +2060,19 @@ public:
  }
  void Fill9q4( double mass ){
      hadMCTMass->Fill(mass) ; 
+ }
+
+ void Fill9r1( double mass ){
+     alepRCTMass->Fill(mass) ; 
+ }
+ void Fill9r2( double mass ){
+     alepMCTMass->Fill(mass) ; 
+ }
+ void Fill9r3( double mass ){
+     ahadRCTMass->Fill(mass) ; 
+ }
+ void Fill9r4( double mass ){
+     ahadMCTMass->Fill(mass) ; 
  }
 
  void Write() {
@@ -2128,10 +2097,21 @@ public:
     WRecott3->Write();
     WRecott4->Write();
 
-    hMClepW->Write();
-    hMChadW->Write();
-    hRecolepW->Write();
-    hRecohadW->Write();
+    MClepW->Write();
+    MChadW->Write();
+    RecolepW->Write();
+    RecohadW->Write();
+    allMClepW->Write();
+    allMChadW->Write();
+    allRecolepW->Write();
+    allRecohadW->Write();
+    selMCW->Write();
+    selRecoW->Write();
+    lRelPtMC->Write();
+    hRelPtMC->Write();
+    lRelPtRC->Write();
+    hRelPtRC->Write();
+
     hEvtEff->Write();
     hObjEff->Write();
     hbJetEff->Write();
@@ -2140,26 +2120,15 @@ public:
     hHLTBits->Write();
     hHLTSelect->Write();
 
-    dR_lepW->Write();
-    PtRes_lepW->Write();
-    MRes_lepW->Write();
-  
-    lMCdR_bjet0->Write();
-    lMCdR_bjet1->Write();
-    hMCdR_bjet0->Write();
-    hMCdR_bjet1->Write();
-    hMCdR_W0->Write();
-    hMCdR_W1->Write();
-    dRbw_had->Write();
-    dRbw_lep->Write();
-    dRbb->Write();
-    dRWjj_rc->Write();
-  
     lepRCTMass->Write();
     lepMCTMass->Write();
     hadRCTMass->Write();
     hadMCTMass->Write();
 
+    alepRCTMass->Write();
+    alepMCTMass->Write();
+    ahadRCTMass->Write();
+    ahadMCTMass->Write();
  }
 
   TH2F *hMCtt;
@@ -2183,10 +2152,21 @@ public:
   TH2F *WRecott3;
   TH2F *WRecott4;
 
-  TH1F *hMClepW;
-  TH1F *hMChadW;
-  TH1F *hRecolepW;
-  TH1F *hRecohadW;
+  TH1F *MClepW;
+  TH1F *MChadW;
+  TH1F *RecolepW;
+  TH1F *RecohadW;
+  TH1F *allMClepW;
+  TH1F *allMChadW;
+  TH1F *allRecolepW;
+  TH1F *allRecohadW;
+  TH2F *selMCW;
+  TH2F *selRecoW;
+  TH2F *lRelPtMC;
+  TH2F *hRelPtMC;
+  TH2F *lRelPtRC;
+  TH2F *hRelPtRC;
+
   TH1F *hEvtEff; 
   TH1F *hObjEff; 
   TH2F *hbJetEff;
@@ -2195,29 +2175,18 @@ public:
   TH2F *hHLTBits;
   TH1F *hHLTSelect;
 
-  TH1F *dR_lepW;
-  TH1F *PtRes_lepW;
-  TH1F *MRes_lepW;
-
-  TH2F *lMCdR_bjet0;
-  TH2F *lMCdR_bjet1;
-  TH2F *hMCdR_bjet0;
-  TH2F *hMCdR_bjet1;
-  TH2F *hMCdR_W0;
-  TH2F *hMCdR_W1;
-  TH2F *dRbw_had;
-  TH2F *dRbw_lep;
-  TH2F *dRbb;
-  TH1F *dRWjj_rc;
-
   TH1F *lepRCTMass;
   TH1F *lepMCTMass;
   TH1F *hadRCTMass;
   TH1F *hadMCTMass;
 
+  TH1F *alepRCTMass;
+  TH1F *alepMCTMass;
+  TH1F *ahadRCTMass;
+  TH1F *ahadMCTMass;
+
  TString name;
 
 };
-
  
 #endif

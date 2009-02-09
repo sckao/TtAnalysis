@@ -63,6 +63,7 @@ TtMET::TtMET(const edm::ParameterSet& iConfig)
   genSrc          = iConfig.getParameter<edm::InputTag> ("genParticles"); 
 
   fromTtMuon      = new TtMuon();
+  tools           = new TtTools();
 }
 
 
@@ -72,6 +73,7 @@ TtMET::~TtMET()
    // (e.g. close files, deallocate resources etc.)
    //if (debug) cout << "[TtMET Analysis] Destructor called" << endl;
    delete fromTtMuon;
+   delete tools;
 }
 
 //
@@ -201,21 +203,29 @@ void TtMET::MetAndMuon(Handle<std::vector<pat::MET> > met, std::vector<const rec
 
      if ( met->size() >  0 && isoMu.size() > 0) {
 
-        LorentzVector v1 = (*met)[0].p4();
-        LorentzVector v2 = isoMu[0]->p4();
-        double ab   = (v1.Px()*v2.Px()) + (v1.Py()*v2.Py()) ;
-	double al   = sqrt( v1.Px()*v1.Px() +  v1.Py()*v1.Py() );
-	double bl   = sqrt( v2.Px()*v2.Px() +  v2.Py()*v2.Py() );
-	double cosA = ab/(al*bl) ;
-	double df   = acos(cosA) ;
+        double df = tools->getdPhi( (*met)[0].p4(), isoMu[0]->p4() );
 
-        if ( njets >= 0 ) histo2->Fill2c0( (*met)[0].et(), df );
-        if ( njets >= 1 ) histo2->Fill2c1( (*met)[0].et(), df );
-        if ( njets >= 2 ) histo2->Fill2c2( (*met)[0].et(), df );
-        if ( njets >= 3 ) histo2->Fill2c3( (*met)[0].et(), df );
-        if ( njets >= 4 ) histo2->Fill2c4( (*met)[0].et(), df );
+        if ( njets >= 4 ) histo2->Fill2c0( (*met)[0].et(), df );
+        if ( njets == 4 ) histo2->Fill2c1( (*met)[0].et(), df );
+        if ( njets == 5 ) histo2->Fill2c2( (*met)[0].et(), df );
+        if ( njets == 6 ) histo2->Fill2c3( (*met)[0].et(), df );
+        if ( njets >= 7 ) histo2->Fill2c4( (*met)[0].et(), df );
 
+        histo2->Fill2d( (*met)[0].et(), isoMu[0]->pt() );
+ 
      }
 
 }
 
+void TtMET::MetAndJets(Handle<std::vector<pat::MET> > met, std::vector<pat::Jet> theJets, HTOP2* histo2 ) {
+
+   if ( met->size() >  0 && theJets.size() > 1) {
+
+      LorentzVector J12 = theJets[0].p4() + theJets[1].p4();
+      double df1  = tools->getdPhi( (*met)[0].p4(), theJets[0].p4() );
+      double df12 = tools->getdPhi( (*met)[0].p4(), J12 );
+
+      histo2->Fill2e( (*met)[0].et(),  df1, df12 );
+
+   }
+}

@@ -65,13 +65,21 @@ void TtEfficiency::EventEfficiency( int topo , bool pass , HTOP9* histo9 ) {
     // hadronic channel
     if      (topo == 0 &&  pass) { histo9->Fill9f( 0.  ); }
     else if (topo == 0 && !pass) { histo9->Fill9f( 0.5 ); } 
-    // semi-leptonic channel
+    // semi-lepton muon channel
     else if (topo == 1 &&  pass) { histo9->Fill9f( 1.  ); }
     else if (topo == 1 && !pass) { histo9->Fill9f( 1.5 ); }
     // di-leptonic channel
     else if (topo == 2 &&  pass) { histo9->Fill9f( 2.  ); }
     else if (topo == 2 && !pass) { histo9->Fill9f( 2.5 ); }
-    else                         { histo9->Fill9f( -1. ); }
+    // semi-lepton electron channel
+    else if (topo == 3 &&  pass) { histo9->Fill9f( 3.  ); }
+    else if (topo == 3 && !pass) { histo9->Fill9f( 3.5 ); }
+    // semi-lepton tau channel
+    else if (topo == 4 &&  pass) { histo9->Fill9f( 4.  ); }
+    else if (topo == 4 && !pass) { histo9->Fill9f( 4.5 ); }
+    // others , most about tau
+    else if (topo == -1 && pass) { histo9->Fill9f( 5. ); }
+    else                         { histo9->Fill9f( 5.5 );}
 
 }
 

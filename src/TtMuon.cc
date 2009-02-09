@@ -129,6 +129,14 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
      if ( fabs(it->eta()) > 2.1 ) continue;
      if ( it->pt() < 20. ) continue;
 
+     bool global =  it->isGlobalMuon() ;
+     if ( !global ) continue;    
+
+     reco::TrackRef glbTrack = it->globalTrack();
+     reco::TrackRef inTrack = it->innerTrack();
+     double dPt = (glbTrack->pt()/inTrack->pt()) - 1  ;
+     // check the consistency of global pt and tracker pt
+     histo3->Fill3l( glbTrack->pt(), inTrack->pt(), dPt, it->eta() );
      isoMuons.push_back( &*it );
  }
  int muSize = static_cast<int>(  patMu->size() );
@@ -150,10 +158,28 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
 
      bool isolated = IsoMuonID( *it, 0.9 );    
 
-     if ( isolated && it->pt() > 20. && fabs(it->eta()) < 2.1) isoMuons.push_back( &*it );
+     if ( isolated && it->pt() > 20. && fabs(it->eta()) < 2.1 && it->isGlobalMuon() ) isoMuons.push_back( &*it );
+     //if ( isolated && it->pt() > 20. && fabs(it->eta()) < 2.1 ) isoMuons.push_back( &*it );
  }
  if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing );
  return isoMuons ;
+
+}
+
+std::vector<const reco::Candidate*> TtMuon::nonIsoMuonSelection( Handle<std::vector<pat::Muon> > patMu) {
+
+ //std::vector<pat::Muon> isoMuons;
+ std::vector<const reco::Candidate*> nonIsoMuons;
+ nonIsoMuons.clear();
+ for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
+
+     bool isolated = IsoMuonID( *it, 0.9 );    
+
+     //if ( isolated && it->pt() > 20. && fabs(it->eta()) < 2.1 && it->isGlobalMuon() ) isoMuons.push_back( &*it );
+     if ( !isolated &&  fabs(it->eta()) < 2.1 ) nonIsoMuons.push_back( &*it );
+ }
+ if ( nonIsoMuons.size() > 1 ) sort( nonIsoMuons.begin(), nonIsoMuons.end(), PtDecreasing );
+ return nonIsoMuons ;
 
 }
 
