@@ -1,8 +1,8 @@
 void TtPt() {
 
- TFile *file  = TFile::Open("ttj_fall08.root");
- TFile *file1 = TFile::Open("wjets_fall08.root");
- TFile *file2 = TFile::Open("qcd_fall08.root");
+ TFile *file  = TFile::Open("ttj_fall08_3j30.root");
+ TFile *file1 = TFile::Open("wjets_fall08_3j30.root");
+ TFile *file2 = TFile::Open("qcd_fall08_3j30.root");
  TString hfolder = "tt_fall08";
 
  TString plot1 = "SysPt.gif";

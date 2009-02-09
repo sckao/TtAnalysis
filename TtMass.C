@@ -1,8 +1,8 @@
 void TtMass( TString name1 ) {
 
- //TFile *file  = TFile::Open("ttj_1Jskim_NoBTag.root");
- //TFile *file1 = TFile::Open("wjets_1Jskim_NoBTag.root");
- //TFile *file2 = TFile::Open("qcd_1Jskim_NoBTag.root");
+ //TFile *file  = TFile::Open("ttj_fall08_3j30.root");
+ //TFile *file1 = TFile::Open("wjets_fall08_3j30.root");
+ //TFile *file2 = TFile::Open("qcd_fall08_3j30.root");
  TFile *file  = TFile::Open("ttj_fall08.root");
  TFile *file1 = TFile::Open("wjets_fall08.root");
  TFile *file2 = TFile::Open("qcd_fall08.root");
@@ -16,6 +16,8 @@ void TtMass( TString name1 ) {
  ttmass1  = (TH2F *) file1->Get("Tops/"+name1); 
  ttmass2  = (TH2F *) file2->Get("Tops/"+name1);
 
+ // scale QCD samples
+ int qScale = 2.01;
  // re-bin value for top mass plot
  int rbin = 4;
  int nbin = 200./rbin ; 
@@ -49,6 +51,8 @@ void TtMass( TString name1 ) {
  ttmass2->ProjectionX("ttmass2_px",1,200,"");
  ttmass2_px->Rebin(rbin);
  ttmass2_py->Rebin(rbin);
+ ttmass2_px->Scale(qScale);  
+ ttmass2_py->Scale(qScale);  
  ttmass2_px->SetFillColor(4);
  ttmass2_py->SetFillColor(4);
  //ttmass2->Scale(1);
@@ -87,6 +91,7 @@ void TtMass( TString name1 ) {
  gStyle->SetStatTextColor(4);
  ttmass2->RebinX(4);
  ttmass2->RebinY(4);
+ ttmass2->Scale(qScale);
  ttmass2->SetLineColor(4);
  ttmass2->Draw("BOXSAMES");
  c1->Update();

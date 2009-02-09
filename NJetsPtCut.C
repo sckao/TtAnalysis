@@ -6,9 +6,9 @@
 
 void NJetsPtCut( int scaleW, int scaleQCD ) {
 
- TFile *file  = TFile::Open("ttj_2Jskim.root");
- TFile *file1 = TFile::Open("wjets_2Jskim.root");
- TFile *file2 = TFile::Open("qcd_2Jskim.root");
+ TFile *file  = TFile::Open("ttj_fall08.root");
+ TFile *file1 = TFile::Open("wjets_fall08.root");
+ TFile *file2 = TFile::Open("qcd_fall08.root");
  TString hfolder = "tt_test2";
 
  TString plot1 = "njets.gif";

@@ -28,8 +28,8 @@ Double_t fitCb(Double_t *x, Double_t *par) {
 
 void FCRatio() {
 
- TFile *file = TFile::Open("qcd_10pb_Et20.root");
- TFile *file1 = TFile::Open("ttj_100pb_Et20.root");
+ TFile *file = TFile::Open("wjets_fall08.root");
+ TFile *file1 = TFile::Open("ttj_fall08.root");
  TString hfolder = "tt_test";
 
  TString name1 = "eta_njets";

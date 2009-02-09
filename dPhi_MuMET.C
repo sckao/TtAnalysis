@@ -1,20 +1,20 @@
 void dPhi_MuMET( TString name1 ) {
 
- TFile *file  = TFile::Open("ttj_fall08.root");
- TFile *file1 = TFile::Open("wjets_fall08.root");
- TFile *file2 = TFile::Open("qcd_fall08.root");
+ TFile *file  = TFile::Open("ttj_fall08_3j30.root");
+ TFile *file1 = TFile::Open("wjets_fall08_3j30.root");
+ TFile *file2 = TFile::Open("qcd_fall08_3j30.root");
  TString hfolder = "tt_fall08";
 
  Int_t rb = 2;
 
- //TString name1 = "MET_dPhi";
+ //TString name1 = 0,1,2,3,4;
  //TString plot1 = "met_dphi.gif";
  
- TString plot1 = name1+".gif";
+ TString plot1 = "MET_dPhi"+name1+".gif";
 
- met_df   = (TH2F *) file->Get("METs/"+name1); 
- met_dfa  = (TH2F *) file1->Get("METs/"+name1); 
- met_dfb  = (TH2F *) file2->Get("METs/"+name1); 
+ met_df   = (TH2F *) file->Get("METs/MET_dPhi"+name1); 
+ met_dfa  = (TH2F *) file1->Get("METs/MET_dPhi"+name1); 
+ met_dfb  = (TH2F *) file2->Get("METs/MET_dPhi"+name1); 
  //met_dfb  = (TH2F *) file2->Get("METs/MET_dPhi"); 
 
  gSystem->mkdir(hfolder);

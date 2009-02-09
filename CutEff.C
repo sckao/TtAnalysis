@@ -1,8 +1,11 @@
 void CutEff() {
 
- TFile *file  = TFile::Open("ttj_fall08.root");
- TFile *file1 = TFile::Open("wjets_fall08.root");
- TFile *file2 = TFile::Open("qcd_fall08.root");
+ //TFile *file  = TFile::Open("ttj_fall08.root");
+ //TFile *file1 = TFile::Open("wjets_fall08.root");
+ //TFile *file2 = TFile::Open("qcd_fall08.root");
+ TFile *file  = TFile::Open("ttj_fall08_4j25_3j30.root");
+ TFile *file1 = TFile::Open("wjets_fall08_4j25_3j30.root");
+ TFile *file2 = TFile::Open("qcd_fall08_4j25_3j30.root");
  
 
  TString plot1 = "ObjSelectionEff.gif";
@@ -20,13 +23,13 @@ void CutEff() {
  wMuJEff  = (TH2F *) file1->Get("Ele/isoEleCut"); 
  qMuJEff  = (TH2F *) file2->Get("Ele/isoEleCut"); 
 
- tLepWEff  = (TH1F *) file->Get("Tops/hRecolepW"); 
- wLepWEff  = (TH1F *) file1->Get("Tops/hRecolepW"); 
- qLepWEff  = (TH1F *) file2->Get("Tops/hRecolepW"); 
+ tLepWEff  = (TH1F *) file->Get("Tops/RecolepW"); 
+ wLepWEff  = (TH1F *) file1->Get("Tops/RecolepW"); 
+ qLepWEff  = (TH1F *) file2->Get("Tops/RecolepW"); 
 
- thadWEff  = (TH1F *) file->Get("Tops/hRecohadW"); 
- whadWEff  = (TH1F *) file1->Get("Tops/hRecohadW"); 
- qhadWEff  = (TH1F *) file2->Get("Tops/hRecohadW"); 
+ thadWEff  = (TH1F *) file->Get("Tops/RecohadW"); 
+ whadWEff  = (TH1F *) file1->Get("Tops/RecohadW"); 
+ qhadWEff  = (TH1F *) file2->Get("Tops/RecohadW"); 
 
  tTtEff    = (TH2F *) file->Get("Tops/hRecott0"); 
  wTtEff    = (TH2F *) file1->Get("Tops/hRecott0"); 
@@ -35,6 +38,7 @@ void CutEff() {
  // 1. Objects Selection Efficiency
  TString hfolder = "tt_fall08";
  int rbin = 4;
+ int qScale = 2.01;
 
  gSystem->mkdir(hfolder);
  gSystem->cd(hfolder);
@@ -73,8 +77,9 @@ void CutEff() {
 
  gStyle->SetStatY(0.51);
  gStyle->SetStatTextColor(4);
- double nQm = qMuEff->Integral();
+ double nQm = qScale * qMuEff->Integral();
  qMuEff->ProjectionX("qMuEff_px",2,2,"");
+ qMuEff_px->Scale(qScale);
  qMuEff_px->SetLineColor(4);
  qMuEff_px->DrawCopy("sames");
  double nMuQm = qMuEff_px->Integral();
@@ -111,6 +116,7 @@ void CutEff() {
  gStyle->SetStatY(0.51);
  gStyle->SetStatTextColor(4);
  qJetEff->ProjectionY("qJetEff_py",1,21,"");
+ qJetEff_py->Scale(qScale);
  qJetEff_py->SetLineColor(4);
  qJetEff_py->DrawCopy("sames");
  double nJetQm = qJetEff_py->Integral(5,21);
@@ -147,6 +153,7 @@ void CutEff() {
  gStyle->SetStatY(0.51);
  gStyle->SetStatTextColor(4);
  qMuJEff->ProjectionY("qMuJEff_py",1,21,"");
+ qMuJEff_py->Scale(qScale);
  qMuJEff_py->SetLineColor(4);
  qMuJEff_py->DrawCopy("sames");
  double nMuJQm = qMuJEff_py->Integral(5,21);
@@ -192,6 +199,7 @@ void CutEff() {
  gStyle->SetStatY(0.51);
  gStyle->SetStatTextColor(4);
  qLepWEff->SetLineColor(4);
+ qLepWEff->Scale(qScale);
  qLepWEff->Rebin(rbin);
  qLepWEff->DrawCopy("sames");
  double qNlepW     = qLepWEff->Integral();
@@ -229,7 +237,8 @@ void CutEff() {
  gStyle->SetStatY(0.51);
  gStyle->SetStatTextColor(4);
  qhadWEff->SetLineColor(4);
- thadWEff->Rebin(rbin);
+ qhadWEff->Scale(qScale);
+ qhadWEff->Rebin(rbin);
  qhadWEff->DrawCopy("sames");
  double qNhadW     = qhadWEff->Integral();
  double qhadW_eff  = qNhadW/nJetQm ;
@@ -270,6 +279,7 @@ void CutEff() {
  gStyle->SetStatY(0.51);
  gStyle->SetStatTextColor(4);
  qTtEff->ProjectionX("qTtEff_px",-1,-1,"");
+ qTtEff_px->Scale(qScale);
  qTtEff_px->SetLineColor(4);
  qTtEff_px->Rebin(rbin);
  qTtEff_px->DrawCopy("sames");
@@ -277,6 +287,11 @@ void CutEff() {
  double sQm_eff  = nQmEvt/nQm ;
  double sQm_eff0 = nQmEvt/nMuJQm ;
  cout<<"Qm n_Evt: "<<nQmEvt <<"   Solution Eff:"<<sQm_eff0<<"  EvtEff= "<< sQm_eff <<endl;
+ cout<<" "<<endl;
+ double bk = nQmEvt + nWjEvt ;
+ double SB = sqrt( (nTtEvt*nTtEvt) + (bk*bk) ) ;
+ cout<<" S/sqrt(S^2+B^2) = "<< nTtEvt/SB <<endl;
+ cout<<" S/S+B           = "<< nTtEvt/(bk + nTtEvt) <<endl;
  cout<<" ========================================= "<<endl;
  c2->Update();
 
@@ -301,6 +316,7 @@ void CutEff() {
  gStyle->SetStatY(0.51);
  gStyle->SetStatTextColor(4);
  qTtEff->ProjectionY("qTtEff_py",-1,-1,"");
+ qTtEff_py->Scale(qScale);
  qTtEff_py->SetLineColor(4);
  qTtEff_py->Rebin(rbin);
  qTtEff_py->DrawCopy("sames");
