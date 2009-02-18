@@ -81,7 +81,7 @@ void TtElectron::ElectronAnalysis(Handle<std::vector<pat::Electron> > patEle, HT
 
 }
 
-void TtElectron::matchedElectronAnalysis( std::vector<const reco::Candidate*>  matchedEle, HTOP4* histo4  ) {
+void TtElectron::matchedElectronAnalysis( std::vector<const reco::Candidate*>  matchedEle, HOBJ4* histo4  ) {
 
  for (std::vector<const reco::Candidate*>::const_iterator it = matchedEle.begin(); it!= matchedEle.end(); it++) {
      const reco::Candidate* it0 = *it ; 
@@ -100,27 +100,28 @@ void TtElectron::matchedElectronAnalysis( std::vector<const reco::Candidate*>  m
      //double hdE   = emE * HovE  ;
      double EovP = caloE / (*it)->p() ;
  
+     double sumE = emR.first + hdR.first ;
+     int calR_count = emR.second + hdR.second ;
+
      double emCompensation = ecalIso->depositWithin(0.055);
      double sumIso = emR.first + hdR.first + tkR.first - emCompensation ;
      double IsoValue = it1->et() / (it1->et() + sumIso );
 
-     //cout<<" Pt:"<< (*it)->pt() <<" emR5= "<<emR5.first <<"  candE= "<<ecalIso->candEnergy() ;
-     //cout<<" caloE: "<< it1->caloEnergy()<<endl;
-     //cout<<" Pt:"<< (*it)->pt() <<" isoE:"<<emR.first<<"/"<<emR.second;
-     //cout<< "  isoH:"<<hdR.first<<"/"<<hdR.second <<endl;
-
-     histo4->Fill4d( (*it)->pt(), (*it)->eta(), EovP, HovE, tkR.second, emR.second,
-                      tkR.first, emR.first, hdR.first, IsoValue );
+     histo4->Fill_4a( (*it)->pt(), (*it)->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
+                      IsoValue, HovE, EovP );
 
  }
 
 }
 
-std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vector<pat::Electron> > patEle, HTOP4* histo4 ) {
+std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vector<pat::Electron> > patEle, HOBJ4* histo1, HOBJ4* histo2 ) {
 
- //std::vector<pat::Electron> isoEle;
+ int elSize = static_cast<int>(  patEle->size() );
+ if ( elSize > 20 ) elSize = 20;
+
  std::vector<const reco::Candidate*> isoEle;
  isoEle.clear();
+ int N_goodEle = 0;
  for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
 
      //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
@@ -141,27 +142,27 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
      double EovP = it->caloEnergy() / it->p() ;
      double HovE = it->hadronicOverEm() ;
 
-     histo4->Fill4b(it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
+     histo1->Fill_4a(it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
                     IsoValue, HovE, EovP );
-  
+     // quality cut  
+     if ( it->pt() < 20.0 )  continue ;
+     if ( EovP < 0.98 ) continue;
+     if ( HovE > 0.02 ) continue;
+     N_goodEle++ ;
+
      // Isolation Cut
      if ( IsoValue < 0.47 ) continue;
      if ( fabs( it->eta() ) > 2.4 ) continue;    
 
-     histo4->Fill4c(it->pt(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
+     histo2->Fill_4a(it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
                     IsoValue, HovE, EovP );
-
-     if ( it->pt() < 20.0 )  continue ;
-     if ( EovP < 0.98 ) continue;
-     if ( HovE > 0.02 ) continue;
 
      isoEle.push_back( &*it );
 
  }
- int elSize = static_cast<int>(  patEle->size() );
- if ( elSize > 20 ) elSize = 20;
 
- histo4->Fill4e( elSize, isoEle.size() ); 
+ histo1->Fill_4b( elSize, N_goodEle ); 
+ histo2->Fill_4b( elSize, isoEle.size() ); 
 
  return isoEle ;
 

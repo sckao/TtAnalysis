@@ -95,7 +95,7 @@ int TtEvtSelector::eventSelection(Handle<std::vector<pat::Muon> > rMu, Handle<st
  std::vector<const reco::Candidate*> IsoMuons = ttMuon->IsoMuonSelection( rMu ) ;
  int nMu = IsoMuons.size();
 
- std::vector<pat::Jet> goodJets = ttJet->JetSelection( rJet, IsoMuons, jetEtThreshold );
+ std::vector<const pat::Jet*> goodJets = ttJet->JetSelection( rJet, IsoMuons, jetEtThreshold );
  
  //if ( goodJets.size() > 3 && goodJets[0].pt() > 60. && goodJets[3].pt() > 40. ) jetTightSelect = true ; 
 
@@ -182,7 +182,6 @@ void TtEvtSelector::TriggerStudy( Handle <edm::TriggerResults> triggers, int top
        */
 
        if ( triggers->accept(i) ) histo9->Fill9k( i, topo );
-       if ( triggers->accept(i) && (topo ==3 || topo ==4 )) histo9->Fill9k( i, 1 );
 
    }
 

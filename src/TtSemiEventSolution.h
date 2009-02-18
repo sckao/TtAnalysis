@@ -59,7 +59,6 @@
 //#include "DataFormates/TrackReco/interface/Track.h"
 //#include "DataFormates/TrackReco/interface/TrackFwd.h"
 
-
 #include "TtAnalysisHisto.h"
 #include "TtEvtSelector.h"
 #include "TtMCMatching.h"
@@ -88,40 +87,41 @@ class TtMuon;
 class TtElectron;
 class TtMET;
 class TtJet;
-class TtEfficiency; 
-
+class TtEfficiency;
 
 class TtSemiEventSolution {
    public:
-    /// Constructor
-  
 
-    explicit TtSemiEventSolution(const edm::ParameterSet&);
+    /// Constructor
+    explicit TtSemiEventSolution( const edm::ParameterSet& );
     /// Destructor
     ~TtSemiEventSolution();
 
     /// Perform the real analysis
-    void BuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup,
-                     HTOP1* histo1, HTOP3* histo3, HTOP4* histo4,  HTOP6* histo6, HTOP7* histo7, HTOP8* histo8, HTOP9* histo9 );
-
-    //std::vector<double> recoW( const pat::Muon lepton, const pat::MET Met );
+    void BuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup, int topo, tHisto histos );
+    void MCBuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup, int topo, tHisto histos );
 
     bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate  );
+    bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 );
+
     bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
                 std::vector<iReco>& wCandidate );
     bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
                 std::vector<iReco>& wCandidates, bool FoundWSolution );
+    bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
+                std::vector<iReco>& wCandidate, HTOP10* hitso10 );
+
     bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate, bool btagging );
+    bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate, bool btagging, HTOP11* histo11 );
 
     // with 2b tagging
     std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theWJets,
-                  std::vector<const pat::Jet*> thebJets, std::vector<const reco::Candidate*> mcMuons,
-                  std::vector<const reco::Candidate*> mcElectrons, edm::Handle<std::vector<pat::MET> > met, HTOP9* histo9  );
+                  std::vector<const pat::Jet*> thebJets, std::vector<const reco::Candidate*> theLep,
+                  edm::Handle<std::vector<pat::MET> > met, tHisto histos  );
  
     // no b-tagging
     std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theJets,
-                  std::vector<const reco::Candidate*> mcMuons, std::vector<const reco::Candidate*> mcElectrons, 
-                  edm::Handle<std::vector<pat::MET> > met, HTOP9* histo9  );
+                  std::vector<const reco::Candidate*> theLep, edm::Handle<std::vector<pat::MET> > met, tHisto histos  );
  
     void dmSortRecoObjects( std::vector<iReco>& objCand );
 
@@ -131,8 +131,12 @@ class TtSemiEventSolution {
     //                   std::vector<const pat::Jet*> rcBJets, HTOP9* histo9 ) ;
     void MCTruthCheck( std::vector<iReco> mcTt, std::vector<iReco> rcTt, std::vector<const pat::Jet*> mcWJets,
                        std::vector<const pat::Jet*> rcWJets, std::vector<const pat::Jet*> mcBJets,
-                       std::vector<const pat::Jet*> rcBJets, HTOP6* histo6 ) ;
+                       std::vector<const pat::Jet*> rcBJets, HTOP6* histo6 ); 
 
+    void McRecoCompare( int topo, int r,  tHisto histos );
+
+    void KeepBuildInfo( bool isData );
+  
    private:
       // ----------member data ---------------------------
 
@@ -144,6 +148,19 @@ class TtSemiEventSolution {
     TtJet*         ttJet;
     TtEfficiency*  ttEff;
     TtTools*       tools;
+
+    std::vector<iReco> semiTt;
+    std::vector<const reco::Candidate*> isoLep;
+    std::vector<const pat::Jet*> selectedJets;
+    std::vector<const pat::Jet*> selectedbJets;
+    std::vector<const pat::Jet*> selectedWJets;
+
+    std::vector<iReco> semiMCTt; 
+    std::vector<const reco::Candidate*> mcLep;
+    std::vector<const pat::Jet*> mcWJets ;
+    std::vector<const pat::Jet*> mcbJets ;
+   
+    std::vector<TtResult> AllTt ;
 
     bool exclude;
 

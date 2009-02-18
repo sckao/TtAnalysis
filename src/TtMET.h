@@ -86,9 +86,13 @@ class TtMET {
 
     std::vector<double> CaloMET( edm::Handle<CaloTowerCollection> calotowers );
 
-    void MetAndMuon( edm::Handle<std::vector<pat::MET> > patMet, std::vector<const reco::Candidate*> isoMuons, HTOP2* histo2, int njets  );
-    void MetAndJets( edm::Handle<std::vector<pat::MET> > met, std::vector<pat::Jet> theJets, HTOP2* histo2 );
+    LorentzVector METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets );
 
+    void MetAndMuon( edm::Handle<std::vector<pat::MET> > patMet, std::vector<const reco::Candidate*> isoMuons, HTOP2* histo2, int njets  );
+    void MetAndJets( edm::Handle<std::vector<pat::MET> > met, std::vector<const pat::Jet*> theJets, HTOP2* histo2 );
+
+    void METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets,
+                         edm::Handle<std::vector<pat::MET> > met, edm::Handle<std::vector<reco::GenParticle> > genParticles, HOBJ2* histo );
 
    private:
 

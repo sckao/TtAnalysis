@@ -16,7 +16,6 @@
 //
 //
 
-
 // system include files
 #include <memory>
 
@@ -24,18 +23,15 @@
 #include "TtAnalysis.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
-
 //
 // constants, enums and typedefs
-//
-
 //
 // static data member definitions
 //
 // constructors and destructor
 using namespace edm;
 using namespace std;
-TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
+TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig) 
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
@@ -53,8 +49,10 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
   caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
   triggerSrc        = iConfig.getParameter<edm::InputTag> ("triggerSource");
-
   //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
+
+  // Create the root file
+  theFile = new TFile(rootFileName.c_str(), "RECREATE");
 
   MCMatching  = new TtMCMatching();
   evtSelected = new TtEvtSelector( iConfig );
@@ -67,9 +65,8 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   ttEff       = new TtEfficiency();
 
   evtIt = 0;
-  // Create the root file
-  theFile = new TFile(rootFileName.c_str(), "RECREATE");
 
+  theFile->cd();
   theFile->mkdir("Jets");
   theFile->cd();
   theFile->mkdir("METs");
@@ -88,16 +85,22 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   theFile->cd();
   theFile->mkdir("Tops");
   theFile->cd();
-
-  h_Jet   = new HTOP1("Jets_");
-  h_MET   = new HTOP2("MET_");
-  h_Muon  = new HTOP3("Muons_");
-  h_Ele   = new HTOP4("Ele_");
-  h_Gam   = new HTOP5("Gam_");
-  h_MObj  = new HTOP6("MObjs_");
-  h_BJet  = new HTOP7("BJets_");
-  h_WJet  = new HTOP8("WJets_");
-  h_Top   = new HTOP9("Tops_");
+  theFile->mkdir("Ws");
+  theFile->cd();
+  
+  histos.hJet   = new HTOP1();
+  histos.hMET   = new HTOP2();
+  histos.hMuon  = new HTOP3();
+  histos.hEle   = new HTOP4();
+  histos.hGam   = new HTOP5();
+  histos.hMObj  = new HTOP6();
+  histos.hBJet  = new HTOP7();
+  histos.hWJet  = new HTOP8();
+  histos.hTop   = new HTOP9();
+  for (int i=0; i< 4; i++) {
+      histos.hWs[i]   = new HTOP10(i) ;
+      histos.hTops[i] = new HTOP11(i) ;
+  }
 
   if (needTree) t_Jet  = new NJet();
 }
@@ -119,54 +122,40 @@ TtAnalysis::~TtAnalysis()
    delete ttJet;
    delete ttEff; 
    delete semiSol;
-
+   
    theFile->cd();
-   theFile->cd("Jets");
-   h_Jet->Write();
-
+   histos.hJet->Write("Jets",theFile);
    theFile->cd();
-   theFile->cd("METs");
-   h_MET->Write();
-
+   histos.hMET->Write("METs",theFile);
    theFile->cd();
-   theFile->cd("Muons");
-   h_Muon->Write();
-
+   histos.hMuon->Write("Muons",theFile);
    theFile->cd();
-   theFile->cd("Ele");
-   h_Ele->Write();
-
+   histos.hEle->Write("Ele",theFile);
    theFile->cd();
-   theFile->cd("Gam");
-   h_Gam->Write();
-
+   histos.hGam->Write("Gam",theFile);
    theFile->cd();
-   theFile->cd("MObjs");
-   h_MObj->Write();
-
+   histos.hMObj->Write("MObjs",theFile);
    theFile->cd();
-   theFile->cd("BJets");
-   h_BJet->Write();
-
+   histos.hBJet->Write("BJets",theFile);
    theFile->cd();
-   theFile->cd("WJets");
-   h_WJet->Write();
-
+   histos.hWJet->Write("WJets",theFile);
    theFile->cd();
-   theFile->cd("Tops");
-   h_Top->Write();
+   histos.hTop->Write("Tops",theFile);
+   theFile->cd();
+   for (int i=0; i<4; i++) {
+     histos.hWs[i]->Write("Ws",theFile);
+     theFile->cd();
+     histos.hTops[i]->Write("Tops",theFile);
+     theFile->cd();
+   } 
+
+   if (debug) cout << "[Wrote the histograms]" << endl;
 
    //Release the memory
-   delete h_Jet;
-   delete h_MET;
-   delete h_Muon;
-   delete h_Ele;
-   delete h_Gam;
-   delete h_MObj;
-   delete h_BJet;
-   delete h_WJet;
-   delete h_Top;
-  
+   //delete &histos;
+
+   if (debug) cout << "[Release the memory of historgrams]" << endl;
+
    if (needTree) {
       theFile->cd();
       t_Jet->Write();
@@ -174,7 +163,7 @@ TtAnalysis::~TtAnalysis()
    }
 
    //Close the Root file
-   theFile->Close();
+   //theFile->Close();
    if (debug) cout << "************* Finished writing histograms to file" << endl;
 
 }
@@ -221,24 +210,11 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    Handle<CaloTowerCollection>  caloTowers;
    iEvent.getByLabel(caloSrc, caloTowers);
 
-   //Handle<std::vector<pat::TriggerPrimitive> >  triggers;
-
+   // Handle<std::vector<pat::TriggerPrimitive> >  triggers;
    // Handle<edm::TriggerResults>  triggers;
    // iEvent.getByLabel(triggerSrc, triggers);
 
-   // Initial the histograms
-   HTOP1 *histo1 = 0;
-   HTOP2 *histo2 = 0;
-   HTOP3 *histo3 = 0;
-   HTOP4 *histo4 = 0;
-   HTOP5 *histo5 = 0;
-   HTOP6 *histo6 = 0;
-   HTOP7 *histo7 = 0;
-   HTOP8 *histo8 = 0;
-   HTOP9 *histo9 = 0;
-
    //cout<<" ***** new Event start ***** "<<endl;
-
    evtIt++;
    int eventId = evtIt + (iEvent.id().run()*100000) ;
 
@@ -255,90 +231,72 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    }
 
    // 0. select the semi-lep events and objects
-   int pass = evtSelected->eventSelection(muons, electrons, jets, 25.);
+   int pass = evtSelected->eventSelection(muons, electrons, jets, 30.);
    int topo = evtSelected->MCEvtSelection(genParticles);
    // check generator process 
    //MCMatching->CheckGenParticle( genParticles );
 
-   histo1 = h_Jet;
-   histo3 = h_Muon;
-   histo4 = h_Ele;
-   histo6 = h_MObj;
-   histo7 = h_BJet;
-   histo8 = h_WJet;
-   histo9 = h_Top;
+   // 1. Build semi-mu tt events
+   semiSol->BuildSemiTt(iEvent, iSetup, 1, histos );
+   semiSol->KeepBuildInfo( true );
+   semiSol->MCBuildSemiTt(iEvent, iSetup, 1, histos );
+   semiSol->KeepBuildInfo( false );
+   semiSol->McRecoCompare( 1, 0, histos );
 
-   //1. Isolation Leptons Selections
-   ttMuon->muonAnalysis( muons, histo3 );
-   //ttMuon->MuonTrigger( muons, triggers );
-
-   ttEle->ElectronAnalysis(electrons, histo4);
-
-   //2. build semi-Tt events
+   // 2. build semi-Tt events
    if ( trigOn ) {
       Handle<edm::TriggerResults>  triggers;
       iEvent.getByLabel(triggerSrc, triggers);
-      evtSelected->TriggerStudy( triggers, topo, 3 ,histo9 );
+      evtSelected->TriggerStudy( triggers, topo, 3 ,histos.hTop );
    }
-   semiSol->BuildSemiTt(iEvent, iSetup, histo1, histo3, histo4, histo6, histo7, histo8, histo9 );
  
-   //3. Jet Et threshold analysis
+   //3. Muon and Leptonic W analysis
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
-   std::vector<pat::Jet> theJets = ttJet->JetSelection( jets, isoMu, 25 ) ;
+   std::vector<const pat::Jet*> theJets = ttJet->JetSelection( jets, isoMu, 30 ) ;
    if ( theJets.size() > 3 && pass > -1) {
-      ttJet->MuonAndJet( theJets, isoMu[0] , histo1 );
-      ttJet->JetEtSpectrum( theJets, histo1 );
-      //ttJet->JetEtSpectrum( genJets, histo1 );
-
       std::vector<iReco> lepW;
       semiSol->recoW( isoMu, mets, lepW );
       if ( lepW.size() > 0 ) {
-         int wl = MCMatching->matchLeptonicW( genParticles, lepW, histo6 );
-         if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histo1 );
+         int wl = MCMatching->matchLeptonicW( genParticles, lepW, histos.hMObj );
+         if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histos.hJet );
       }
    }
 
    //4. Jet Studies
-   ttJet->jetAnalysis(jets, histo1);
+   ttJet->jetAnalysis(jets, histos.hJet);
    //ttJet->JetTrigger( jets, triggers );
 
    std::vector<const reco::Candidate*> nonIsoMu = ttMuon->nonIsoMuonSelection(muons);
    std::vector<const pat::Jet*> tmpJets;
-   std::vector<jmatch> mcwjets  = MCMatching->matchWJets(genParticles, jets, tmpJets, histo8, false);
-   std::vector<jmatch> mcbjets  = MCMatching->matchbJets(genParticles, jets, tmpJets, histo7, false);
-   ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histo3, true );
-   ttJet->bTagAnalysis( jets, histo7 );
-   ttJet->JetdRAnalysis( jets, histo1 );
+   std::vector<jmatch> mcjets  = MCMatching->matchJets(genParticles, theJets, histos.hBJet, histos.hWJet, false);
+   ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histos.hMuon, true );
+   ttJet->bTagAnalysis( jets, histos.hBJet );
 
    if ( topo == 1) {
-      ttJet->genJetInfo(genJets,genParticles, histo1, histo7, histo8);
-      ttJet->matchedWJetsAnalysis( mcwjets, isoMu, histo8 );
+      ttJet->genJetInfo(genJets,genParticles, histos.hJet, histos.hBJet, histos.hWJet);
+      ttJet->matchedWJetsAnalysis( mcjets, isoMu, histos.hWJet );
    } 
    if ( pass > 3 && topo == 1 ) {
-      ttJet->selectedWJetsAnalysis(jets,histo8);
+      ttJet->selectedWJetsAnalysis(jets, isoMu, histos.hWJet);
    }
    // looking for the leptonic b jet effect 
    if ( pass > 3 ) {
-      ttJet->matchedbJetsAnalysis( mcbjets, mcwjets, isoMu, histo7 );
-      std::vector<const reco::Candidate*> isoMufromB = MCMatching->matchMuonfromB( genParticles, theJets, nonIsoMu, histo7,true );     
+      ttJet->matchedbJetsAnalysis( mcjets, isoMu, histos.hBJet );
+      std::vector<const reco::Candidate*> isoMufromB = MCMatching->matchMuonfromB( genParticles, theJets, nonIsoMu, histos.hBJet,true );     
    }
 
    //5. MET from PAT
-   histo2 = h_MET;
-   ttMET->metAnalysis(mets, iEvent, histo2);
+   ttMET->metAnalysis(mets, iEvent, histos.hMET);
    if ( pass > 3 ) {
-      ttMET->MetAndMuon(mets, isoMu, histo2, pass );
-      ttMET->MetAndJets(mets, theJets, histo2 );
+      ttMET->MetAndMuon(mets, isoMu, histos.hMET, pass );
+      ttMET->MetAndJets(mets, theJets, histos.hMET );
    }
    
    //6. Electron Studies
-   //std::vector<const reco::Candidate*> tempEle; 
-   //std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, electrons, tempEle, histo4, true);  
-   //ttEle->matchedElectronAnalysis( mcElectrons, histo4 );
+   ttEle->ElectronAnalysis(electrons, histos.hEle);
 
    //7. photon studies
-   histo5 = h_Gam;
-   ttGam->PhotonAnalysis(photons, histo5);
+   ttGam->PhotonAnalysis(photons, histos.hGam);
 
 }
 
@@ -346,67 +304,6 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 //*        Utility Function           *
 //*************************************
 
-std::vector<int> TtAnalysis::findGrandMa(int momId, double eta, double phi, 
-                                         Handle<std::vector<reco::GenParticle> > genParticles) {
-
- double dR = 99.;
- std::vector<int> sources; 
- for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-     if ( (*it).pdgId()!= momId ) continue;
-     double dEta = (*it).eta() - eta ;
-     double dPhi = (*it).phi() - phi ;
-     double dR1 = sqrt( dEta*dEta + dPhi*dPhi );
-
-     if ( dR1 < dR ) {
-        dR = dR1;
-        sources.clear();
-        for (size_t i=0; i< (*it).numberOfMothers(); i++) {
-            const reco::Candidate *grandma = (*it).mother(i);
-            sources.push_back(grandma->pdgId()); 
-            //cout<<" W/Z : "<<(*it).pdgId()<<" from "<<grandma->pdgId()<<" h:"<<(*it).eta()<<" f:"<<(*it).phi()<<endl;
-        }
-     } 
-  }
-  return sources;
-}
-
-// return the daughters 
-hfPos TtAnalysis::findDaughter(int dauId, int momId, double mom_eta, double mom_phi,
-                                         Handle<std::vector<reco::GenParticle> > genParticles) {
- double dR = 99.;
- int mom_status = -99;
- int dau_status = -99;
- hfPos decayPos(4);
- for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-     // find the daughter candidate
-     if ( (*it).pdgId()!= dauId && (*it).status() == 1 ) continue;
-    
-     // match their mom
-     for (size_t i=0; i< (*it).numberOfMothers(); i++) {
-         const reco::Candidate *mom = (*it).mother(i) ;
-         if ( mom->pdgId() != momId ) continue;
-	 double dEta = mom->eta() - mom_eta ;
-	 double dPhi = mom->phi() - mom_phi ;
-	 double dR1 = sqrt( dEta*dEta + dPhi*dPhi );
-         if ( dR1 < dR ) {
-            dR  = dR1;
-	    decayPos[0] = (*it).eta();
-	    decayPos[1] = (*it).phi();
-	    decayPos[2] = (*it).pt();
-	    decayPos[3] = -1;
-	    mom_status = mom->status();
-	    dau_status = (*it).status();
-         }
-     }
-    
-  }
-
-  //cout <<" The "<<momId<<" (h:"<<mom_eta<<" f:"<<mom_phi <<" st:"<<mom_status<<")";
-  //cout <<" decays to status("<<dau_status<<") "<<dauId<<" h:"<<decayPos[0]<<" f:"<<decayPos[1]<<endl;
-
-  return decayPos;
-
-} 
 
 
 //define this as a plug-in

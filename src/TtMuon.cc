@@ -79,14 +79,6 @@ TtMuon::~TtMuon()
 static bool PtDecreasing(const reco::Candidate* s1, const reco::Candidate* s2) { return ( s1->pt() > s2->pt() ); }
 
 // ------------ method called to for each event  ------------
-void TtMuon::muonAnalysis(Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 ) {
-
- for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
-     histo3->Fill3a( it->pt(), it->eta() );
-     if ( IsoMuonID( *it , 0.9 ) ) histo3->Fill3i( it->pt(), it->eta()  );
- }
-
-}
 
 void TtMuon::MuonTreeFeeder(Handle<std::vector<pat::Muon> > patMu, NJet* jtree, int eventId ) {
 
@@ -100,11 +92,13 @@ void TtMuon::MuonTreeFeeder(Handle<std::vector<pat::Muon> > patMu, NJet* jtree, 
 
 }
 
-std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 ) {
+
+std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector<pat::Muon> > patMu, HOBJ3* histo1, HOBJ3* histo2 ) {
 
  //std::vector<pat::Muon> isoMuons;
  std::vector<const reco::Candidate*> isoMuons;
  isoMuons.clear();
+ int N_glbMu = 0;
  for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
 
      //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
@@ -114,37 +108,37 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
      std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3);
-
      //double thetaCal = (ecalIso->direction()).theta();
 
      double sumE = emR.first + hdR.first ;
      double RelIso = it->pt() / ( it->pt() + emR.first + hdR.first + tkR.first ) ;
       
-     histo3->Fill3b( it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, RelIso );
-  
-     // Isolation Cut
-     if ( RelIso < 0.9 ) continue;
-     histo3->Fill3c( it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, RelIso );
-
-     if ( fabs(it->eta()) > 2.1 ) continue;
-     if ( it->pt() < 20. ) continue;
-
+     // trust global muon only
      bool global =  it->isGlobalMuon() ;
      if ( !global ) continue;    
+     N_glbMu++;
 
      reco::TrackRef glbTrack = it->globalTrack();
      reco::TrackRef inTrack = it->innerTrack();
      double dPt = (glbTrack->pt()/inTrack->pt()) - 1  ;
+
+     histo1->Fill_3a( it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, RelIso );
+     histo1->Fill_3b( glbTrack->pt(), inTrack->pt(), dPt, it->eta() );
+
+     // Isolation Cut
+     if ( RelIso < 0.9 ) continue;
+     if ( fabs(it->eta()) > 2.1 ) continue;
+     if ( it->pt() < 20. ) continue;
+
      // check the consistency of global pt and tracker pt
-     histo3->Fill3l( glbTrack->pt(), inTrack->pt(), dPt, it->eta() );
+     histo2->Fill_3a( it->pt(), it->eta(), emR.first, hdR.first, tkR.first, sumE, RelIso );
+     histo2->Fill_3b( glbTrack->pt(), inTrack->pt(), dPt, it->eta() );
      isoMuons.push_back( &*it );
  }
- int muSize = static_cast<int>(  patMu->size() );
- if ( muSize > 20 ) muSize = 20;
-
- histo3->Fill3e( muSize, isoMuons.size() );
 
  if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing );
+ histo1->Fill_3c( N_glbMu, isoMuons.size() );
+ histo2->Fill_3c( patMu->size(), isoMuons.size() );
 
  return isoMuons ;
 }
@@ -256,7 +250,7 @@ void TtMuon::MuonTrigger( Handle<std::vector<pat::Muon> >patMu, Handle <edm::Tri
 
 }
 
-void TtMuon::matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HTOP3* histo3  ) {
+void TtMuon::matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HOBJ3* histo ) {
 
  for (std::vector<const reco::Candidate*>::const_iterator it = matchedMuon.begin(); it!= matchedMuon.end(); it++) {
 
@@ -273,7 +267,7 @@ void TtMuon::matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMu
      double sumE = emR.first + hdR.first ;
      double RelIso = it1->pt() / ( it1->pt() + emR.first + hdR.first + tkR.first ) ;
 
-     histo3->Fill3d( it1->pt(), it1->eta(), emR.first, hdR.first, tkR.first, sumE, RelIso );
+     histo->Fill_3a( it1->pt(), it1->eta(), emR.first, hdR.first, tkR.first, sumE, RelIso );
 
  }
 

@@ -176,22 +176,78 @@ std::vector<double> TtMET::CaloMET( Handle<CaloTowerCollection> calotowers ) {
    return caloInfo;
 }
 
+LorentzVector  TtMET::METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets ) {
+
+  double Psum[3] ={ 0.0 };
+  for (size_t i=0; i < theLep.size(); i++ ) {
+      Psum[0] -= theLep[i]->p4().Px() ;
+      Psum[1] -= theLep[i]->p4().Py() ;
+  }
+  for (size_t i=0; i < theJets.size(); i++ ) {
+      Psum[0] -= theJets[i]->p4().Px() ;
+      Psum[1] -= theJets[i]->p4().Py() ;
+  }
+
+
+  LorentzVector theMET( Psum[0], Psum[1], 0., 0. );
+  
+  return theMET;
+
+}
+
+void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets,
+                            Handle<std::vector<pat::MET> > met, Handle<std::vector<reco::GenParticle> > genParticles, 
+                            HOBJ2* histo ) {
+
+     LorentzVector noMET(0.,0.,0.,0.);
+     LorentzVector patMET = (met->size() > 0) ?  (*met)[0].p4() : noMET ;
+     LorentzVector evtMET = METfromObjects( theLep, theJets );
+     LorentzVector neuMET = findNeutrino( genParticles );
+
+     double patResol = 9. ;
+     double evtResol = 9. ;
+     double dPhi_neu_pat = 9. ;
+     double dPhi_neu_evt = 9. ;
+
+     if ( neuMET.Pt() != 0. ) {
+
+        patResol = ( patMET.Pt()/neuMET.Pt() ) - 1. ;
+	evtResol = ( evtMET.Pt()/neuMET.Pt() ) - 1. ;
+        if ( patMET.Pt() != 0. && evtMET.Pt() != 0. ) {
+	   dPhi_neu_pat = tools->getdPhi( patMET, neuMET );
+	   dPhi_neu_evt = tools->getdPhi( evtMET, neuMET );
+        }
+        if ( patResol >= 1.98 ) patResol = 1.98 ;
+        if ( evtResol >= 1.98 ) evtResol = 1.98 ;
+        if ( dPhi_neu_pat >= 3.142 ) dPhi_neu_pat = 3.142 ;
+        if ( dPhi_neu_evt >= 3.142 ) dPhi_neu_evt = 3.142 ;
+
+     }
+
+     histo->Fill_2a( patResol,  evtResol, dPhi_neu_pat, dPhi_neu_evt );
+
+}
+
 // return 4 momentum of neutrino
 LorentzVector TtMET::findNeutrino( Handle<std::vector<reco::GenParticle> > genParticles ) {
 
    double vp[4] = {0.0};
    for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       if ( abs((*it).pdgId()) != 24) continue;
-       for (size_t v=0; v< (*it).numberOfDaughters(); ++v) {
-           const reco::Candidate *dau = (*it).daughter(v) ;
-           if( abs(dau->pdgId()) != 12 && abs(dau->pdgId()) != 14 ) continue;
-           //cout<<"daughter("<< dau->pdgId() <<") status:"<< dau->status() ;
-           //cout<<" p4:"<<dau->p4()<<endl;
-           vp[0] +=  dau->px() ;
-           vp[1] +=  dau->py() ;
-           vp[2] +=  dau->pz() ;
-           vp[3] +=  dau->p() ;
+       if ( abs((*it).pdgId()) != 12 && abs((*it).pdgId()) != 14 && abs((*it).pdgId()) != 16 ) continue;
+       if ( it->status() != 3 ) continue;
+
+       bool fromW = false;
+       for (size_t v=0; v< (*it).numberOfMothers(); ++v) {
+           const reco::Candidate *mom = (*it).mother(v) ;
+           if( abs(mom->pdgId()) != 24 && abs(mom->pdgId()) != 6 ) continue;
+           fromW = true;
        }
+       if ( !fromW ) continue;
+ 
+       vp[0] +=  it->px() ;
+       vp[1] +=  it->py() ;
+       vp[2] +=  it->pz() ;
+       vp[3] +=  it->p() ;
    }
 
    LorentzVector vp4 = LorentzVector(vp[0],vp[1],vp[2],vp[3]);
@@ -217,12 +273,12 @@ void TtMET::MetAndMuon(Handle<std::vector<pat::MET> > met, std::vector<const rec
 
 }
 
-void TtMET::MetAndJets(Handle<std::vector<pat::MET> > met, std::vector<pat::Jet> theJets, HTOP2* histo2 ) {
+void TtMET::MetAndJets(Handle<std::vector<pat::MET> > met, std::vector<const pat::Jet*> theJets, HTOP2* histo2 ) {
 
    if ( met->size() >  0 && theJets.size() > 1) {
 
-      LorentzVector J12 = theJets[0].p4() + theJets[1].p4();
-      double df1  = tools->getdPhi( (*met)[0].p4(), theJets[0].p4() );
+      LorentzVector J12 = theJets[0]->p4() + theJets[1]->p4();
+      double df1  = tools->getdPhi( (*met)[0].p4(), theJets[0]->p4() );
       double df12 = tools->getdPhi( (*met)[0].p4(), J12 );
 
       histo2->Fill2e( (*met)[0].et(),  df1, df12 );

@@ -1,11 +1,11 @@
-#ifndef TtAnalysis_H
-#define TtAnalysis_H
+#ifndef JetAnalysis_H
+#define JetAnalysis_H
 // -*- C++ -*-
 //
-// Package:    TtAnalysis
-// Class:      TtAnalysis
+// Package:    JetAnalysis
+// Class:      JetAnalysis
 // 
-/**\class TtAnalysis TtAnalysis.cc PhysicsTools/TtAnalysis/src/TtAnalysis.cc
+/**\class JetAnalysis JetAnalysis.cc PhysicsTools/TtAnalysis/src/JetAnalysis.cc
 
  Description: <one line class summary>
 
@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtAnalysis.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
+// $Id: JetAnalysis.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -66,18 +66,13 @@
 //#include "AnalysisDataFormats/TopObjects/interface/TtGenEvent.h"
 //#include "AnalysisDataFormats/TopObjects/interface/TtSemiEvtSolution.h"
 
-#include "TtAnalysisHisto.h"
-#include "TtAnalysisNtuple.h"
+#include "TtObjHisto.h"
 #include "TtEvtSelector.h"
-#include "TtMCMatching.h"
 #include "TtMuon.h"
-#include "TtElectron.h"
-#include "TtPhoton.h"
-#include "TtMET.h"
 #include "TtJet.h"
-#include "TtEfficiency.h"
-#include "TtSemiEventSolution.h"
+#include "TtMET.h"
 #include "TtFormat.h"
+#include "TtTools.h"
 
 #include "TFile.h"
 #include "TVector3.h"
@@ -91,23 +86,16 @@
 // class decleration
 //
 class TtEvtSelector;
-class TtMCMatching;
 class TtMuon;
-class TtElectron;
-class TtPhoton;
-class TtMET;
 class TtJet;
-class TtEfficiency; 
-class TtSemiEventSolution;
+class TtMET;
 
-class TtAnalysis : public edm::EDAnalyzer {
+class JetAnalysis : public edm::EDAnalyzer {
    public:
     /// Constructor
-  
-
-    explicit TtAnalysis(const edm::ParameterSet&);
+    explicit JetAnalysis(const edm::ParameterSet&);
     /// Destructor
-    ~TtAnalysis();
+    ~JetAnalysis();
 
     /// Perform the real analysis
     void analyze(const edm::Event & iEvent, const edm::EventSetup& iSetup);
@@ -117,44 +105,39 @@ class TtAnalysis : public edm::EDAnalyzer {
    private:
       // ----------member data ---------------------------
 
-    TtEvtSelector* evtSelected;
-    TtMCMatching*  MCMatching;
-    TtMuon*        ttMuon;
-    TtElectron*    ttEle;
-    TtPhoton*      ttGam;
-    TtMET*         ttMET;
-    TtJet*         ttJet;
-    TtEfficiency*  ttEff;
-    TtSemiEventSolution* semiSol;
-
+    TtEvtSelector*       evtSelected;
+    TtMuon*              ttMuon;
+    TtJet*               ttJet;
+    TtMET*               ttMET;
+    TtElectron*          ttEle;
+ 
     // Histograms
-    NJet  *t_Jet;
-    tHisto histos ;
+    HOBJ1 *hJ_Et20;
+    HOBJ1 *hJ_Et25;
+    HOBJ1 *hJ_Et30;
+    HOBJ2 *hMET_J20;
+    HOBJ2 *hMET_J25;
+    HOBJ2 *hMET_J30;
 
     // The file which will store the histos
     TFile *theFile;
 
-    bool exclude;
 
     // Switch for debug output
     bool debug;
-    bool needTree; 
-    bool trigOn;
     int evtIt;
 
     std::string rootFileName;
-    std::string leptonFlavour;
     edm::InputTag muonSrc;
     std::string recoMuon;
     edm::InputTag electronSrc;
-    edm::InputTag photonSrc;
-    edm::InputTag metSrc;
     edm::InputTag jetSrc;
+    edm::InputTag metSrc;
     edm::InputTag genJetSrc;
     edm::InputTag jetObj;
     edm::InputTag genSrc;
     edm::InputTag caloSrc;
-    edm::InputTag triggerSrc;
+
 
 };
 

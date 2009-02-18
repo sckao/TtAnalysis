@@ -56,6 +56,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TtAnalysisHisto.h"
+#include "TtObjHisto.h"
 #include "TtAnalysisNtuple.h"
 
 #include "TFile.h"
@@ -77,10 +78,9 @@ class TtMuon {
     ~TtMuon();
 
     /// Perform the real analysis
-    void muonAnalysis(edm::Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 );
     void MuonTreeFeeder(edm::Handle<std::vector<pat::Muon> > patMu, NJet* jtree, int eventId );
 
-    std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu, HTOP3* histo3 );
+    std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu, HOBJ3* histo1,  HOBJ3* histo2 );
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
     std::vector<const reco::Candidate*> nonIsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
 
@@ -90,7 +90,7 @@ class TtMuon {
 
     void MuonTrigger( edm::Handle<std::vector<pat::Muon> >patMu, edm::Handle <edm::TriggerResults> triggers);
 
-    void matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HTOP3* histo3  ); 
+    void matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HOBJ3* histo  ); 
 
    private:
 

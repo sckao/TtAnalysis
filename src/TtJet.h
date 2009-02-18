@@ -34,8 +34,8 @@
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 
 // Track Calo Mapping!
-#include "TrackingTools/TrackAssociator/interface/TrackDetectorAssociator.h"
-#include "TrackingTools/TrackAssociator/interface/TrackAssociatorParameters.h"
+//#include "TrackingTools/TrackAssociator/interface/TrackDetectorAssociator.h"
+//#include "TrackingTools/TrackAssociator/interface/TrackAssociatorParameters.h"
 
 //#include "TrackingTools/TrackAssociator/interface/TrackDetMatchInfo.h"
 
@@ -73,6 +73,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TtTools.h"
+#include "TtObjHisto.h"
 #include "TtAnalysisHisto.h"
 #include "TtAnalysisNtuple.h"
 #include "TtMuon.h"
@@ -108,13 +109,14 @@ class TtJet {
     void JetTreeFeeder(edm::Handle<std::vector<pat::Jet> > patJet, NJet* jtree, int eventId );
 
     void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
-    void JetdRAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
+    void JetdRAnalysis(std::vector<const pat::Jet*>  patJet, HOBJ1* histo1);
 
-    void JetEtSpectrum( edm::Handle<std::vector<reco::GenJet> > genJet, HTOP1* histo1);
-    void JetEtSpectrum( std::vector<pat::Jet> patJet, HTOP1* histo1);
+    void JetEtSpectrum( edm::Handle<std::vector<reco::GenJet> > genJet, HOBJ1* histo1);
+    void JetEtSpectrum( std::vector<const pat::Jet*> patJet, HOBJ1* histo1);
 
-    void MuonAndJet( std::vector<pat::Jet> patJet, const reco::Candidate* isoMu, HTOP1* histo1 );
-    void JetAndLepW( std::vector<pat::Jet> patJet,  LorentzVector p1, HTOP1* histo1 );
+    void MuonAndJet( std::vector<const pat::Jet*> patJet, const reco::Candidate* isoMu, HOBJ1* histo1 );
+
+    void JetAndLepW( std::vector<const pat::Jet*> patJet,  LorentzVector p1, HTOP1* histo1 );
 
     void genJetInfo(edm::Handle<std::vector<reco::GenJet> > genJet,
                     edm::Handle<std::vector<reco::GenParticle> > genParticles,
@@ -122,30 +124,28 @@ class TtJet {
 
     void matchedWJetsAnalysis(std::vector<jmatch> mcwjets, std::vector<const reco::Candidate*> isoMuons, HTOP8* histo8);
 
-    void matchedbJetsAnalysis(std::vector<jmatch> mcbjets, std::vector<jmatch> mcwjets, 
-                              std::vector<const reco::Candidate*> isoMuons, HTOP7* histo7);
+    void matchedbJetsAnalysis(std::vector<jmatch> mcjets, std::vector<const reco::Candidate*> isoMuons, HTOP7* histo7);
 
-    void selectedWJetsAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP8* histo8 );
+    void selectedWJetsAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> isoMuons, HTOP8* histo8 );
 
-    std::vector< const pat::Jet* > WJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );
-    std::vector< const pat::Jet* > bJetSelection( edm::Handle<std::vector<pat::Jet> >  Jets );    
+    std::vector< const pat::Jet* > WJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons );
+    std::vector< const pat::Jet* > bJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons );    
 
     double NofJetConstituents( pat::Jet theJet );
     double EoverH( pat::Jet theJet );
     //return W 4-momentum
     LorentzVector findW(LorentzVector qm1, LorentzVector qm2);
 
-    void JetMatchedMuon( edm::Handle<std::vector<pat::Jet> > patJet , edm::Handle<std::vector<pat::Muon> > patMuon
-             , const edm::Event& iEvent, const edm::EventSetup& iSetup, HTOP3* histo3 );
+    //void JetMatchedMuon( edm::Handle<std::vector<pat::Jet> > patJet , edm::Handle<std::vector<pat::Muon> > patMuon
+    //         , const edm::Event& iEvent, const edm::EventSetup& iSetup, const edm::ParameterSet& iConfig, HTOP3* histo3 );
     void JetMatchedMuon( edm::Handle<std::vector<pat::Jet> > patJet , edm::Handle<std::vector<pat::Muon> > patMuon
              , const edm::Event& iEvent, const edm::EventSetup& iSetup, HTOP3* histo3, bool Done  );
 
     FreeTrajectoryState getFTS(GlobalPoint GP, GlobalVector GV, int charge,
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
-    //std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, LorentzVector muP4 );
-    std::vector<pat::Jet> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
-    std::vector< const pat::Jet* > JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HTOP1* histo1 );
+    std::vector<const pat::Jet*> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
+    std::vector< const pat::Jet* > JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HOBJ1* histo1 );
 
     void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, HTOP7* histo7 );
 
@@ -160,8 +160,8 @@ class TtJet {
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;
     edm::InputTag genSrc;
-    edm::ParameterSet tkParas; 
-    TrackAssociatorParameters theParameters; 
+    //edm::ParameterSet tkParas; 
+    //TrackAssociatorParameters theParameters; 
 
 };
 

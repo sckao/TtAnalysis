@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtElectron.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -53,6 +53,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TtAnalysisHisto.h"
+#include "TtObjHisto.h"
 #include "TtAnalysisNtuple.h"
 
 #include "TFile.h"
@@ -77,9 +78,12 @@ class TtElectron {
     /// Perform the real analysis
     void ElectronTreeFeeder(edm::Handle<std::vector<pat::Electron> > patMu, NJet* jtree, int eventId );
     void ElectronAnalysis(edm::Handle<std::vector<pat::Electron> > patMu, HTOP4* histo4 );
-    void matchedElectronAnalysis( std::vector<const reco::Candidate*> patMu, HTOP4* histo4 );
 
-    std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patEle, HTOP4* histo4 );
+    void matchedElectronAnalysis( std::vector<const reco::Candidate*> patMu, HOBJ4* histo4 );
+
+    std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patEle, 
+                                                         HOBJ4* histo1, HOBJ4* histo2 );
+
     std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patEle );
 
     

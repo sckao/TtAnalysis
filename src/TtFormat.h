@@ -44,6 +44,8 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
+#include "TtAnalysisHisto.h"
+
 #include "TFile.h"
 #include "TVector3.h"
 #include <vector>
@@ -59,6 +61,8 @@ typedef math::XYZTLorentzVector LorentzVector;
 typedef std::pair<int, LorentzVector> iParton;
 // hfPos[0]:eta, hfPos[1]:phi, hfPos[2]:pt
 typedef std::vector<double> hfPos ;
+
+enum ttChannel{ hadronic, semiMuon, dilep, semiElectron, semiTau, other };
 
 //
 struct iReco{
@@ -90,6 +94,32 @@ struct iTt {
     LorentzVector p4;
     GlobalVector  gv;
     double pt;
+};
+
+struct tHisto {
+
+    HTOP1 *hJet;
+    HTOP2 *hMET;
+    HTOP3 *hMuon;
+    HTOP4 *hEle;
+    HTOP5 *hGam;
+    HTOP6 *hMObj;
+    HTOP7 *hBJet;
+    HTOP8 *hWJet;
+    HTOP9 *hTop;
+    HTOP10 *hWs[4];   // 0: Lep-MC , 1: Lep-Reco , 2: Had-MC , 3: Had-Reco
+    HTOP11 *hTops[4]; // 0: Lep-MC , 1: Lep-Reco , 2: Had-MC , 3: Had-Reco
+
+};
+
+struct TtResult {
+
+    std::vector<iReco>                   Tt ;
+    std::vector<const reco::Candidate*>  Ls ;
+    std::vector<const pat::Jet*>         Js ;
+    std::vector<const pat::Jet*>         bJ ;
+    std::vector<const pat::Jet*>         WJ ;
+    bool isData;
 };
 
 #endif

@@ -78,21 +78,24 @@ class TtMCMatching {
     /// Perform the real analysis
     void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, NJet* jtree, int eventId);
 
+    std::vector<jmatch> matchJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                    std::vector<const pat::Jet*> selectedJets, HTOP7* histo7, HTOP8* histo8, bool fillhisto );
+
     std::vector<jmatch> matchWJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<const pat::Jet*> selectedWJets,
-                                   HTOP8* histo8, bool fillhisto );
+                                   std::vector<const pat::Jet*> selectedWJets, HTOP8* histo8, bool fillhisto );
 
     std::vector<jmatch> matchbJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                   edm::Handle<std::vector<pat::Jet> > jets, std::vector<const pat::Jet*> selectedbJets,
-                                   HTOP7* histo7, bool fillhisto );
+                                   std::vector<const pat::Jet*> selectedbJets, HTOP7* histo7, bool fillhisto );
 
     std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        edm::Handle<std::vector<pat::Muon> > muons, 
                                         std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3, bool fillhisto);
+    std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                                        edm::Handle<std::vector<pat::Muon> > muons, HTOP3* histo3, bool fillhisto);
 
     std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        edm::Handle<std::vector<pat::Electron> > electrons,
                                         std::vector<const reco::Candidate*> isoEle, HTOP4* histo4, bool fillhisto);
+    std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                                        edm::Handle<std::vector<pat::Electron> > electrons, HTOP4* histo4, bool fillhisto);
 
     int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution );
     int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution, HTOP6* histo6 );
@@ -108,7 +111,7 @@ class TtMCMatching {
     std::vector<reco::Particle> genMuonFromB( edm::Handle<std::vector<reco::GenParticle> > genParticles, reco::Particle genB ) ;
 
     std::vector<const reco::Candidate*> matchMuonfromB( edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                std::vector<pat::Jet> jets, std::vector<const reco::Candidate*> isoMuons ,HTOP7* histo7, bool fillhisto ) ;
+                std::vector<const pat::Jet*> jets, std::vector<const reco::Candidate*> isoMuons ,HTOP7* histo7, bool fillhisto ) ;
 
     void CheckGenParticle(  edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
