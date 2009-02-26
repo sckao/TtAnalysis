@@ -20,17 +20,21 @@ process.source = cms.Source("PoolSource",
     debugVebosity = cms.untracked.uint32(10),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-'file:/data/top/sckao/MGTtJets/TtJets_PAT1_0.root'
+'file:/data/top/sckao/Fall08HLTQCD/QCDPAT1.root',
+'file:/data/top/sckao/Fall08HLTQCD/QCDPAT2.root',
+'file:/data/top/sckao/Fall08HLTQCD/QCDPAT3.root',
+'file:/data/top/sckao/Fall08HLTQCD/QCDPAT4.root'
     )
 )
 
 # replace the source files from a file list
-#import PhysicsTools.TtAnalysis.ttjetslist_cff as fileList
-import PhysicsTools.TtAnalysis.ttjetslist_skim1 as fileList
-process.source.fileNames = fileList.fileNames
+#import PhysicsTools.TtAnalysis.qcdlist_cff as fileList
+#import PhysicsTools.TtAnalysis.qcdlist_skim1 as fileList
+#process.source.fileNames = fileList.fileNames
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(8353)
+    # 1 jet filter ; 2841508 for 100 /pb , every 56830 => 2 /pb
+    input = cms.untracked.int32(-1)
 )
 process.MessageLogger = cms.Service("MessageLogger")
 
@@ -42,7 +46,7 @@ process.ttAna = cms.EDFilter("TtAnalysis",
     btag     = cms.untracked.bool(False),
     needTree = cms.untracked.bool(False),
     trigOn   = cms.untracked.bool(False),
-    rootFileName = cms.untracked.string('ttj_1Jskim_NoBTag1.root'),
+    rootFileName = cms.untracked.string('/data/top/sckao/Fall08QCDAna/ANAFILE'),
     genParticles = cms.InputTag("genParticles"),
     genJetSource = cms.InputTag("iterativeCone5GenJets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
@@ -60,20 +64,21 @@ process.ttAna = cms.EDFilter("TtAnalysis",
 process.jetAna = cms.EDFilter("JetAnalysis",
 
     debug    = cms.untracked.bool(False),
-    rootFileName = cms.untracked.string('ttj_JetEtAnalysis.root'),
+    rootFileName = cms.untracked.string('/data/top/sckao/Fall08QCDAna/JETFILE'),
     genParticles = cms.InputTag("genParticles"),
     genJetSource = cms.InputTag("iterativeCone5GenJets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
     jetSource      = cms.InputTag("selectedLayer1Jets"),
+    metSource      = cms.InputTag("selectedLayer1METs"),
     muonSource     = cms.InputTag("selectedLayer1Muons"),
     caloSource     = cms.InputTag("towerMaker"),
     recoMuons      = cms.untracked.string('muons'),
-)   
-    
+)
+
 process.muAna = cms.EDFilter("MuonAnalysis",
-    
+
     debug    = cms.untracked.bool(False),
-    rootFileName = cms.untracked.string('ttj_IsoMuAnalysis.root'),
+    rootFileName = cms.untracked.string('/data/top/sckao/Fall08QCDAna/MUFILE'),
     genParticles = cms.InputTag("genParticles"),
     genJetSource = cms.InputTag("iterativeCone5GenJets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
@@ -82,10 +87,10 @@ process.muAna = cms.EDFilter("MuonAnalysis",
     metSource      = cms.InputTag("selectedLayer1METs"),
     caloSource     = cms.InputTag("towerMaker"),
     recoMuons      = cms.untracked.string('muons'),
-)   
-    
+)
 
-process.p = cms.Path( process.ttAna + process.jetAna + process.muAna )
+
+process.p = cms.Path(process.ttAna + process.jetAna + process.muAna )
 #process.ttAna.TrackAssociatorParameters.useEcal = False
 #process.ttAna.TrackAssociatorParameters.useHcal = False
 #process.ttAna.TrackAssociatorParameters.useCalo = True

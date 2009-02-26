@@ -15,3 +15,11 @@
 <export>
    <lib name=PhysicsToolsTtAnalysis>
 </export>
+
+<export>
+   <lib name=PhysicsToolsJetAnalysis>
+</export>
+
+<export>
+   <lib name=PhysicsToolsMuonAnalysis>
+</export>

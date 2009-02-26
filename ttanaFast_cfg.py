@@ -17,7 +17,7 @@ process.load("Geometry.CaloEventSetup.CaloGeometry_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 process.GlobalTag.globaltag = 'IDEAL_V9::All'
 
-from TrackingTools.TrackAssociator.default_cfi import *
+#from TrackingTools.TrackAssociator.default_cfi import *
 
 process.source = cms.Source("PoolSource",
     debugFlag = cms.untracked.bool(False),
@@ -39,14 +39,13 @@ process.maxEvents = cms.untracked.PSet(
 process.MessageLogger = cms.Service("MessageLogger")
 
 process.ttAna = cms.EDFilter("TtAnalysis",
-    TrackAssociatorParameterBlock,
-    TrackAssociatorParameters,
+    #TrackAssociatorParameterBlock,
+    #TrackAssociatorParameters,
     debug    = cms.untracked.bool(False),
     btag     = cms.untracked.bool(False),
     needTree = cms.untracked.bool(False),
     trigOn   = cms.untracked.bool(False),
     rootFileName = cms.untracked.string('/data/top/sckao/WJ_11pb_Et20.root'),
-    #rootFileName = cms.untracked.string('WJ_1pb_test.root'),
     genParticles = cms.InputTag("genParticles"),
     genJetSource = cms.InputTag("iterativeCone5GenJets"),
     electronSource = cms.InputTag("selectedLayer1Electrons"),
@@ -61,10 +60,39 @@ process.ttAna = cms.EDFilter("TtAnalysis",
     caloSource   = cms.InputTag("towerMaker")
 )
 
-process.p = cms.Path(process.ttAna)
-process.ttAna.TrackAssociatorParameters.useEcal = False
-process.ttAna.TrackAssociatorParameters.useHcal = False
-process.ttAna.TrackAssociatorParameters.useCalo = True
-process.ttAna.TrackAssociatorParameters.useHO = False
-process.ttAna.TrackAssociatorParameters.useMuon = False
+process.jetAna = cms.EDFilter("JetAnalysis",
+
+    debug    = cms.untracked.bool(False),
+    rootFileName = cms.untracked.string('ttj_JetEtAnalysis.root'),
+    genParticles = cms.InputTag("genParticles"),
+    genJetSource = cms.InputTag("iterativeCone5GenJets"),
+    electronSource = cms.InputTag("selectedLayer1Electrons"),
+    jetSource      = cms.InputTag("selectedLayer1Jets"),
+    muonSource     = cms.InputTag("selectedLayer1Muons"),
+    caloSource     = cms.InputTag("towerMaker"),
+    recoMuons      = cms.untracked.string('muons'),
+)   
+    
+process.muAna = cms.EDFilter("MuonAnalysis",
+    
+    debug    = cms.untracked.bool(False),
+    rootFileName = cms.untracked.string('ttj_IsoMuAnalysis.root'),
+    genParticles = cms.InputTag("genParticles"),
+    genJetSource = cms.InputTag("iterativeCone5GenJets"),
+    electronSource = cms.InputTag("selectedLayer1Electrons"),
+    jetSource      = cms.InputTag("selectedLayer1Jets"),
+    muonSource     = cms.InputTag("selectedLayer1Muons"),
+    metSource      = cms.InputTag("selectedLayer1METs"),
+    caloSource     = cms.InputTag("towerMaker"),
+    recoMuons      = cms.untracked.string('muons'),
+)   
+    
+
+
+process.p = cms.Path(process.ttAna  + process.jetAna + process.muAna )
+#process.ttAna.TrackAssociatorParameters.useEcal = False
+#process.ttAna.TrackAssociatorParameters.useHcal = False
+#process.ttAna.TrackAssociatorParameters.useCalo = True
+#process.ttAna.TrackAssociatorParameters.useHO = False
+#process.ttAna.TrackAssociatorParameters.useMuon = False
 

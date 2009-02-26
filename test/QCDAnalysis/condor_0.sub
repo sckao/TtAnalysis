@@ -1,0 +1,8 @@
+universe   = vanilla
+Executable =/home/cms/sckao/Top/CMSSW_2_2_3/src/PhysicsTools/TtAnalysis/test/QCDAnalysis/RUNDIR1/CONDOR_SH
+log        = condor.log
+output     = condor.out
+error      = condor.err
+arguments  =
+Queue 1
+
