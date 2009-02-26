@@ -163,9 +163,9 @@ class HOBJ2 {
 public:
  
  HOBJ2() {
-
     PtResol     = new TH2F("PtResol",   "Pt Resol, pat vs evt ",150,-1.01, 1.99, 150, -1.01, 1.99 );
     dPhi_NeuMET = new TH2F("dPhi_NeuMET", "dPhi(neu, MET),  pat vs evt ",160,-0.05, 3.15, 160, -0.05, 3.15 );
+    Pt_dPhi_MET = new TH2F("Pt_dPhi_MET", " pat & evt,  PtResol vs  dPhi", 150,-1.01, 1.99, 160,-0.05, 3.15);
  }
 
  /// Destructor
@@ -173,12 +173,14 @@ public:
 
     delete PtResol;
     delete dPhi_NeuMET;
+    delete Pt_dPhi_MET;
  }
 
- void Fill_2a( double patResol,  double evtResol, double dPhi_neu_pat, double dPhi_neu_evt ){
+ void Fill_2a( double patResol,  double evtResol, double theResol, double dPhi_neu_pat, double dPhi_neu_evt, double dPhi_pat_evt ){
 
     PtResol->Fill( patResol, evtResol );
     dPhi_NeuMET->Fill( dPhi_neu_pat, dPhi_neu_evt );
+    Pt_dPhi_MET->Fill( theResol, dPhi_pat_evt );
  }
 
  void Write( TString theFolder , TFile* file  ) {
@@ -187,12 +189,14 @@ public:
 
     PtResol->Write();
     dPhi_NeuMET->Write();
+    Pt_dPhi_MET->Write();
 
     file->cd("../");
  }
 
   TH2F *PtResol;
   TH2F *dPhi_NeuMET;
+  TH2F *Pt_dPhi_MET;
 
 };
 

@@ -89,6 +89,8 @@ class TtMET;
 class TtJet;
 class TtEfficiency;
 
+typedef std::vector<int> hadIdx;
+
 class TtSemiEventSolution {
    public:
 
@@ -136,6 +138,11 @@ class TtSemiEventSolution {
     void McRecoCompare( int topo, int r,  tHisto histos );
 
     void KeepBuildInfo( bool isData );
+
+    void HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<hadIdx>& tList, iReco t2, iReco w2 );
+    
+    void Algo_dmMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs );
+    void Algo_PtMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs );
   
    private:
       // ----------member data ---------------------------
@@ -161,6 +168,11 @@ class TtSemiEventSolution {
     std::vector<const pat::Jet*> mcbJets ;
    
     std::vector<TtResult> AllTt ;
+
+    int lt;
+    int ht;
+    int lw;
+    int hw;
 
     bool exclude;
 

@@ -206,11 +206,12 @@ void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vec
 
      double patResol = 9. ;
      double evtResol = 9. ;
+     double theResol = 9. ;
      double dPhi_neu_pat = 9. ;
      double dPhi_neu_evt = 9. ;
+     double dPhi_pat_evt = 9. ;
 
      if ( neuMET.Pt() != 0. ) {
-
         patResol = ( patMET.Pt()/neuMET.Pt() ) - 1. ;
 	evtResol = ( evtMET.Pt()/neuMET.Pt() ) - 1. ;
         if ( patMET.Pt() != 0. && evtMET.Pt() != 0. ) {
@@ -221,10 +222,13 @@ void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vec
         if ( evtResol >= 1.98 ) evtResol = 1.98 ;
         if ( dPhi_neu_pat >= 3.142 ) dPhi_neu_pat = 3.142 ;
         if ( dPhi_neu_evt >= 3.142 ) dPhi_neu_evt = 3.142 ;
-
+     }
+     if ( patMET.Pt() != 0. ) {
+        theResol = ( evtMET.Pt()/patMET.Pt() ) - 1. ;
+        dPhi_pat_evt = tools->getdPhi( patMET, evtMET );
      }
 
-     histo->Fill_2a( patResol,  evtResol, dPhi_neu_pat, dPhi_neu_evt );
+     histo->Fill_2a( patResol,  evtResol, theResol, dPhi_neu_pat, dPhi_neu_evt, dPhi_pat_evt );
 
 }
 
@@ -285,3 +289,4 @@ void TtMET::MetAndJets(Handle<std::vector<pat::MET> > met, std::vector<const pat
 
    }
 }
+
