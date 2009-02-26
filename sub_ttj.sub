@@ -1,0 +1,7 @@
+universe   = vanilla
+Executable =/home/cms/sckao/Top/CMSSW_2_2_3/src/PhysicsTools/TtAnalysis/sub_ttj.sh
+log        = condor_tt.log
+output     = condor_tt.out
+error      = condor_tt.err
+arguments  =
+Queue 1

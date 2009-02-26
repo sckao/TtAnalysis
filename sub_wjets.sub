@@ -1,0 +1,7 @@
+universe   = vanilla
+Executable =/home/cms/sckao/Top/CMSSW_2_2_3/src/PhysicsTools/TtAnalysis/sub_wjets.sh
+log        = condor_wj.log
+output     = condor_wj.out
+error      = condor_wj.err
+arguments  =
+Queue 1
