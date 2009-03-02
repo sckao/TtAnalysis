@@ -37,7 +37,7 @@ static bool ptDecrease(const iReco t1, const iReco t2) { return ( t1.pt > t2.pt 
 // constructors and destructor
 using namespace edm;
 using namespace std;
-TtSemiEventSolution::TtSemiEventSolution(const edm::ParameterSet& iConfig ) : lt(-1), ht(-1), lw(-1), hw(-1)
+TtSemiEventSolution::TtSemiEventSolution(const edm::ParameterSet& iConfig )
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool> ("debug");
@@ -132,25 +132,32 @@ void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, const edm::Even
    // ********************************************
    // *     Check Results and Efficiency !!!     *
    // ********************************************
-   if ( semiTt.size() == 2 ) {
-      double lepTMass = tools->getInvMass( semiTt[0].p4 ); 
-      double hadTMass = tools->getInvMass( semiTt[1].p4 ); 
-      if (lepTMass >= 400. ) lepTMass = 399.99 ;
-      if (hadTMass >= 400. ) hadTMass = 399.99 ;
+   if ( semiTt.size() >= 2 ) {
 
-      double PxTt = semiTt[0].p4.Px() + semiTt[1].p4.Px() ;
-      double PyTt = semiTt[0].p4.Py() + semiTt[1].p4.Py() ;
-      double PtTt = sqrt( (PxTt*PxTt) + (PyTt*PyTt) ) ;
-      if ( PtTt > 400. ) PtTt = 399.9 ;
+      int ttSize = static_cast<int>( semiTt.size() ) / 2 ;
+      for (int i=0; i< ttSize; i++) {
+         int k = i*2 ;
+         double lepTMass = tools->getInvMass( semiTt[k].p4 ); 
+         double hadTMass = tools->getInvMass( semiTt[k+1].p4 ); 
+         if (lepTMass >= 400. ) lepTMass = 399.99 ;
+         if (hadTMass >= 400. ) hadTMass = 399.99 ;
 
-      double Wtt = tools->getInvMass( semiTt[0].p4, semiTt[1].p4 );
-      double Wt2 = lepTMass + hadTMass ;
+         double PxTt = semiTt[k].p4.Px() + semiTt[k+1].p4.Px() ;
+	 double PyTt = semiTt[k].p4.Py() + semiTt[k+1].p4.Py() ;
+	 double PtTt = sqrt( (PxTt*PxTt) + (PyTt*PyTt) ) ;
+	 if ( PtTt > 400. ) PtTt = 399.9 ;
 
-      if ( pass  > 3 ) histos.hTop->Fill9a0( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
-      if ( pass == 4 ) histos.hTop->Fill9a1( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
-      if ( pass == 5 ) histos.hTop->Fill9a2( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
-      if ( pass == 6 ) histos.hTop->Fill9a3( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
-      if ( pass >= 7 ) histos.hTop->Fill9a4( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
+         double Wtt = tools->getInvMass( semiTt[k].p4, semiTt[k+1].p4 );
+         double Wt2 = lepTMass + hadTMass ;
+
+         if ( pass  > 3 ) histos.hTop->Fill9a0( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
+	 if ( pass == 4 ) histos.hTop->Fill9a1( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
+	 if ( pass == 5 ) histos.hTop->Fill9a2( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
+	 if ( pass == 6 ) histos.hTop->Fill9a3( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
+	 if ( pass >= 7 ) histos.hTop->Fill9a4( lepTMass, hadTMass, PtTt, Wtt, Wt2 );
+      }
+
+      KeepBuildInfo( true );
 
    }
 
@@ -195,6 +202,7 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, const edm::Ev
    mcbJets.clear();
    semiMCTt.clear();
 
+   if ( !passSelect ) return ;
    // 2. gen-reco matching selection for leptons 
    std::vector<const reco::Candidate*> isoMuons = ttMuon->IsoMuonSelection( muons );
    std::vector<const reco::Candidate*> isoEle   = ttEle->IsoEleSelection( electrons );
@@ -203,8 +211,8 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, const edm::Ev
 
    // 3. gen-reco matching selection for jets ;  For No B-tagging case only
    //    W and b jets selections 
-   std::vector<const pat::Jet*> selectedJets  = ttJet->JetSelection( jets, isoLep, JetEtCut );
-   std::vector<jmatch> mc_jets  = MCMatching->matchJets(genParticles, selectedJets, histos.hBJet, histos.hWJet, build);  
+   std::vector<const pat::Jet*> theSelectedJets  = ttJet->JetSelection( jets, isoMuons, JetEtCut );
+   std::vector<jmatch> mc_jets  = MCMatching->matchJets(genParticles, theSelectedJets, histos.hBJet, histos.hWJet, build);  
 
    // 4. classify wjets and bjets
    int wQ = 0 ;
@@ -289,6 +297,8 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, const edm::Ev
 
       histos.hTop->Fill9(mcLepTMass, mcHadTMass, PtTt, Wtt, Wt2 );
       if ( pass > 3 ) histos.hTop->Fill9g( mcLepTMass, mcHadTMass );    
+
+      KeepBuildInfo( false );
    }
  
 }
@@ -547,7 +557,7 @@ bool TtSemiEventSolution::recoTop( std::vector<iReco> wCandidate, std::vector<co
   tCandidates.clear();
 
   std::vector<iReco> bWpairList;  
-  std::vector<hadIdx> tList;  
+  std::vector<Idx> tList;
   for(size_t i=0; i < wCandidate.size(); i++ ){
      for (size_t j=0; j< bjets.size(); j++ ){
 
@@ -612,6 +622,7 @@ std::vector<iReco> TtSemiEventSolution::recoSemiLeptonicTtEvent(int topo, std::v
                             Handle<std::vector<pat::MET> >  mets, tHisto histos ) {
 
    std::vector<iReco> TtCollection;
+   std::vector<Idx> twIdx ;
    TtCollection.clear();
    if (topo != 1 && topo != -1 ) return TtCollection;
 
@@ -638,36 +649,14 @@ std::vector<iReco> TtSemiEventSolution::recoSemiLeptonicTtEvent(int topo, std::v
       if( type == 0 ) findhadT = recoTop( hadWs ,thebJets, hadTs, true, histos.hTops[2] );
       if( type == 1 ) findhadT = recoTop( hadWs ,thebJets, hadTs, true, histos.hTops[3] );
 
-      Algo_dmMin( lepTs, hadTs, hadWs );
-      //Algo_PtMin( lepTs, hadTs, hadWs );
+      Algo_dmMin( lepTs, hadTs, hadWs, twIdx );
+      //Algo_PtMin( lepTs, hadTs, hadWs, twIdx );
+      //Algo_Zero( lepTs, hadTs, hadWs, twIdx );
 
-      if ( lt != -1 && ht != -1 ) {
-         TtCollection.push_back( lepTs[ lt ] );
-         TtCollection.push_back( hadTs[ ht ] );
-	 double lepW_mt = (lepWs[ lw ].mt >= 160. ) ? 159.9 : lepWs[ lw ].mt ;
-         double hadW_mass =  tools->getInvMass( hadWs[hw].p4) ;
-         double hadW_m  = ( hadW_mass >= 160 ) ? 159.9 : hadW_mass ;
-         double lRelPt = tools->getRelPt( lepWs[ lw ].p4 , lepTs[lt].p4 );
-         double hRelPt = tools->getRelPt( hadWs[ hw].p4 , hadTs[ht].p4 );
-         double ltbeta = tools->getBeta( lepTs[lt].p4 );
-         double htbeta = tools->getBeta( hadTs[ht].p4 );
-         double lWdRab = tools->getdR( lepWs[ lw ].q4v[0].second, lepWs[ lw ].q4v[1].second );
-         double hWdRab = tools->getdR( hadWs[ hw].q4v[0].second, hadWs[ hw].q4v[1].second );
-	 double lepT_pt = ( lepTs[lt].pt >= 400) ? 399.9 : lepTs[lt].pt ;
-	 double hadT_pt = ( hadTs[ht].pt >= 400) ? 399.9 : hadTs[ht].pt ;
-
-         if ( type ==  1 ) {
-            histos.hWs[1]->Fill10b( lepW_mt, lRelPt, ltbeta, lWdRab );
-            histos.hWs[3]->Fill10b( hadW_m , hRelPt, htbeta, hWdRab );
-            histos.hTops[1]->Fill11c( lepTs[ lt ].dm + 171.2 , lepT_pt );
-            histos.hTops[3]->Fill11c( hadTs[ ht].dm + 171.2 , hadT_pt );
-         }
-         if ( type ==  0 ) {
-            histos.hWs[0]->Fill10b( lepW_mt, lRelPt, ltbeta, lWdRab );
-            histos.hWs[2]->Fill10b( hadW_m , hRelPt, htbeta, hWdRab );
-            histos.hTops[0]->Fill11c( lepTs[ lt ].dm + 171.2 , lepT_pt );
-            histos.hTops[2]->Fill11c( hadTs[ ht].dm + 171.2 , hadT_pt );
-         }
+      for ( size_t i=0; i< twIdx.size(); i++ ) {
+          TtCollection.push_back( lepTs[ twIdx[i][0] ] );
+	  TtCollection.push_back( hadTs[ twIdx[i][1] ] );
+          ResultRecord( twIdx[i], lepTs, hadTs, lepWs, hadWs, type, histos ) ;
       }
    }
    return TtCollection ;
@@ -680,6 +669,7 @@ std::vector<iReco> TtSemiEventSolution::recoSemiLeptonicTtEvent(int topo, std::v
                             Handle<std::vector<pat::MET> >  mets, tHisto histos ) {
 
    std::vector<iReco> TtCollection;
+   std::vector<Idx> twIdx ;
    TtCollection.clear();
    if (topo != 1 && topo != -1) return TtCollection;
 
@@ -707,37 +697,15 @@ std::vector<iReco> TtSemiEventSolution::recoSemiLeptonicTtEvent(int topo, std::v
       if( type == 0 ) findhadT = recoTop( hadWs ,theJets, hadTs, true, histos.hTops[2] );
       if( type == 1 ) findhadT = recoTop( hadWs ,theJets, hadTs, true, histos.hTops[3] );
 
-      Algo_dmMin( lepTs, hadTs, hadWs );
-      //Algo_PtMin( lepTs, hadTs, hadWs );
-
-      if ( lt != -1 && ht != -1 ) {
-         TtCollection.push_back( lepTs[ lt ] );
-	 TtCollection.push_back( hadTs[ ht ] );
-         double lepW_mt = (lepWs[ lw ].mt >= 160) ? 159.9 : lepWs[ lw ].mt ;
-         double hadW_mass =  tools->getInvMass( hadWs[hw].p4) ;
-         double hadW_m  = ( hadW_mass >= 160 ) ? 159.9 : hadW_mass ;
-         double lRelPt = tools->getRelPt( lepWs[ lw ].p4 , lepTs[lt].p4 );
-         double hRelPt = tools->getRelPt( hadWs[ hw ].p4 , hadTs[ht].p4 );
-         double ltbeta = tools->getBeta( lepTs[lt].p4 );
-         double htbeta = tools->getBeta( hadTs[ht].p4 );
-         double lWdRab = tools->getdR( lepWs[ lw ].q4v[0].second, lepWs[ lw ].q4v[1].second );
-         double hWdRab = tools->getdR( hadWs[ hw ].q4v[0].second, hadWs[ hw ].q4v[1].second );
-	 double lepT_pt = ( lepTs[lt].pt >= 400) ? 399.9 : lepTs[lt].pt ;
-	 double hadT_pt = ( hadTs[ht].pt >= 400) ? 399.9 : hadTs[ht].pt ;
-
-         if ( type ==  1 ) {
-            histos.hWs[1]->Fill10b( lepW_mt, lRelPt, ltbeta, lWdRab );
-            histos.hWs[3]->Fill10b( hadW_m , hRelPt, htbeta, hWdRab );
-            histos.hTops[1]->Fill11c( lepTs[ lt ].dm + 171.2 , lepT_pt );
-            histos.hTops[3]->Fill11c( hadTs[ ht ].dm + 171.2 , hadT_pt );
-         }
-         if ( type ==  0 ) {
-            histos.hWs[0]->Fill10b( lepW_mt, lRelPt, ltbeta, lWdRab );
-            histos.hWs[2]->Fill10b( hadW_m , hRelPt, htbeta, hWdRab );
-            histos.hTops[0]->Fill11c( lepTs[ lt ].dm + 171.2 , lepT_pt );
-            histos.hTops[2]->Fill11c( hadTs[ ht ].dm + 171.2 , hadT_pt );
-         }
+      //Algo_dmMin( lepTs, hadTs, hadWs, twIdx );
+      //Algo_PtMin( lepTs, hadTs, hadWs, twIdx );
+      Algo_Zero( lepTs, hadTs, hadWs, twIdx );
+      for ( size_t i=0; i< twIdx.size(); i++ ) {
+          TtCollection.push_back( lepTs[ twIdx[i][0] ] );
+	  TtCollection.push_back( hadTs[ twIdx[i][1] ] );
+          ResultRecord( twIdx[i], lepTs, hadTs, lepWs, hadWs, type, histos ) ;
       }
+
    }
 
    return TtCollection ;
@@ -822,12 +790,12 @@ void TtSemiEventSolution::MCTruthCheck( std::vector<iReco> mcTt, std::vector<iRe
 
 }
 
-void TtSemiEventSolution::Algo_dmMin( std::vector<iReco> lepTs,  std::vector<iReco> hadTs, std::vector<iReco> hadWs ) {
+void TtSemiEventSolution::Algo_dmMin( std::vector<iReco> lepTs,  std::vector<iReco> hadTs, std::vector<iReco> hadWs, std::vector<Idx>& twIdx ) {
 
-      lt = -1;
-      ht = -1;
-      lw = -1;
-      hw = -1;
+      int lt = -1;
+      int ht = -1;
+      int lw = -1;
+      int hw = -1;
       if ( lepTs.size() > 0  && hadTs.size() > 0 ) {
          double dmtt = 999. ;
          for (size_t i=0; i< lepTs.size(); i++ ) {
@@ -850,14 +818,23 @@ void TtSemiEventSolution::Algo_dmMin( std::vector<iReco> lepTs,  std::vector<iRe
          }
       }
 
+      if ( lt != -1 && ht != -1 ) {
+         Idx tws;
+         tws.push_back(lt);
+         tws.push_back(ht);
+         tws.push_back(lw);
+         tws.push_back(hw);
+
+         twIdx.push_back(tws);
+      }
 }
 
-void TtSemiEventSolution::Algo_PtMin( std::vector<iReco> lepTs,  std::vector<iReco> hadTs, std::vector<iReco> hadWs ) {
+void TtSemiEventSolution::Algo_PtMin( std::vector<iReco> lepTs,  std::vector<iReco> hadTs, std::vector<iReco> hadWs, std::vector<Idx>& twIdx ) {
 
-      lt = -1;
-      ht = -1;
-      lw = -1;
-      hw = -1;
+      int lt = -1;
+      int ht = -1;
+      int lw = -1;
+      int hw = -1;
       if ( lepTs.size() > 0  && hadTs.size() > 0 ) {
          double PtSum0 = 9999. ;
          for (size_t i=0; i< lepTs.size(); i++ ) {
@@ -882,14 +859,21 @@ void TtSemiEventSolution::Algo_PtMin( std::vector<iReco> lepTs,  std::vector<iRe
          }
       }
 
+      if ( lt != -1 && ht != -1 ) {
+         Idx tws;
+         tws.push_back(lt);
+         tws.push_back(ht);
+         tws.push_back(lw);
+         tws.push_back(hw);
+
+         twIdx.push_back(tws);
+      }
 }
 
-/*
-void TtSemiEventSolution::Algo_Zero( std::vector<iReco> lepTs,  std::vector<iReco> hadTs, std::vector<iReco> hadWs ) {
+
+void TtSemiEventSolution::Algo_Zero( std::vector<iReco> lepTs,  std::vector<iReco> hadTs, std::vector<iReco> hadWs, std::vector<Idx>& twIdx  ) {
 
       if ( lepTs.size() > 0  && hadTs.size() > 0 ) {
-         std::vector<int> last_hadIdx(3, -1) ;
-	 std::vector<int> this_hadIdx(3, -1) ;
          for (size_t i=0; i< lepTs.size(); i++ ) {
              for (size_t j=0; j< hadTs.size(); j++) {
 
@@ -899,32 +883,77 @@ void TtSemiEventSolution::Algo_Zero( std::vector<iReco> lepTs,  std::vector<iRec
                  if ( lepTs[i].from.second == hadWs[iw].from.first  ) continue;
                  if ( lepTs[i].from.second == hadWs[iw].from.second ) continue;
 
-                 this_hadIdx[0] = hadTs[j].from.second ;
-                 this_hadIdx[1] = hadWs[iw].from.first ;
-                 this_hadIdx[2] = hadWs[iw].from.second ;
+                 Idx tws;
+                 tws.push_back( i );
+                 tws.push_back( j );
+                 tws.push_back( lepTs[i].from.first );
+                 tws.push_back( hadTs[j].from.first );
+                 twIdx.push_back( tws );
             }
          }
       }
 
-}
-*/
 
-void TtSemiEventSolution::HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<hadIdx>& tList, iReco t2, iReco w2 ) {
+}
+
+void TtSemiEventSolution::ResultRecord( Idx index, std::vector<iReco> lepTs, std::vector<iReco> hadTs, std::vector<iReco> lepWs, std::vector<iReco> hadWs, int type, tHisto& histos ) {
+
+      int lt = index[0];
+      int ht = index[1];
+      int lw = index[2];
+      int hw = index[3];
+
+      if ( lt != -1 && ht != -1 ) {
+	 double lepW_mt = (lepWs[ lw ].mt >= 160. ) ? 159.9 : lepWs[ lw ].mt ;
+         double hadW_mass =  tools->getInvMass( hadWs[hw].p4) ;
+         double hadW_m  = ( hadW_mass >= 160 ) ? 159.9 : hadW_mass ;
+         double lRelPt = tools->getRelPt( lepWs[ lw ].p4 , lepTs[lt].p4 );
+         double hRelPt = tools->getRelPt( hadWs[ hw].p4 , hadTs[ht].p4 );
+         double ltbeta = tools->getBeta( lepTs[lt].p4 );
+         double htbeta = tools->getBeta( hadTs[ht].p4 );
+         double lWdRab = tools->getdR( lepWs[ lw ].q4v[0].second, lepWs[ lw ].q4v[1].second );
+         double hWdRab = tools->getdR( hadWs[ hw].q4v[0].second, hadWs[ hw].q4v[1].second );
+	 double lepT_pt = ( lepTs[lt].pt >= 400) ? 399.9 : lepTs[lt].pt ;
+	 double hadT_pt = ( hadTs[ht].pt >= 400) ? 399.9 : hadTs[ht].pt ;
+
+         if ( type ==  1 ) {
+            histos.hWs[1]->Fill10b( lepW_mt, lRelPt, ltbeta, lWdRab );
+            histos.hWs[3]->Fill10b( hadW_m , hRelPt, htbeta, hWdRab );
+            histos.hTops[1]->Fill11c( lepTs[ lt ].dm + 171.2 , lepT_pt );
+            histos.hTops[3]->Fill11c( hadTs[ ht].dm + 171.2 , hadT_pt );
+         }
+         if ( type ==  0 ) {
+            histos.hWs[0]->Fill10b( lepW_mt, lRelPt, ltbeta, lWdRab );
+            histos.hWs[2]->Fill10b( hadW_m , hRelPt, htbeta, hWdRab );
+            histos.hTops[0]->Fill11c( lepTs[ lt ].dm + 171.2 , lepT_pt );
+            histos.hTops[2]->Fill11c( hadTs[ ht].dm + 171.2 , hadT_pt );
+         }
+      }
+
+}
+
+void TtSemiEventSolution::HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<Idx>& tList, iReco t2, iReco w2 ) {
+
+     if ( w2.from.first == -1 && w2.from.second == -1 ) {
+        tCandidates.push_back(t2) ;
+        return ;
+     }
 
      std::vector<int> this_hadIdx(3, -1) ;
      this_hadIdx[0] = t2.from.second;
      this_hadIdx[1] = w2.from.first ;
      this_hadIdx[2] = w2.from.second ;
 
+
      if ( tList.size() == 0 ) {
         tList.push_back( this_hadIdx );
         tCandidates.push_back( t2 );
      }
 
-     for(size_t k=0; k<tList.size(); k++ ) {
+     int repeat = 0;
+     for(size_t k=0; k < tList.size(); k++ ) {
 
         std::vector<int> last_hadIdx = tList[k];
-        int repeat = 0;
         for(int i=0; i<3; i++) {
            for(int j=0; j<3; j++) {
               if ( last_hadIdx[i] == -1 ) continue;
@@ -932,7 +961,8 @@ void TtSemiEventSolution::HadronicTopCombinatoric( std::vector<iReco>& tCandidat
            }
         }
 
-        if ( repeat == 3 ) continue;
+     }
+     if ( repeat < 3 ) {
         tList.push_back( this_hadIdx );
         tCandidates.push_back( t2 );
      }

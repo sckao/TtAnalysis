@@ -89,7 +89,7 @@ class TtMET;
 class TtJet;
 class TtEfficiency;
 
-typedef std::vector<int> hadIdx;
+typedef std::vector<int> Idx;
 
 class TtSemiEventSolution {
    public:
@@ -139,11 +139,14 @@ class TtSemiEventSolution {
 
     void KeepBuildInfo( bool isData );
 
-    void HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<hadIdx>& tList, iReco t2, iReco w2 );
+    void HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<Idx>& tList, iReco t2, iReco w2 );
     
-    void Algo_dmMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs );
-    void Algo_PtMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs );
+    void Algo_dmMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
+    void Algo_PtMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
+    void Algo_Zero( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
   
+    void ResultRecord( Idx index, std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> lepWs, std::vector<iReco> hadWs , int type, tHisto& histos );
+   
    private:
       // ----------member data ---------------------------
 
@@ -169,10 +172,6 @@ class TtSemiEventSolution {
    
     std::vector<TtResult> AllTt ;
 
-    int lt;
-    int ht;
-    int lw;
-    int hw;
 
     bool exclude;
 

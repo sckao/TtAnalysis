@@ -238,9 +238,9 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    // 1. Build semi-mu tt events
    semiSol->BuildSemiTt(iEvent, iSetup, 1, histos );
-   semiSol->KeepBuildInfo( true );
+   //semiSol->KeepBuildInfo( true );
    semiSol->MCBuildSemiTt(iEvent, iSetup, 1, histos );
-   semiSol->KeepBuildInfo( false );
+   //semiSol->KeepBuildInfo( false );
    semiSol->McRecoCompare( 1, 0, histos );
 
    // 2. build semi-Tt events
