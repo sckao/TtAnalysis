@@ -60,6 +60,8 @@ typedef math::XYZTLorentzVector LorentzVector;
 typedef std::pair<int, LorentzVector> iParton;
 // hfPos[0]:eta, hfPos[1]:phi, hfPos[2]:pt
 typedef std::vector<double> hfPos ;
+typedef std::vector<int> Idx;
+typedef std::pair<int, double> IDPair;
 
 enum ttChannel{ hadronic, semiMuon, dilep, semiElectron, semiTau, other };
 

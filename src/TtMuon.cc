@@ -95,6 +95,9 @@ void TtMuon::MuonTreeFeeder(Handle<std::vector<pat::Muon> > patMu, NJet* jtree, 
 
 std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector<pat::Muon> > patMu, HOBJ3* histo1, HOBJ3* histo2 ) {
 
+ int muSize = static_cast<int>( patMu->size() );
+ if ( muSize > 20 ) muSize = 20;
+
  //std::vector<pat::Muon> isoMuons;
  std::vector<const reco::Candidate*> isoMuons;
  isoMuons.clear();
@@ -137,8 +140,8 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
  }
 
  if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing );
- histo1->Fill_3c( N_glbMu, isoMuons.size() );
- histo2->Fill_3c( patMu->size(), isoMuons.size() );
+ histo1->Fill_3c( muSize, N_glbMu );
+ histo2->Fill_3c( muSize, isoMuons.size() );
 
  return isoMuons ;
 }

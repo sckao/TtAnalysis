@@ -77,6 +77,7 @@ TtMCMatching::~TtMCMatching()
 //
 static bool PtDecreasing(const reco::Particle s1, const reco::Particle s2) { return ( s1.pt() > s2.pt() ); }
 static bool PidDecreasing( jmatch s1, jmatch s2) { return ( s1.MomIdx > s2.MomIdx ); }
+static bool dRIncreasing( IDPair s1, IDPair s2) { return ( s1.second < s2.second ); }
 
 void TtMCMatching::MCTreeFeeder(Handle<std::vector<reco::GenParticle> > genParticles , NJet* jtree, int eventId ){
 
@@ -172,7 +173,6 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
 // general matching for w jets and bjets 
 std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticle> > genParticles,
                                            std::vector<const pat::Jet*> selectedJets,
-                          //                 Handle<std::vector<pat::Jet> > jets, 
                                            HTOP7* histo7, HTOP8* histo8, bool fillhisto ) {
 
    // Accumulate the hadronic dauaghters from W
@@ -181,78 +181,85 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
        std::vector<reco::Particle> tmpMom = ttDecay(genParticles, i) ;
        for (std::vector<reco::Particle>::iterator it= tmpMom.begin(); it!= tmpMom.end(); it++){
            jetMom.push_back( *it );
+           //if (fillhisto) cout<<"tmpMom sz"<<tmpMom.size() << " jmom:"<< it->pdgId() <<endl;
        }
    }
- 
-   // Loop all pat jets
-   // get 4 collection w.r.t. possible 4 jet mom(quarks from W)
-   // each collection contains candidate jets
-   std::vector<int> q1; // q+ from w+
-   std::vector<int> q2; // q- from w+
-   std::vector<int> q3; // q+ from w-
-   std::vector<int> q4; // q- from w-
-   std::vector<int> q5; // b- from t+
-   std::vector<int> q6; // b+ from t-
-   for (size_t i=0; i < selectedJets.size(); i++){ 
-   //for (size_t i=0; i < jets->size(); i++){
+   //if (fillhisto) cout<<"  === jetMom size == "<<jetMom.size() <<endl;
 
-       if ( selectedJets[i]->et() < 20. ) continue;
-    
-       double dR0    = 3. ;
-       double ptRes0 = 3. ;
-       int wj = -1 ;
-       for (size_t j=0; j < jetMom.size(); j++ ) {
-           bool matched = matchingGeneral( jetMom[j].p4() , selectedJets[i]->p4() , dR0 , ptRes0 ) ;
-           if ( matched )  wj = static_cast<int>(j) ;
-       }
-       if ( wj!= -1 && (jetMom[wj].pdgId()== 2 || jetMom[wj].pdgId()== 4) ) q1.push_back( static_cast<int>(i) ) ;
-       if ( wj!= -1 && (jetMom[wj].pdgId()==-1 || jetMom[wj].pdgId()==-3) ) q2.push_back( static_cast<int>(i) ) ;
-       if ( wj!= -1 && (jetMom[wj].pdgId()== 1 || jetMom[wj].pdgId()== 3) ) q3.push_back( static_cast<int>(i) ) ;
-       if ( wj!= -1 && (jetMom[wj].pdgId()==-2 || jetMom[wj].pdgId()==-4) ) q4.push_back( static_cast<int>(i) ) ;
-       if ( wj!= -1 && (jetMom[wj].pdgId()== 5 ) )  q5.push_back( static_cast<int>(i) ) ;
-       if ( wj!= -1 && (jetMom[wj].pdgId()==-5 ) )  q6.push_back( static_cast<int>(i) ) ;
+   // make a map for jet index and dR with all parton
+   std::vector< std::vector<IDPair> > Qs;
+   for( size_t i=0; i< jetMom.size(); i++ ) {
+      std::vector<IDPair> js ;
+      for( size_t j=0; j<selectedJets.size(); j++ ){
+         double dR = tools->getdR( jetMom[i].p4(), selectedJets[j]->p4() ) ;
+         IDPair jId_dR = make_pair(j,dR);
+         js.push_back( jId_dR );
+      }
+      sort( js.begin(), js.end(), dRIncreasing );
+      Qs.push_back(js);
    }
-  
-   // loop 4 or 6 collections to find the best matched jet 
+
+   // check the best matching for each parton
+   std::vector<int>  qMatch( jetMom.size() , -1 );
+   std::vector<bool> usedJet( selectedJets.size(), false );
+
+   // loop index m => the order of match-sorting
+   for( size_t m=0; m<selectedJets.size(); m++ ) {
+
+      for( size_t j=0; j<selectedJets.size(); j++ ) {
+
+         if (usedJet[j]) continue;
+         // look at the best matched jet for each parton
+         std::vector<int> qCand;
+         for( size_t i=0; i< Qs.size(); i++) {
+            if ( qMatch[i] != -1 ) continue;
+            std::vector<IDPair> JdR = Qs[i];
+            if( JdR[m].first == static_cast<int>(j) ) qCand.push_back( i ) ;
+         }
+
+         double dR0    = 9. ;
+         double ptRes0 = 9. ;
+         int wj = -1 ;
+         for (size_t k=0; k < qCand.size(); k++ ) {
+             bool matched = matchingGeneral( jetMom[ qCand[k] ].p4() , selectedJets[j]->p4() , dR0 , ptRes0 ) ;
+             if ( matched )  wj = qCand[k] ;
+         }
+         if ( wj !=  -1 ) {
+            qMatch[wj] = j ;
+            usedJet[j] = true;
+
+         }
+
+      }
+
+   }
+
+   cout<<" ===== new matching ====== "<<endl;
    std::vector<jmatch> matchedJets ;
-   std::vector<int> qtemp;   
-   for (size_t j=0; j < jetMom.size(); j++  ) {
-       
-       if (jetMom[j].pdgId() ==  2 || jetMom[j].pdgId()==  4) qtemp = q1 ;
-       if (jetMom[j].pdgId() == -1 || jetMom[j].pdgId()== -3) qtemp = q2 ;
-       if (jetMom[j].pdgId() ==  1 || jetMom[j].pdgId()==  3) qtemp = q3 ;
-       if (jetMom[j].pdgId() == -2 || jetMom[j].pdgId()== -4) qtemp = q4 ;
-       if (jetMom[j].pdgId() ==  5 )                          qtemp = q5 ;
-       if (jetMom[j].pdgId() == -5 )                          qtemp = q6 ;
-
-       double dR0    = 0.7;
-       double ptRes0 = 0.7;
-       int wj = -1;
-       for(std::vector<int>::iterator it=qtemp.begin(); it != qtemp.end(); it++ ){
-          bool matched = matchingGeneral( jetMom[j].p4() , selectedJets[*it]->p4() , dR0 , ptRes0 ); 
-          if (matched) wj = *it ;
-       }
-
-       if (wj != -1) {
-          jmatch theTjet;
-	  theTjet.trueJet= selectedJets[wj] ;
-	  theTjet.mom    = jetMom[j] ;
-	  theTjet.MomIdx = jetMom[j].pdgId() ;
-	  theTjet.res_P  = ( selectedJets[wj]->pt() /jetMom[j].pt()) - 1. ;
-	  theTjet.sumP4  = selectedJets[wj]->p4() ;
-	  theTjet.hasMatched = true ;
-          matchedJets.push_back( theTjet );
-          if ( fillhisto && abs(theTjet.MomIdx) == 5  ) histo7->Fill7h( jetMom[j].eta(), jetMom[j].phi(),
-                                       selectedJets[wj]->eta(), selectedJets[wj]->phi(), jetMom[j].pt(), theTjet.res_P  );
-          if ( fillhisto && abs(theTjet.MomIdx)  < 5  ) histo8->Fill8h( jetMom[j].eta(), jetMom[j].phi(),
-                                       selectedJets[wj]->eta(), selectedJets[wj]->phi(), jetMom[j].pt(), theTjet.res_P  );
-       }
-
+   for(size_t k=0; k < qMatch.size(); k++ ) {
+      cout<<" q:"<< jetMom[k].pdgId() <<"  matchedJ:"<< qMatch[k] <<endl;
+      int s = qMatch[k] ;
+      if ( s == -1 )continue;
+      jmatch theTjet;
+      theTjet.trueJet= selectedJets[s] ;
+      theTjet.mom    = jetMom[k] ;
+      theTjet.MomIdx = jetMom[k].pdgId() ;
+      theTjet.res_P  = ( selectedJets[s]->pt() /jetMom[k].pt()) - 1. ;
+      theTjet.sumP4  = selectedJets[s]->p4() ;
+      theTjet.hasMatched = true ;
+      matchedJets.push_back( theTjet );
+      if ( fillhisto && abs(theTjet.MomIdx) == 5  ) histo7->Fill7h( jetMom[k].eta(), jetMom[k].phi(),
+		      selectedJets[s]->eta(), selectedJets[s]->phi(), jetMom[k].pt(), theTjet.res_P  );
+      if ( fillhisto && abs(theTjet.MomIdx)  < 5  ) histo8->Fill8h( jetMom[k].eta(), jetMom[k].phi(),
+		      selectedJets[s]->eta(), selectedJets[s]->phi(), jetMom[k].pt(), theTjet.res_P  );
    }
+   cout<<" ======================== "<<endl;
+
    sort( matchedJets.begin(), matchedJets.end(), PidDecreasing );
    return matchedJets ;
 
 }
+
 
 std::vector<jmatch> TtMCMatching::matchbJets( Handle<std::vector<reco::GenParticle> > genParticles,
                                               std::vector<const pat::Jet*> selectedbJets ,HTOP7* histo7, bool fillhisto ) {
@@ -344,13 +351,13 @@ std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<
       double ptRes1 = 9.;
       int usedMuon = -1;
       for (size_t j=0; j < isoMuons.size(); j++ ) {
-          bool matched = matchingGeneral( isoMuons[j]->p4() , mcMuon[i].p4(), dR1, ptRes1 );
+          bool matched = matchingGeneral( mcMuon[i].p4(), isoMuons[j]->p4(), dR1, ptRes1 );
           if ( matched && isoMuons[j]->charge() == mcMuon[i].charge() ) usedMuon = static_cast<int>(j);
       }
       if (usedMuon != -1) {
          matchList.push_back( usedMuon ); 
          double ptRes2 = (isoMuons[usedMuon]->pt()/mcMuon[i].pt()) - 1. ;
-         if (fillhisto) histo3->Fill3b( mcMuon[i].eta(),  mcMuon[i].phi(), isoMuons[usedMuon]->eta() , isoMuons[usedMuon]->phi()
+         if (fillhisto) histo3->Fill3b( mcMuon[i].eta(),  mcMuon[i].phi(), isoMuons[usedMuon]->eta(), isoMuons[usedMuon]->phi()
                                        ,mcMuon[i].pt(), ptRes2 );
       }
 
@@ -358,17 +365,13 @@ std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<
    // using one more loops to check whether double counting 
    std::vector<const reco::Candidate*> matchedMuon ;
 
-   std::vector<bool> used;
-   for (size_t k=0; k < isoMuons.size(); k++ ) {
-       used.push_back(false);
-   }
+   std::vector<bool> used(isoMuons.size(), false  );
+
    for (std::vector<int>::const_iterator it= matchList.begin(); it != matchList.end(); it++) { 
        if ( used[*it] ) continue;
        matchedMuon.push_back( isoMuons[*it] );  
        used[*it] = true;
    }
-
-   if ( matchedMuon.size() > 2 ) cout<<" WRONG MATCHING "<<endl;
 
    return matchedMuon ;
 }
@@ -509,126 +512,63 @@ std::vector<const reco::Candidate*> TtMCMatching::matchElectron(Handle<std::vect
 int TtMCMatching::matchLeptonicW( Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolutions ){
 
    int wl = -1;
-   LorentzVector wP4(0.,0.,0.,0.);
-   std::vector<reco::Particle> mu = ttDecay( genParticles, 13 ) ;
-   std::vector<reco::Particle> el = ttDecay( genParticles, 11 ) ;
-   std::vector<reco::Particle> lep;
-   if ( mu.size() == 1 && el.size() == 0 ) lep = mu ;
-   if ( mu.size() == 0 && el.size() == 1 ) lep = el ;
+   std::vector<reco::Particle> nu_m = ttDecay( genParticles, 14 ) ;
+   std::vector<reco::Particle> nu_e = ttDecay( genParticles, 12 ) ;
+   std::vector<reco::Particle> neu;
+   if ( nu_m.size() == 1 && nu_e.size() == 0 ) neu = nu_m ;
+   if ( nu_m.size() == 0 && nu_e.size() == 1 ) neu = nu_e ;
+   if ( neu.size() == 0 ) return wl;
+   cout<<" nu_m:"<< nu_m.size() <<" nu_e:"<<nu_e.size()<<" p4:"<< neu[0].p4()<<endl;
 
-   if ( lep.size() == 1 ) {
-      LorentzVector tP4(0.,0.,0.,0.);
-      LorentzVector bP4(0.,0.,0.,0.);
-      for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-          if ( lep[0].charge() > 0 && it->pdgId() ==  6 ) tP4 = it->p4();
-          if ( lep[0].charge() > 0 && it->pdgId() == -5 ) bP4 = it->p4();
-          if ( lep[0].charge() < 0 && it->pdgId() == -6 ) tP4 = it->p4();
-          if ( lep[0].charge() < 0 && it->pdgId() ==  5 ) bP4 = it->p4();
-      } 
-      double wE  = tP4.E()  - bP4.E() ; 
-      double wPx = tP4.Px() - bP4.Px() ; 
-      double wPy = tP4.Py() - bP4.Py() ; 
-      double wPz = tP4.Pz() - bP4.Pz() ; 
-      wP4.SetPxPyPzE( wPx, wPy, wPz, wE );
-
-   }
-
-   // don't work right ! some w are missing!!!
-   /* 
-   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       // looking for object from W 
-       if ( abs((*it).pdgId()) != 24 ) continue;
-       for (size_t q=0; q< (*it).numberOfDaughters(); q++) {
-           const reco::Candidate *dau = (*it).daughter(q) ;
-           if ( abs(dau->pdgId()) ==  13 ) wP4 = it->p4() ;
-       }
-   }*/
-
-   LorentzVector zero(0.,0.,0.,0.);
-   if (wP4 == zero) return wl;
-   
-   double dR0 = 0.7;
-   double ptRes0 = 0.7;
+   double dR0 = 9.;
+   double ptRes0 = 9.;
    for (size_t j=0; j < wSolutions.size(); j++ ) {
-       bool matched = matchingGeneral( wP4 , wSolutions[j].p4 , dR0 , ptRes0 );
+       iParton reco_neu = wSolutions[j].q4v[1] ;
+       bool matched = matchingGeneral( neu[0].p4() , reco_neu.second , dR0 , ptRes0 );
        if ( matched )  wl = static_cast<int>(j) ;
    }
+   cout<<" selected w: "<< wl <<endl;
    return wl;
 
 }
 
+
 int TtMCMatching::matchLeptonicW( Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolutions, HTOP6* histo6 ){
 
    int wl = -1;
-   LorentzVector wP4(0.,0.,0.,0.);
-   std::vector<reco::Particle> mu = ttDecay( genParticles, 13 ) ;
-   std::vector<reco::Particle> el = ttDecay( genParticles, 11 ) ;
-   std::vector<reco::Particle> lep;
-   if ( mu.size() == 1 && el.size() == 0 ) lep = mu ;
-   if ( mu.size() == 0 && el.size() == 1 ) lep = el ;
+   std::vector<reco::Particle> nu_m = ttDecay( genParticles, 14 ) ;
+   std::vector<reco::Particle> nu_e = ttDecay( genParticles, 12 ) ;
+   std::vector<reco::Particle> neu;
+   if ( nu_m.size() == 1 && nu_e.size() == 0 ) neu = nu_m ;
+   if ( nu_m.size() == 0 && nu_e.size() == 1 ) neu = nu_e ;
+   if ( neu.size() == 0 ) return wl;
 
-   if ( lep.size() == 1 ) {
-      LorentzVector tP4(0.,0.,0.,0.);
-      LorentzVector bP4(0.,0.,0.,0.);
-      for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-          if ( lep[0].charge() > 0 && it->pdgId() ==  6 ) tP4 = it->p4();
-          if ( lep[0].charge() > 0 && it->pdgId() == -5 ) bP4 = it->p4();
-          if ( lep[0].charge() < 0 && it->pdgId() == -6 ) tP4 = it->p4();
-          if ( lep[0].charge() < 0 && it->pdgId() ==  5 ) bP4 = it->p4();
-      } 
-      double wE  = tP4.E()  - bP4.E() ; 
-      double wPx = tP4.Px() - bP4.Px() ; 
-      double wPy = tP4.Py() - bP4.Py() ; 
-      double wPz = tP4.Pz() - bP4.Pz() ; 
-      wP4.SetPxPyPzE( wPx, wPy, wPz, wE );
-
-   }
-   /*
-   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       // looking for object from W
-       if ( abs((*it).pdgId()) != 24 ) continue;
-       for (size_t q=0; q< (*it).numberOfDaughters(); q++) {
-           const reco::Candidate *dau = (*it).daughter(q) ;
-           if ( abs(dau->pdgId()) ==  13 ) wP4 = it->p4() ;
-       }
-   }*/
-
-   LorentzVector zero(0.,0.,0.,0.);
-   if (wP4 == zero) return wl;
-
-   double dR0 = 0.7;
-   double ptRes0 = 0.7;
+   double dR0 = 9.;
+   double ptRes0 = 9.;
    for (size_t j=0; j < wSolutions.size(); j++ ) {
-       bool matched = matchingGeneral( wP4 , wSolutions[j].p4 , dR0 , ptRes0 );
+       iParton reco_neu = wSolutions[j].q4v[1] ;
+       bool matched = matchingGeneral( neu[0].p4() , reco_neu.second , dR0 , ptRes0 );
        if ( matched )  wl = static_cast<int>(j) ;
    }
 
    if ( wl != -1 ) {
       LorentzVector lv = wSolutions[wl].p4 ;
-      double mom = (lv.Px()*lv.Px()) + (lv.Py()*lv.Py()) + (lv.Pz()*lv.Pz()) ;
-      double mass = sqrt( lv.E()*lv.E() - mom );
-      double gmom = (wP4.Px()*wP4.Px()) + (wP4.Py()*wP4.Py()) + (wP4.Pz()*wP4.Pz()) ;
-      double gmass = sqrt( wP4.E()*wP4.E() - gmom );
-      double dM = (mass/gmass) - 1. ;
-      histo6->Fill6d( dR0, ptRes0, dM);
+
+      double ptRes = (lv.Pt()/neu[0].pt()) - 1 ;
+      double pzRes = (lv.Pz()/neu[0].p4().Pz()) - 1 ;
+
+      histo6->Fill6d( dR0, ptRes, pzRes );
    }
    return wl;
 }
-
 
 bool TtMCMatching::matchingGeneral( LorentzVector theP4 , iTt ttObj, double& dR0, double& ptRes0 ){
 
      bool betterMatch = false;
 
      double pt1 = sqrt( (theP4.Px()*theP4.Px())  + (theP4.Py()*theP4.Py()) );
-     //double pa1 = sqrt( (pt1*pt1) + (theP4.Pz()*theP4.Pz()) );
-     //GlobalVector gp1( theP4.Px()/pa1, theP4.Py()/pa1, theP4.Pz()/pa1 );
    
-     //double dh = gp1.eta() - ttObj.gv.eta() ;
-     //double df = gp1.phi() - ttObj.gv.phi() ; 
-     //double dR = sqrt( (dh*dh) + (df*df) );
      double dR = tools->getdR( theP4, ttObj.p4 );
-     // 1/pt resolution
      double ptRes = fabs( (ttObj.pt/pt1 ) - 1.) ;
 
      if ( (dR - dR0) < 0.1 && (dR < 0.5) && ( ptRes < ptRes0 ) ) {
@@ -644,6 +584,7 @@ bool TtMCMatching::matchingGeneral( LorentzVector theP4 , iTt ttObj, double& dR0
 
      return betterMatch ;
 }
+
 bool TtMCMatching::matchingGeneral( LorentzVector aP4 ,  LorentzVector bP4, double& dR0, double& ptRes0 ){
 
      bool betterMatch = false;
@@ -660,14 +601,14 @@ bool TtMCMatching::matchingGeneral( LorentzVector aP4 ,  LorentzVector bP4, doub
         dR0    = dR ;
         ptRes0 = ptRes;
      }
-     if ( (dR - dR0) < 0.  && dR >= 0.5 && dR < 0.7) {
+     if ( (dR - dR0) < 0.  && dR >= 0.5 ) {
         betterMatch = true ;
         dR0    = dR ;
         ptRes0 = ptRes;
      }
-
      return betterMatch ;
 }
+
 
 std::vector<iTt> TtMCMatching::TtObjects( Handle<std::vector<reco::GenParticle> > genParticles ) {
 

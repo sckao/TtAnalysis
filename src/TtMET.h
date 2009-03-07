@@ -82,9 +82,11 @@ class TtMET {
 
     void metAnalysis(edm::Handle<std::vector<pat::MET> > patMet, const edm::Event & iEvent, HTOP2* histo2);
 
-    LorentzVector findNeutrino(edm::Handle<std::vector<reco::GenParticle> > genParticles );
+    LorentzVector METfromNeutrino( edm::Handle<std::vector<reco::GenParticle> > genParticles );
+    LorentzVector METfromNeutrino( const edm::Event & iEvent );
 
-    std::vector<double> CaloMET( edm::Handle<CaloTowerCollection> calotowers );
+    LorentzVector CaloMET( edm::Handle<CaloTowerCollection> calotowers );
+    LorentzVector CaloMET( const edm::Event & iEvent );
 
     LorentzVector METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets );
 
@@ -96,7 +98,7 @@ class TtMET {
 
    private:
 
-    TtMuon*   fromTtMuon;
+    TtMuon*   ttMuon;
     TtTools*  tools;
 
     edm::InputTag caloSrc;

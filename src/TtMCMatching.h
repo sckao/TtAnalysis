@@ -78,6 +78,8 @@ class TtMCMatching {
     /// Perform the real analysis
     void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, NJet* jtree, int eventId);
 
+    //void matchJets_test(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<const pat::Jet*> selectedJets) ;
+
     std::vector<jmatch> matchJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                     std::vector<const pat::Jet*> selectedJets, HTOP7* histo7, HTOP8* histo8, bool fillhisto );
 

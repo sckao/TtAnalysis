@@ -62,7 +62,7 @@ TtMET::TtMET(const edm::ParameterSet& iConfig)
   caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
   genSrc          = iConfig.getParameter<edm::InputTag> ("genParticles"); 
 
-  fromTtMuon      = new TtMuon();
+  ttMuon      = new TtMuon();
   tools           = new TtTools();
 }
 
@@ -72,7 +72,7 @@ TtMET::~TtMET()
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
    //if (debug) cout << "[TtMET Analysis] Destructor called" << endl;
-   delete fromTtMuon;
+   delete ttMuon;
    delete tools;
 }
 
@@ -117,24 +117,22 @@ void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event&
      histo2->Fill2a( (*m1).et(), emf, emfCalo, (*m1).sumEt() );
 
      // calculate the MET from CaloTowers
-     std::vector<double> calo = CaloMET(caloTowers);
+     LorentzVector calo = CaloMET(caloTowers);
      // calculate the muon correction
-     std::vector<double> muPtCorr = fromTtMuon->MuonEtCorrection(muons);
+     std::vector<double> muPtCorr = ttMuon->MuonEtCorrection(muons);
 
      // the pure caloMET info
-     double calx = calo[0] ;
-     double caly = calo[1] ;
-     double vsc =  sqrt( calx*calx + caly*caly );
-     double phic = atan2(caly, calx);
+     double vsc =  sqrt( calo.Px()*calo.Px() + calo.Py()*calo.Py() );
+     double phic = atan2( calo.Py(), calo.Px() );
 
      // caloMET + over corrected muon
-     double calx1 = calo[0] + muPtCorr[0];
-     double caly1 = calo[1] + muPtCorr[1];
+     double calx1 = calo.Px() + muPtCorr[0];
+     double caly1 = calo.Py() + muPtCorr[1];
      double vsc1  =  sqrt( calx1*calx1 + caly1*caly1 );
      double phic1 = atan2(caly1, calx1);
 
      // find neutrino from generator
-     LorentzVector vP4 = findNeutrino(genParticles) ;
+     LorentzVector vP4 = METfromNeutrino(genParticles) ;
 
      double vPT = sqrt(vP4.Px()*vP4.Px() + vP4.Py()*vP4.Py());
      double vPhi= atan2(vP4.Py(), vP4.Px());
@@ -155,25 +153,37 @@ void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event&
 
 }
 
-std::vector<double> TtMET::CaloMET( Handle<CaloTowerCollection> calotowers ) {
+LorentzVector TtMET::CaloMET( Handle<CaloTowerCollection> calotowers ) {
 
-   std::vector<double> caloInfo ;
-   caloInfo.clear();
    double caloXY[2] = {0.0};
    for (CaloTowerCollection::const_iterator t1 = calotowers->begin(); t1 != calotowers->end(); t1++) {
        caloXY[0] -= t1->et()*cos(t1->phi());
        caloXY[1] -= t1->et()*sin(t1->phi());
    }
    double vsumEt = sqrt( caloXY[0]*caloXY[0] + caloXY[1]*caloXY[1] );
-   double phi_sumEt = atan2(caloXY[1], caloXY[0]);
 
    // output MET info
-   caloInfo.push_back(caloXY[0]);
-   caloInfo.push_back(caloXY[1]);
-   caloInfo.push_back(vsumEt);
-   caloInfo.push_back(phi_sumEt);
+   LorentzVector theMET( caloXY[0], caloXY[1], 0, vsumEt  );
 
-   return caloInfo;
+   return theMET;
+}
+
+LorentzVector TtMET::CaloMET( const edm::Event& iEvent ) {
+
+   Handle<CaloTowerCollection>  caloTowers;
+   iEvent.getByLabel(caloSrc, caloTowers);
+
+   double caloXY[2] = {0.0};
+   for (CaloTowerCollection::const_iterator t1 = caloTowers->begin(); t1 != caloTowers->end(); t1++) {
+       caloXY[0] -= t1->et()*cos(t1->phi());
+       caloXY[1] -= t1->et()*sin(t1->phi());
+   }
+   double vsumEt = sqrt( caloXY[0]*caloXY[0] + caloXY[1]*caloXY[1] );
+
+   // output MET info
+   LorentzVector theMET( caloXY[0], caloXY[1], 0, vsumEt  );
+
+   return theMET;
 }
 
 LorentzVector  TtMET::METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets ) {
@@ -188,11 +198,66 @@ LorentzVector  TtMET::METfromObjects( std::vector<const reco::Candidate*> theLep
       Psum[1] -= theJets[i]->p4().Py() ;
   }
 
+  Psum[2] = sqrt( Psum[0]*Psum[0] + Psum[1]*Psum[1] );
 
-  LorentzVector theMET( Psum[0], Psum[1], 0., 0. );
+  LorentzVector theMET( Psum[0], Psum[1], 0., Psum[2] );
   
   return theMET;
 
+}
+
+// return 4 momentum of neutrino
+LorentzVector TtMET::METfromNeutrino( const edm::Event& iEvent ) {
+
+   Handle<std::vector<reco::GenParticle> > genParticles;
+   iEvent.getByLabel(genSrc, genParticles);
+
+   double vp[4] = {0.0};
+   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
+       if ( abs((*it).pdgId()) != 12 && abs((*it).pdgId()) != 14 && abs((*it).pdgId()) != 16 ) continue;
+       if ( it->status() != 3 ) continue;
+
+       bool fromW = false;
+       for (size_t v=0; v< (*it).numberOfMothers(); ++v) {
+           const reco::Candidate *mom = (*it).mother(v) ;
+           if( abs(mom->pdgId()) != 24 && abs(mom->pdgId()) != 6 ) continue;
+           fromW = true;
+       }
+       if ( !fromW ) continue;
+ 
+       vp[0] +=  it->px() ;
+       vp[1] +=  it->py() ;
+       vp[2] +=  it->pz() ;
+       vp[3] +=  it->p() ;
+   }
+
+   LorentzVector vp4 = LorentzVector(vp[0],vp[1],vp[2],vp[3]);
+   return vp4;
+}
+
+LorentzVector TtMET::METfromNeutrino( Handle<std::vector<reco::GenParticle> > genParticles ) {
+
+   double vp[4] = {0.0};
+   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
+       if ( abs((*it).pdgId()) != 12 && abs((*it).pdgId()) != 14 && abs((*it).pdgId()) != 16 ) continue;
+       if ( it->status() != 3 ) continue;
+
+       bool fromW = false;
+       for (size_t v=0; v< (*it).numberOfMothers(); ++v) {
+           const reco::Candidate *mom = (*it).mother(v) ;
+           if( abs(mom->pdgId()) != 24 && abs(mom->pdgId()) != 6 ) continue;
+           fromW = true;
+       }
+       if ( !fromW ) continue;
+ 
+       vp[0] +=  it->px() ;
+       vp[1] +=  it->py() ;
+       vp[2] +=  it->pz() ;
+       vp[3] +=  it->p() ;
+   }
+
+   LorentzVector vp4 = LorentzVector(vp[0],vp[1],vp[2],vp[3]);
+   return vp4;
 }
 
 void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets,
@@ -202,7 +267,7 @@ void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vec
      LorentzVector noMET(0.,0.,0.,0.);
      LorentzVector patMET = (met->size() > 0) ?  (*met)[0].p4() : noMET ;
      LorentzVector evtMET = METfromObjects( theLep, theJets );
-     LorentzVector neuMET = findNeutrino( genParticles );
+     LorentzVector neuMET = METfromNeutrino( genParticles );
 
      double patResol = 9. ;
      double evtResol = 9. ;
@@ -232,31 +297,6 @@ void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vec
 
 }
 
-// return 4 momentum of neutrino
-LorentzVector TtMET::findNeutrino( Handle<std::vector<reco::GenParticle> > genParticles ) {
-
-   double vp[4] = {0.0};
-   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       if ( abs((*it).pdgId()) != 12 && abs((*it).pdgId()) != 14 && abs((*it).pdgId()) != 16 ) continue;
-       if ( it->status() != 3 ) continue;
-
-       bool fromW = false;
-       for (size_t v=0; v< (*it).numberOfMothers(); ++v) {
-           const reco::Candidate *mom = (*it).mother(v) ;
-           if( abs(mom->pdgId()) != 24 && abs(mom->pdgId()) != 6 ) continue;
-           fromW = true;
-       }
-       if ( !fromW ) continue;
- 
-       vp[0] +=  it->px() ;
-       vp[1] +=  it->py() ;
-       vp[2] +=  it->pz() ;
-       vp[3] +=  it->p() ;
-   }
-
-   LorentzVector vp4 = LorentzVector(vp[0],vp[1],vp[2],vp[3]);
-   return vp4;
-}
 
 
 void TtMET::MetAndMuon(Handle<std::vector<pat::MET> > met, std::vector<const reco::Candidate*> isoMu, HTOP2* histo2, int njets ) {

@@ -106,11 +106,11 @@ class TtSemiEventSolution {
     bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate  );
     bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 );
 
-    bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
+    bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
                 std::vector<iReco>& wCandidate );
-    bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
+    bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
                 std::vector<iReco>& wCandidates, bool FoundWSolution );
-    bool recoW( std::vector<const reco::Candidate*> lepton, edm::Handle<std::vector<pat::MET> > met,
+    bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
                 std::vector<iReco>& wCandidate, HTOP10* hitso10 );
 
     bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate, bool btagging );
@@ -119,11 +119,12 @@ class TtSemiEventSolution {
     // with 2b tagging
     std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theWJets,
                   std::vector<const pat::Jet*> thebJets, std::vector<const reco::Candidate*> theLep,
-                  edm::Handle<std::vector<pat::MET> > met, tHisto histos  );
+                  LorentzVector metP4, tHisto histos  );
+//                  edm::Handle<std::vector<pat::MET> > met, tHisto histos  );
  
     // no b-tagging
     std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theJets,
-                  std::vector<const reco::Candidate*> theLep, edm::Handle<std::vector<pat::MET> > met, tHisto histos  );
+                  std::vector<const reco::Candidate*> theLep, LorentzVector metP4, tHisto histos  );
  
     void dmSortRecoObjects( std::vector<iReco>& objCand );
 
@@ -143,6 +144,7 @@ class TtSemiEventSolution {
     
     void Algo_dmMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
     void Algo_PtMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
+    void Algo_Beta( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> lepWs, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
     void Algo_Zero( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
   
     void ResultRecord( Idx index, std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> lepWs, std::vector<iReco> hadWs , int type, tHisto& histos );

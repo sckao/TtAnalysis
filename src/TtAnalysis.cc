@@ -255,7 +255,8 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    std::vector<const pat::Jet*> theJets = ttJet->JetSelection( jets, isoMu, 30 ) ;
    if ( theJets.size() > 3 && pass > -1) {
       std::vector<iReco> lepW;
-      semiSol->recoW( isoMu, mets, lepW );
+      LorentzVector metP4 = ttMET->METfromObjects( isoMu, theJets );
+      semiSol->recoW( isoMu, metP4, lepW );
       if ( lepW.size() > 0 ) {
          int wl = MCMatching->matchLeptonicW( genParticles, lepW, histos.hMObj );
          if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histos.hJet );
