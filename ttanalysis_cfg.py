@@ -34,7 +34,7 @@ process.maxEvents = cms.untracked.PSet(
 )
 process.MessageLogger = cms.Service("MessageLogger")
 
-process.ttAna = cms.EDFilter("TtAnalysis",
+process.ttAna = cms.EDAnalyzer("TtAnalysis",
 
     #TrackAssociatorParameterBlock,
     #TrackAssociatorParameters, 
@@ -54,10 +54,12 @@ process.ttAna = cms.EDFilter("TtAnalysis",
     triggerSource  = cms.InputTag("TriggerResults","","HLT"),
     #triggerSource  = cms.InputTag("TriggerResults","","PAT"),
     recoMuons      = cms.untracked.string('muons'),
+    # recoAlgo : zero, beta, dmMin, ptMin
+    recoAlgo       = cms.untracked.string('zero'),
     leptonFlavour  = cms.string('muon')
 )
 
-process.jetAna = cms.EDFilter("JetAnalysis",
+process.jetAna = cms.EDAnalyzer("JetAnalysis",
 
     debug    = cms.untracked.bool(False),
     rootFileName = cms.untracked.string('ttj_JetEtAnalysis.root'),
@@ -67,10 +69,10 @@ process.jetAna = cms.EDFilter("JetAnalysis",
     jetSource      = cms.InputTag("selectedLayer1Jets"),
     muonSource     = cms.InputTag("selectedLayer1Muons"),
     caloSource     = cms.InputTag("towerMaker"),
-    recoMuons      = cms.untracked.string('muons'),
+    recoMuons      = cms.untracked.string('muons')
 )   
     
-process.muAna = cms.EDFilter("MuonAnalysis",
+process.muAna = cms.EDAnalyzer("MuonAnalysis",
     
     debug    = cms.untracked.bool(False),
     rootFileName = cms.untracked.string('ttj_IsoMuAnalysis.root'),
@@ -81,7 +83,7 @@ process.muAna = cms.EDFilter("MuonAnalysis",
     muonSource     = cms.InputTag("selectedLayer1Muons"),
     metSource      = cms.InputTag("selectedLayer1METs"),
     caloSource     = cms.InputTag("towerMaker"),
-    recoMuons      = cms.untracked.string('muons'),
+    recoMuons      = cms.untracked.string('muons')
 )   
     
 
