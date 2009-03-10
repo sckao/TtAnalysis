@@ -234,10 +234,10 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
 
    }
 
-   cout<<" ===== new matching ====== "<<endl;
+   if (fillhisto) cout<<" ===== new matching ====== "<<endl;
    std::vector<jmatch> matchedJets ;
    for(size_t k=0; k < qMatch.size(); k++ ) {
-      cout<<" q:"<< jetMom[k].pdgId() <<"  matchedJ:"<< qMatch[k] <<endl;
+      if (fillhisto) cout<<" q:"<< jetMom[k].pdgId() <<"  matchedJ:"<< qMatch[k] <<endl;
       int s = qMatch[k] ;
       if ( s == -1 )continue;
       jmatch theTjet;
@@ -253,7 +253,7 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
       if ( fillhisto && abs(theTjet.MomIdx)  < 5  ) histo8->Fill8h( jetMom[k].eta(), jetMom[k].phi(),
 		      selectedJets[s]->eta(), selectedJets[s]->phi(), jetMom[k].pt(), theTjet.res_P  );
    }
-   cout<<" ======================== "<<endl;
+   if (fillhisto) cout<<" ======================== "<<endl;
 
    sort( matchedJets.begin(), matchedJets.end(), PidDecreasing );
    return matchedJets ;

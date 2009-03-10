@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtSemiEventSolution.h,v 1.4 2009/01/23 16:08:16 sckao Exp $
+// $Id: TtSemiEventSolution.h,v 1.11 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -132,11 +132,11 @@ class TtSemiEventSolution {
 
     //void MCTruthCheckB( std::vector<iReco> mcTt, std::vector<iReco> rcTt, std::vector<const pat::Jet*> mcBJets,
     //                   std::vector<const pat::Jet*> rcBJets, HTOP9* histo9 ) ;
-    void MCTruthCheck( std::vector<iReco> mcTt, std::vector<iReco> rcTt, std::vector<const pat::Jet*> mcWJets,
+    void MCTruthCheck( std::vector<iReco> mcTt, std::vector<iReco> rcTt, int k,  std::vector<const pat::Jet*> mcWJets,
                        std::vector<const pat::Jet*> rcWJets, std::vector<const pat::Jet*> mcBJets,
                        std::vector<const pat::Jet*> rcBJets, HTOP6* histo6 ); 
 
-    void McRecoCompare( int topo, int r,  tHisto histos );
+    void McRecoCompare( int topo, int r, bool pass, tHisto histos );
 
     void KeepBuildInfo( bool isData );
 
@@ -183,6 +183,7 @@ class TtSemiEventSolution {
 
     edm::InputTag muonSrc;
     std::string recoMuon;
+    std::string algo;
     edm::InputTag electronSrc;
     edm::InputTag metSrc;
     edm::InputTag jetSrc;

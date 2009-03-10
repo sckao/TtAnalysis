@@ -163,7 +163,7 @@ TtAnalysis::~TtAnalysis()
    }
 
    //Close the Root file
-   //theFile->Close();
+   theFile->Close();
    if (debug) cout << "************* Finished writing histograms to file" << endl;
 
 }
@@ -241,7 +241,8 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //semiSol->KeepBuildInfo( true );
    semiSol->MCBuildSemiTt(iEvent, iSetup, 1, histos );
    //semiSol->KeepBuildInfo( false );
-   semiSol->McRecoCompare( 1, 0, histos );
+   //bool matchedpass =  ( pass == 4  ) ? true : false ;
+   //semiSol->McRecoCompare( 1, 0, matchedpass, histos );
 
    // 2. build semi-Tt events
    if ( trigOn ) {
@@ -307,5 +308,5 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
 
 
-//define this as a plug-in
-DEFINE_FWK_MODULE(TtAnalysis);
+//define this as a plug-in => In SealModule.C
+//DEFINE_FWK_MODULE(TtAnalysis);

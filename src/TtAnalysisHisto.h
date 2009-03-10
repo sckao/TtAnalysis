@@ -1416,11 +1416,12 @@ public:
     if ( idx == 1 ) N1 = "Lep" ;
     if ( idx == 2 ) N1 = "MC_Had" ;
     if ( idx == 3 ) N1 = "Had" ;
-
-    allWmass   = new TH1F(N1+"_allWmass", " mt of leptonic W or mass of hadronic W for all solutions"     ,320,0,160.);
-    selWmass   = new TH1F(N1+"_selWmass", " mt of leptonic W or mass of hadronic W for selected solution" ,320,0,160.);
-    beta_RelPt = new TH2F(N1+"_RelPt", "RelPt of W w.r.t LepTop ",32, -0.06, 1.22, 320, 0, 160.);
-    dRab_W     = new TH1F(N1+"_dRab_W","dR for (j1 , j2) or (u , v) ",200, -0.025,9.975 );  
+ 
+    allWmass    = new TH1F(N1+"_allWmass", " mt of leptonic W or mass of hadronic W for all solutions"     ,320,0,160.);
+    selWmass    = new TH1F(N1+"_selWmass", " mt of leptonic W or mass of hadronic W for selected solution" ,320,0,160.);
+    beta_RelPt  = new TH2F(N1+"_RelPt", "RelPt of W w.r.t Top ",32, -0.06, 1.22, 320, 0, 160.);
+    beta_RelPtb = new TH2F(N1+"_RelPtb", "RelPt of b w.r.t Top ",32, -0.06, 1.22, 320, 0, 160.);
+    dRab_W      = new TH1F(N1+"_dRab_W","dR for (j1 , j2) or (u , v) ",200, -0.025,9.975 );  
 
  }
 
@@ -1435,6 +1436,7 @@ public:
     allWmass   = (TH1F *) file->Get(theFolder+N1+"_allWmass");
     selWmass   = (TH1F *) file->Get(theFolder+N1+"_selWmass");
     beta_RelPt = (TH2F *) file->Get(theFolder+N1+"_beta_RelPt");
+    beta_RelPtb = (TH2F *) file->Get(theFolder+N1+"_beta_RelPtb");
     dRab_W     = (TH1F *) file->Get(theFolder+N1+"_dRab_W");
 
  }
@@ -1445,15 +1447,17 @@ public:
     delete allWmass;
     delete selWmass;
     delete beta_RelPt;
+    delete beta_RelPtb;
     delete dRab_W;
  }
 
  void Fill10a( double wmass ){
     allWmass->Fill( wmass );
  }
- void Fill10b( double wmass, double RelPt, double beta, double dRab ) {
+ void Fill10b( double wmass, double RelPt, double RelPtb, double beta, double dRab ) {
     selWmass->Fill( wmass );
     beta_RelPt->Fill( beta, RelPt );
+    beta_RelPtb->Fill( beta, RelPtb );
     dRab_W->Fill( dRab );
  }
 
@@ -1464,6 +1468,7 @@ public:
     allWmass->Write();
     selWmass->Write();
     beta_RelPt->Write();
+    beta_RelPtb->Write();
     dRab_W->Write();
 
  }
@@ -1471,6 +1476,7 @@ public:
   TH1F *allWmass;
   TH1F *selWmass;
   TH2F *beta_RelPt;
+  TH2F *beta_RelPtb;
   TH1F *dRab_W;
 
  };

@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtAnalysis.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
+// $Id: TtAnalysis.h,v 1.10 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -66,6 +66,7 @@
 //#include "AnalysisDataFormats/TopObjects/interface/TtGenEvent.h"
 //#include "AnalysisDataFormats/TopObjects/interface/TtSemiEvtSolution.h"
 
+#include "TtObjHisto.h"
 #include "TtAnalysisHisto.h"
 #include "TtAnalysisNtuple.h"
 #include "TtEvtSelector.h"
