@@ -100,11 +100,11 @@ class TtSemiEventSolution {
     ~TtSemiEventSolution();
 
     /// Perform the real analysis
-    void BuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup, int topo, tHisto histos );
-    void MCBuildSemiTt(const edm::Event & iEvent, const edm::EventSetup& iSetup, int topo, tHisto histos );
+    void BuildSemiTt(const edm::Event & iEvent,   int topo, tHisto histos );
+    void MCBuildSemiTt(const edm::Event & iEvent, int topo, tHisto histos );
 
-    bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate  );
-    bool recoW( std::vector<const pat::Jet*> wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 );
+    bool recoW( std::vector<const reco::Candidate*> wjets, std::vector<iReco>& wCandidate  );
+    bool recoW( std::vector<const reco::Candidate*> wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 );
 
     bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
                 std::vector<iReco>& wCandidate );
@@ -113,30 +113,27 @@ class TtSemiEventSolution {
     bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
                 std::vector<iReco>& wCandidate, HTOP10* hitso10 );
 
-    bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate, bool btagging );
-    bool recoTop( std::vector<iReco> wCandidate, std::vector<const pat::Jet*> bjets, std::vector<iReco>& tCandidate, bool btagging, HTOP11* histo11 );
+    bool recoTop( std::vector<iReco> wCandidate, std::vector<const reco::Candidate*> bjets, std::vector<iReco>& tCandidate, bool btagging );
+    bool recoTop( std::vector<iReco> wCandidate, std::vector<const reco::Candidate*> bjets, std::vector<iReco>& tCandidate, bool btagging, HTOP11* histo11 );
 
     // with 2b tagging
-    std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theWJets,
-                  std::vector<const pat::Jet*> thebJets, std::vector<const reco::Candidate*> theLep,
+    std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const reco::Candidate*> theWJets,
+                  std::vector<const reco::Candidate*> thebJets, std::vector<const reco::Candidate*> theLep,
                   LorentzVector metP4, tHisto histos  );
-//                  edm::Handle<std::vector<pat::MET> > met, tHisto histos  );
  
     // no b-tagging
-    std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const pat::Jet*> theJets,
+    std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const reco::Candidate*> theJets,
                   std::vector<const reco::Candidate*> theLep, LorentzVector metP4, tHisto histos  );
  
     void dmSortRecoObjects( std::vector<iReco>& objCand );
 
     void accuracySemiTt( std::vector<iReco> ttMC, std::vector<iReco> ttReco, HTOP9* histo9 ) ;
 
-    //void MCTruthCheckB( std::vector<iReco> mcTt, std::vector<iReco> rcTt, std::vector<const pat::Jet*> mcBJets,
-    //                   std::vector<const pat::Jet*> rcBJets, HTOP9* histo9 ) ;
-    void MCTruthCheck( std::vector<iReco> mcTt, std::vector<iReco> rcTt, int k,  std::vector<const pat::Jet*> mcWJets,
-                       std::vector<const pat::Jet*> rcWJets, std::vector<const pat::Jet*> mcBJets,
-                       std::vector<const pat::Jet*> rcBJets, HTOP6* histo6 ); 
+    void MCTruthCheck( std::vector<iReco> mcTt, std::vector<iReco> rcTt, int k,  std::vector<const reco::Candidate*> mcWJets,
+                       std::vector<const reco::Candidate*> rcWJets, std::vector<const reco::Candidate*> mcBJets,
+                       std::vector<const reco::Candidate*> rcBJets, HTOP6* histo6 ); 
 
-    void McRecoCompare( int topo, int r, bool pass, tHisto histos );
+    void McRecoCompare( int topo, int r, bool matchedpass, tHisto histos );
 
     void KeepBuildInfo( bool isData );
 
@@ -147,7 +144,9 @@ class TtSemiEventSolution {
     void Algo_Beta( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> lepWs, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
     void Algo_Zero( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
   
-    void ResultRecord( Idx index, std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> lepWs, std::vector<iReco> hadWs , int type, tHisto& histos );
+    void ResultRecord( int it, std::vector<Idx> twIdx, std::vector<iReco> lepTops, std::vector<bool>& usedLepT, 
+                                                       std::vector<iReco> hadTops, std::vector<bool>& usedHadT,
+                                          std::vector<iReco> lepWs, std::vector<iReco> hadWs , int type, tHisto histos );
    
    private:
       // ----------member data ---------------------------
@@ -163,35 +162,36 @@ class TtSemiEventSolution {
 
     std::vector<iReco> semiTt;
     std::vector<const reco::Candidate*> isoLep;
-    std::vector<const pat::Jet*> selectedJets;
-    std::vector<const pat::Jet*> selectedbJets;
-    std::vector<const pat::Jet*> selectedWJets;
+    std::vector<const reco::Candidate*> selectedJets;
+    std::vector<const reco::Candidate*> selectedbJets;
+    std::vector<const reco::Candidate*> selectedWJets;
 
     std::vector<iReco> semiMCTt; 
     std::vector<const reco::Candidate*> mcLep;
-    std::vector<const pat::Jet*> mcWJets ;
-    std::vector<const pat::Jet*> mcbJets ;
+    std::vector<const reco::Candidate*> mcWJets ;
+    std::vector<const reco::Candidate*> mcbJets ;
    
     std::vector<TtResult> AllTt ;
 
-
-    bool exclude;
+    int pass;
+    bool pure4Jet;
 
     // Switch for debug output
     bool debug;
     bool btag;
 
-    edm::InputTag muonSrc;
     std::string recoMuon;
     std::string algo;
+    edm::InputTag muonSrc;
     edm::InputTag electronSrc;
     edm::InputTag metSrc;
+    edm::InputTag tcmetSrc;
     edm::InputTag jetSrc;
+    edm::InputTag jptSrc;
     edm::InputTag genJetSrc;
     edm::InputTag jetObj;
     edm::InputTag genSrc;
     edm::InputTag caloSrc;
-
 
 };
 

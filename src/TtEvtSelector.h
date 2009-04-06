@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtEvtSelector.h,v 1.7 2009/01/23 16:08:16 sckao Exp $
+// $Id: TtEvtSelector.h,v 1.10 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -90,7 +90,15 @@ class TtEvtSelector {
 
     /// Perform the real analysis
     int eventSelection(edm::Handle<std::vector<pat::Muon> > rMu, edm::Handle<std::vector<pat::Electron> > rE,
-                        edm::Handle<std::vector<pat::Jet> > rJet, double jetEtThreshold );
+                       edm::Handle<std::vector<pat::Jet> > rJet, double jetEtThreshold );
+
+    int eventSelection(edm::Handle<std::vector<pat::Muon> > rMu, edm::Handle<std::vector<pat::Electron> > rE,
+                       edm::Handle<std::vector<reco::CaloJet> > rJet, double jetEtThreshold );
+
+    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, LorentzVector& metp4, const edm::Event& iEvent, string MetType, string JetType );
+
+    int eventSelection( int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedWJets, std::vector<const reco::Candidate*>& selectedbJets, LorentzVector& metp4, const edm::Event& iEvent, string MetType );
+
     int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
     bool HLTSemiSelection( edm::Handle <edm::TriggerResults> triggers, int setup );
@@ -103,6 +111,14 @@ class TtEvtSelector {
    TtJet*        ttJet;
    TtMET*        ttMET;
    TtMCMatching* mcMatch;
+
+   edm::InputTag muonSrc;
+   edm::InputTag electronSrc;
+   edm::InputTag metSrc;
+   edm::InputTag tcmetSrc;
+   edm::InputTag jetSrc;
+   edm::InputTag jptSrc;
+
 
 };
 

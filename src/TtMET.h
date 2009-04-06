@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMET.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
+// $Id: TtMET.h,v 1.10 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -45,6 +45,7 @@
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
+#include "DataFormats/METReco/interface/MET.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h" 
 #include "DataFormats/Candidate/interface/Particle.h" 
@@ -80,7 +81,7 @@ class TtMET {
     /// Perform the real analysis
     void MetTreeFeeder(edm::Handle<std::vector<pat::MET> > patMet, NJet* jtree, int eventId ); 
 
-    void metAnalysis(edm::Handle<std::vector<pat::MET> > patMet, const edm::Event & iEvent, HTOP2* histo2);
+    void metAnalysis(const edm::Event & iEvent, HTOP2* histo2);
 
     LorentzVector METfromNeutrino( edm::Handle<std::vector<reco::GenParticle> > genParticles );
     LorentzVector METfromNeutrino( const edm::Event & iEvent );
@@ -88,13 +89,14 @@ class TtMET {
     LorentzVector CaloMET( edm::Handle<CaloTowerCollection> calotowers );
     LorentzVector CaloMET( const edm::Event & iEvent );
 
-    LorentzVector METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets );
+    LorentzVector METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets );
 
     void MetAndMuon( edm::Handle<std::vector<pat::MET> > patMet, std::vector<const reco::Candidate*> isoMuons, HTOP2* histo2, int njets  );
-    void MetAndJets( edm::Handle<std::vector<pat::MET> > met, std::vector<const pat::Jet*> theJets, HTOP2* histo2 );
+    void MetAndJets( edm::Handle<std::vector<pat::MET> > met, std::vector<const reco::Candidate*> theJets, HTOP2* histo2 );
 
-    void METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets,
-                         edm::Handle<std::vector<pat::MET> > met, edm::Handle<std::vector<reco::GenParticle> > genParticles, HOBJ2* histo );
+    void METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets,
+                         edm::Handle<std::vector<pat::MET> > met, edm::Handle<std::vector<reco::MET> > tcmet, 
+                         edm::Handle<std::vector<reco::GenParticle> > genParticles, HOBJ2* histo );
 
    private:
 
@@ -103,6 +105,8 @@ class TtMET {
 
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;
+    edm::InputTag tcmetSrc;
+    edm::InputTag metSrc;
     edm::InputTag genSrc;
 
 

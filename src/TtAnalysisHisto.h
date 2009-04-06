@@ -380,9 +380,14 @@ public:
     hResPAT = new TH1F("ResPAT","PAT MET Resolution", 100, -5.,5.);
     hResCal = new TH1F("ResCal","Cal MET Resolution", 100, -5.,5.);
     hResCor = new TH1F("ResCor","Cor MET Resolution", 100, -5.,5.);
+    hResTC  = new TH1F("ResTC", " TC MET Resolution", 100, -5.,5.);
     hPhiPAT = new TH1F("PhiPAT","PAT Phi Resolution", 100, -5.,5.);
     hPhiCal = new TH1F("PhiCal","Cal Phi Resolution", 100, -5.,5.);
     hPhiCor = new TH1F("PhiCor","Cor Phi Resolution", 100, -5.,5.);
+    hPhiTC  = new TH1F("PhiTC" ," TC Phi Resolution", 100, -5.,5.);
+
+    tc_patMET = new TH2F("tc_patMET"," tcMET vs patMet ",  400, 0,400, 400, 0,400);
+    tc_patPhi = new TH2F("tc_patPhi"," tcMET vs patMet ",  165, -3.15,3.15, 165, -3.15,3.15);
 
     MET_dPhi0 = new TH2F("MET_dPhi0","MET vs dPhi(Mu,MET) > 3j", 500, 0,500, 32, -0.05,3.15);
     MET_dPhi1 = new TH2F("MET_dPhi1","MET vs dPhi(Mu,MET) 4j", 500, 0,500, 32, -0.05,3.15);
@@ -402,9 +407,14 @@ public:
     hResPAT     = (TH1F *) file->Get(theFolder+"hResPAT");
     hResCal     = (TH1F *) file->Get(theFolder+"hResCal");
     hResCor     = (TH1F *) file->Get(theFolder+"hResCor");
+    hResTC      = (TH1F *) file->Get(theFolder+"hResTC");
     hPhiPAT     = (TH1F *) file->Get(theFolder+"hPhiPAT");
     hPhiCal     = (TH1F *) file->Get(theFolder+"hPhiCal");
     hPhiCor     = (TH1F *) file->Get(theFolder+"hPhiCor");
+    hPhiTC      = (TH1F *) file->Get(theFolder+"hPhiTC");
+
+    tc_patMET   = (TH2F *) file->Get(theFolder+"tc_patMET");
+    tc_patPhi   = (TH2F *) file->Get(theFolder+"tc_patPhi");
 
     MET_dPhi0   = (TH2F *) file->Get(theFolder+"MET_dPhi0");
     MET_dPhi1   = (TH2F *) file->Get(theFolder+"MET_dPhi1");
@@ -425,9 +435,11 @@ public:
     delete hResPAT;
     delete hResCal;
     delete hResCor;
+    delete hResTC;
     delete hPhiPAT;
     delete hPhiCal;
     delete hPhiCor;
+    delete hPhiTC;
 
     delete MET_dPhi0;
     delete MET_dPhi1;
@@ -446,13 +458,15 @@ public:
     hSumEt_MET->Fill(sumEt, met);
  }
 
- void Fill2b(double respat, double rescal, double rescor, double phipat, double phical, double phicor){
+ void Fill2b(double respat, double rescal, double rescor, double restc, double phipat, double phical, double phicor, double phitc ){
     hResPAT->Fill(respat);
     hResCal->Fill(rescal);
     hResCor->Fill(rescor);
+    hResTC->Fill(restc);
     hPhiPAT->Fill(phipat);
     hPhiCal->Fill(phical);
     hPhiCor->Fill(phicor);
+    hPhiTC->Fill(phitc);
  }
 
  void Fill2c0( double met, double dPhi) {
@@ -477,6 +491,10 @@ public:
     dPhi_METJ1->Fill(met, df1);
     dPhi_METJ12->Fill(met, df12);
  }
+ void Fill2f( double tcmet, double patmet, double tcphi, double patphi ){
+    tc_patMET->Fill(tcmet, patmet);
+    tc_patPhi->Fill(tcphi, patphi);
+ }
 
  void Write( TString theFolder , TFile* file  ) {
 
@@ -488,9 +506,14 @@ public:
     hResPAT->Write();
     hResCal->Write();
     hResCor->Write();
+    hResTC->Write();
     hPhiPAT->Write();
     hPhiCal->Write();
     hPhiCor->Write();
+    hPhiTC->Write();
+
+    tc_patMET->Write();
+    tc_patPhi->Write();
 
     MET_dPhi0->Write();
     MET_dPhi1->Write();
@@ -509,9 +532,14 @@ public:
   TH1F *hResPAT;
   TH1F *hResCal;
   TH1F *hResCor;
+  TH1F *hResTC;
   TH1F *hPhiPAT;
   TH1F *hPhiCal;
   TH1F *hPhiCor;
+  TH1F *hPhiTC;
+
+  TH2F *tc_patMET;
+  TH2F *tc_patPhi;
 
   TH2F *MET_dPhi0;
   TH2F *MET_dPhi1;
@@ -744,14 +772,20 @@ public:
 
     dRb_dRw_lep = new TH2F("dRb_dRw_lep","leptonic T dR(mcB, recoB), dR(mcW, recoW) ", 200,-0.025,9.975, 200, -0.025, 9.975 );
     dRb_dRw_had = new TH2F("dRb_dRw_had","hadronic T dR(mcB, recoB), dR(mcW, recoW) ", 200,-0.025,9.975, 200, -0.025, 9.975 );
-    dRtt        = new TH2F("dRtt"," dR(rec, mc)_lep, dR(rec, mc)_had", 200, -0.025, 9.975, 200, -0.025, 9.975 );
+    dRtt        = new TH2F("dRtt"," dR(rec, mc)_lep, dR(rec, mc)_had", 400, -0.22, 9.78, 400, -0.22, 9.78 );
 
     dRbw_had = new TH2F("dRbw_had","hadronic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
     dRbw_lep = new TH2F("dRbw_lep","leptonic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
 
-    dR_lepW    = new TH1F("dR_lepW"," dR(reco - gen) for matched leptonic W ",200,0.,10.);
+    dR_neu     = new TH1F("dR_neu"," dR(reco - gen) for neutrino ",200,0.,10.);
     PtRes_lepW = new TH1F("PtRes_lepW"," Pt Res for matched leptonic W ",200,-1.005,0.995);
     PzRes_lepW = new TH1F("PzRes_lepW"," Pz Res for matched leptonic W ",200,-1.005,0.995);
+ 
+    mcTtMass   = new TH2F("mcTtMass"  ," mc Tt mass matched w/ reco cuts all", 200,0,400, 200,0,400);
+    mcTtMass0  = new TH2F("mcTtMass0" ," mc Tt mass matched w/ reco cuts  4j", 200,0,400, 200,0,400);
+    mcTtMass1  = new TH2F("mcTtMass1" ," mc Tt mass matched w/ reco cuts  5j", 200,0,400, 200,0,400);
+    mcTtMass2  = new TH2F("mcTtMass2" ," mc Tt mass matched w/ reco cuts  6j", 200,0,400, 200,0,400);
+    mcTtMass3  = new TH2F("mcTtMass3" ," mc Tt mass matched w/ reco cuts >7j", 200,0,400, 200,0,400);
 
  } 
 
@@ -763,10 +797,15 @@ public:
     dRbw_lep   = (TH2F *) file->Get(theFolder+"dRbw_lep");
     dRtt       = (TH2F *) file->Get(theFolder+"dRtt");
 
-    dR_lepW    = (TH1F *) file->Get(theFolder+"dR_lepW");
+    dR_neu    = (TH1F *) file->Get(theFolder+"dR_neu");
     PtRes_lepW = (TH1F *) file->Get(theFolder+"PtRes_lepW");
     PzRes_lepW  = (TH1F *) file->Get(theFolder+"PzRes_lepW");
 
+    mcTtMass    = (TH2F *) file->Get(theFolder+"mcTtMass");
+    mcTtMass0   = (TH2F *) file->Get(theFolder+"mcTtMass0");
+    mcTtMass1   = (TH2F *) file->Get(theFolder+"mcTtMass1");
+    mcTtMass2   = (TH2F *) file->Get(theFolder+"mcTtMass2");
+    mcTtMass3   = (TH2F *) file->Get(theFolder+"mcTtMass3");
  }
 
  /// Destructor
@@ -778,10 +817,15 @@ public:
     delete dRbw_lep;
     delete dRtt;
 
-    delete dR_lepW;
+    delete dR_neu;
     delete PtRes_lepW;
     delete PzRes_lepW;
 
+    delete mcTtMass;
+    delete mcTtMass0;
+    delete mcTtMass1;
+    delete mcTtMass2;
+    delete mcTtMass3;
  }
 
  void Fill6a( double dRt0, double dRbj0, double dRw0, double dRt1, double dRbj1, double dRw1 ) {
@@ -792,9 +836,24 @@ public:
  void Fill6b( double dRbw_mcl, double dRbw_rcl, double dRbw_mch, double dRbw_rch ){
     dRbw_had->Fill( dRbw_mch, dRbw_rch );
     dRbw_lep->Fill( dRbw_mcl, dRbw_rcl );
+ }
+ void Fill6c( double mclepTMass, double mchadTMass ){
+    mcTtMass->Fill( mclepTMass, mchadTMass );
+ } 
+ void Fill6c0( double mclepTMass, double mchadTMass ){
+    mcTtMass0->Fill( mclepTMass, mchadTMass );
+ } 
+ void Fill6c1( double mclepTMass, double mchadTMass ){
+    mcTtMass1->Fill( mclepTMass, mchadTMass );
+ } 
+ void Fill6c2( double mclepTMass, double mchadTMass ){
+    mcTtMass2->Fill( mclepTMass, mchadTMass );
+ } 
+ void Fill6c3( double mclepTMass, double mchadTMass ){
+    mcTtMass3->Fill( mclepTMass, mchadTMass );
  } 
  void Fill6d( double dR, double PtRes, double MRes ) {
-    dR_lepW->Fill(dR);
+    dR_neu->Fill(dR);
     PtRes_lepW->Fill(PtRes);
     PzRes_lepW->Fill(MRes);
  }
@@ -810,10 +869,15 @@ public:
     dRbw_lep->Write();
     dRtt->Write();
 
-    dR_lepW->Write();
+    dR_neu->Write();
     PtRes_lepW->Write();
     PzRes_lepW->Write();
   
+    mcTtMass->Write();
+    mcTtMass0->Write();
+    mcTtMass1->Write();
+    mcTtMass2->Write();
+    mcTtMass3->Write();
  }
 
   TH2F *dRb_dRw_lep;
@@ -822,11 +886,15 @@ public:
   TH2F *dRbw_lep;
   TH2F *dRtt;
 
-  TH1F *dR_lepW;
+  TH1F *dR_neu;
   TH1F *PtRes_lepW;
   TH1F *PzRes_lepW;
 
-
+  TH2F *mcTtMass;
+  TH2F *mcTtMass0;
+  TH2F *mcTtMass1;
+  TH2F *mcTtMass2;
+  TH2F *mcTtMass3;
 };
 
 class HTOP7 {
@@ -1183,28 +1251,6 @@ public:
  HTOP9() {
 
    // reconstructed objects masses
-    hMCtt     = new TH2F("hMCtt","MCMatched top mass ",200,0,400, 200,0,400);
-    hMCtt1    = new TH2F("hMCtt1","MCMatched top mass w/ 4 j only",200,0,400, 200,0,400);
-    hRecott0   = new TH2F("hRecott0","Reco top mass w/ > 3j ", 200,0,400, 200,0,400);
-    hRecott1   = new TH2F("hRecott1","Reco top mass w/ 4j", 200,0,400, 200,0,400);
-    hRecott2   = new TH2F("hRecott2","Reco top mass w/ 5j", 200,0,400, 200,0,400);
-    hRecott3   = new TH2F("hRecott3","Reco top mass w/ 6j", 200,0,400, 200,0,400);
-    hRecott4   = new TH2F("hRecott4","Reco top mass w/ >= 7j", 200,0,400, 200,0,400);
-
-    PtMCtt      = new TH1F("PtMCtt",   "Pt of MCMatched tt", 200,0,400);
-    PtMCtt1     = new TH1F("PtMCtt1",  "Pt of MCMatched tt 4j events only", 200,0,400);
-    PtRecott0   = new TH1F("PtRecott0","Pt of Reco top mass w/ > 3j", 200,0,400);
-    PtRecott1   = new TH1F("PtRecott1","Pt of Reco top mass w/ 4j", 200,0,400);
-    PtRecott2   = new TH1F("PtRecott2","Pt of Reco top mass w/ 5j", 200,0,400);
-    PtRecott3   = new TH1F("PtRecott3","Pt of Reco top mass w/ 6j", 200,0,400);
-    PtRecott4   = new TH1F("PtRecott4","Pt of Reco top mass w/ >= 7j", 200,0,400);
-
-    WMCtt      = new TH2F("WMCtt",   "W vs Mt1+Mt2 of MCMatched tt", 500,0,1000, 400,0,800);
-    WRecott0   = new TH2F("WRecott0","W vs Mt1+Mt2 of Reco top mass w/ > 3j", 500,0,1000, 400,0,800);
-    WRecott1   = new TH2F("WRecott1","W vs Mt1+Mt2 of Reco top mass w/ 4j", 500,0,1000, 400,0,800);
-    WRecott2   = new TH2F("WRecott2","W vs Mt1+Mt2 of Reco top mass w/ 5j", 500,0,1000, 400,0,800);
-    WRecott3   = new TH2F("WRecott3","W vs Mt1+Mt2 of Reco top mass w/ 6j", 500,0,1000, 400,0,800);
-    WRecott4   = new TH2F("WRecott4","W vs Mt1+Mt2of Reco top mass w/ >= 7j", 500,0,1000, 400,0,800);
 
     hEvtEff   = new TH1F("hEvtEff","(pass,fail)=> had(0,0.5) Mu(1,1.5) dilep(2,2.5) Ele(3,3.5), Tau(4,4.5), other(5,5.5)", 12,-0.25,5.75 );
     hObjEff   = new TH1F("hObjEff"," object selection Eff", 10, -0.5,9.5 );
@@ -1217,27 +1263,6 @@ public:
  } 
 
  HTOP9( TString theFolder, TFile* file ) {
-
-    hMCtt      = (TH2F *) file->Get(theFolder+"hMCtt");
-    hMCtt1     = (TH2F *) file->Get(theFolder+"hMCtt1");
-    hRecott0   = (TH2F *) file->Get(theFolder+"hRecott0");
-    hRecott1   = (TH2F *) file->Get(theFolder+"hRecott1");
-    hRecott2   = (TH2F *) file->Get(theFolder+"hRecott2");
-    hRecott3   = (TH2F *) file->Get(theFolder+"hRecott3");
-    hRecott4   = (TH2F *) file->Get(theFolder+"hRecott4");
-    PtMCtt     = (TH1F *) file->Get(theFolder+"PtMCtt");
-    PtMCtt1    = (TH1F *) file->Get(theFolder+"PtMCtt1");
-    PtRecott0  = (TH1F *) file->Get(theFolder+"PtRecott0");
-    PtRecott1  = (TH1F *) file->Get(theFolder+"PtRecott1");
-    PtRecott2  = (TH1F *) file->Get(theFolder+"PtRecott2");
-    PtRecott3  = (TH1F *) file->Get(theFolder+"PtRecott3");
-    PtRecott4  = (TH1F *) file->Get(theFolder+"PtRecott4");
-    WMCtt      = (TH2F *) file->Get(theFolder+"WMCtt");
-    WRecott0   = (TH2F *) file->Get(theFolder+"WRecott0");
-    WRecott1   = (TH2F *) file->Get(theFolder+"WRecott1");
-    WRecott2   = (TH2F *) file->Get(theFolder+"WRecott2");
-    WRecott3   = (TH2F *) file->Get(theFolder+"WRecott3");
-    WRecott4   = (TH2F *) file->Get(theFolder+"WRecott4");
 
     hEvtEff    = (TH1F *) file->Get(theFolder+"hEvtEff");
     hObjEff    = (TH1F *) file->Get(theFolder+"hObjEff");
@@ -1254,27 +1279,6 @@ public:
  /// Destructor
  virtual ~HTOP9() {
 
-    delete hMCtt;
-    delete hMCtt1;
-    delete hRecott0;
-    delete hRecott1;
-    delete hRecott2;
-    delete hRecott3;
-    delete hRecott4;
-    delete PtMCtt;
-    delete PtMCtt1;
-    delete PtRecott0;
-    delete PtRecott1;
-    delete PtRecott2;
-    delete PtRecott3;
-    delete PtRecott4;
-    delete WMCtt;
-    delete WRecott0;
-    delete WRecott1;
-    delete WRecott2;
-    delete WRecott3;
-    delete WRecott4;
-
     delete hEvtEff;
     delete hObjEff;
     delete hbJetEff;
@@ -1285,40 +1289,6 @@ public:
    
  }
 
- void Fill9(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
-    hMCtt->Fill( lep_mt, had_mt );
-    PtMCtt->Fill( PtTt );
-    WMCtt->Fill( Wtt, Wt2 );
- }
- void Fill9g(double lep_mt, double had_mt, double PtTt ){
-    hMCtt1->Fill( lep_mt, had_mt );
-    PtMCtt1->Fill( PtTt );
- }
- void Fill9a0(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
-    hRecott0->Fill( lep_mt, had_mt );
-    PtRecott0->Fill( PtTt );
-    WRecott0->Fill( Wtt, Wt2 );
- }
- void Fill9a1(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
-    hRecott1->Fill( lep_mt, had_mt );
-    PtRecott1->Fill( PtTt );
-    WRecott1->Fill( Wtt, Wt2 );
- }
- void Fill9a2(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
-    hRecott2->Fill( lep_mt, had_mt );
-    PtRecott2->Fill( PtTt );
-    WRecott2->Fill( Wtt, Wt2 );
- }
- void Fill9a3(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
-    hRecott3->Fill( lep_mt, had_mt );
-    PtRecott3->Fill( PtTt );
-    WRecott3->Fill( Wtt, Wt2 );
- }
- void Fill9a4(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
-    hRecott4->Fill( lep_mt, had_mt );
-    PtRecott4->Fill( PtTt );
-    WRecott4->Fill( Wtt, Wt2 );
- }
  void Fill9f(float count ) {
     hEvtEff->Fill( count );
  }
@@ -1343,27 +1313,6 @@ public:
 
     file->cd( theFolder );
 
-    hMCtt->Write();
-    hMCtt1->Write();
-    hRecott0->Write();
-    hRecott1->Write();
-    hRecott2->Write();
-    hRecott3->Write();
-    hRecott4->Write();
-    PtMCtt->Write();
-    PtMCtt1->Write();
-    PtRecott0->Write();
-    PtRecott1->Write();
-    PtRecott2->Write();
-    PtRecott3->Write();
-    PtRecott4->Write();
-    WMCtt->Write();
-    WRecott0->Write();
-    WRecott1->Write();
-    WRecott2->Write();
-    WRecott3->Write();
-    WRecott4->Write();
-
     hEvtEff->Write();
     hObjEff->Write();
     hbJetEff->Write();
@@ -1373,28 +1322,6 @@ public:
     hHLTSelect->Write();
 
  }
-
-  TH2F *hMCtt;
-  TH2F *hMCtt1;
-  TH2F *hRecott0;
-  TH2F *hRecott1;
-  TH2F *hRecott2;
-  TH2F *hRecott3;
-  TH2F *hRecott4;
-
-  TH1F *PtMCtt;
-  TH1F *PtMCtt1;
-  TH1F *PtRecott0;
-  TH1F *PtRecott1;
-  TH1F *PtRecott2;
-  TH1F *PtRecott3;
-  TH1F *PtRecott4;
-  TH2F *WMCtt;
-  TH2F *WRecott0;
-  TH2F *WRecott1;
-  TH2F *WRecott2;
-  TH2F *WRecott3;
-  TH2F *WRecott4;
 
   TH1F *hEvtEff; 
   TH1F *hObjEff; 
@@ -1420,7 +1347,6 @@ public:
     allWmass    = new TH1F(N1+"_allWmass", " mt of leptonic W or mass of hadronic W for all solutions"     ,320,0,160.);
     selWmass    = new TH1F(N1+"_selWmass", " mt of leptonic W or mass of hadronic W for selected solution" ,320,0,160.);
     beta_RelPt  = new TH2F(N1+"_RelPt", "RelPt of W w.r.t Top ",32, -0.06, 1.22, 320, 0, 160.);
-    beta_RelPtb = new TH2F(N1+"_RelPtb", "RelPt of b w.r.t Top ",32, -0.06, 1.22, 320, 0, 160.);
     dRab_W      = new TH1F(N1+"_dRab_W","dR for (j1 , j2) or (u , v) ",200, -0.025,9.975 );  
 
  }
@@ -1436,7 +1362,6 @@ public:
     allWmass   = (TH1F *) file->Get(theFolder+N1+"_allWmass");
     selWmass   = (TH1F *) file->Get(theFolder+N1+"_selWmass");
     beta_RelPt = (TH2F *) file->Get(theFolder+N1+"_beta_RelPt");
-    beta_RelPtb = (TH2F *) file->Get(theFolder+N1+"_beta_RelPtb");
     dRab_W     = (TH1F *) file->Get(theFolder+N1+"_dRab_W");
 
  }
@@ -1447,17 +1372,15 @@ public:
     delete allWmass;
     delete selWmass;
     delete beta_RelPt;
-    delete beta_RelPtb;
     delete dRab_W;
  }
 
  void Fill10a( double wmass ){
     allWmass->Fill( wmass );
  }
- void Fill10b( double wmass, double RelPt, double RelPtb, double beta, double dRab ) {
+ void Fill10b( double wmass, double RelPt, double beta, double dRab ) {
     selWmass->Fill( wmass );
     beta_RelPt->Fill( beta, RelPt );
-    beta_RelPtb->Fill( beta, RelPtb );
     dRab_W->Fill( dRab );
  }
 
@@ -1468,7 +1391,6 @@ public:
     allWmass->Write();
     selWmass->Write();
     beta_RelPt->Write();
-    beta_RelPtb->Write();
     dRab_W->Write();
 
  }
@@ -1476,7 +1398,6 @@ public:
   TH1F *allWmass;
   TH1F *selWmass;
   TH2F *beta_RelPt;
-  TH2F *beta_RelPtb;
   TH1F *dRab_W;
 
  };
@@ -1491,11 +1412,36 @@ public:
     if ( idx == 1 ) N1 = "Lep" ;
     if ( idx == 2 ) N1 = "MC_Had" ;
     if ( idx == 3 ) N1 = "Had" ;
+    TString N2 ;
+    if ( idx == 0 ) N2 = "MC_" ;
+    if ( idx == 1 ) N2 = "" ;
 
-    allTmass_pt    = new TH2F(N1+"_allTmass_pt", " Top Mass vs Pt for all solutions"     ,200,0.,400., 200,0,400 );
-    highPtTmass_pt = new TH2F(N1+"_highPtTmass_pt", " highest Pt Top Mass vs Pt"         ,200,0.,400., 200,0,400 );
-    selTmass_pt    = new TH2F(N1+"_selTmass_pt", " Top Mass vs Pt for seleted solution"  ,200,0.,400., 200,0,400 );
-    selTmass_Wmass = new TH2F(N1+"_selTmass_Wmass", " Top Mass vs W Mass for seleted solution"  ,200,0.,400., 200,0,400 );
+    allTmass_pt    = new TH2F(N1+"_allTmass_pt",   " Top Mass vs Pt for all solutions" ,200,0.,400., 200,0,400 );
+    highPtTmass_pt = new TH2F(N1+"_highPtTmass_pt"," highest Pt Top Mass vs Pt"        ,200,0.,400., 200,0,400 );
+    selTmass_Wmass = new TH2F(N1+"_selTmass_Wmass"," Top Mass vs W Mass for seleted solution" ,200,0.,400., 200,0,400 );
+    selTmass_pt    = new TH2F(N1+"_selTmass_pt",   " Top Mass vs Pt for seleted solution >3J" ,200,0.,400., 200,0,400 );
+    selTmass_pt0   = new TH2F(N1+"_selTmass_pt0",  " Top Mass vs Pt for seleted solution =4J" ,200,0.,400., 200,0,400 );
+    selTmass_pt1   = new TH2F(N1+"_selTmass_pt1", " Top Mass vs Pt for seleted solution =5J"  ,200,0.,400., 200,0,400 );
+    selTmass_pt2   = new TH2F(N1+"_selTmass_pt2", " Top Mass vs Pt for seleted solution =6J"  ,200,0.,400., 200,0,400 );
+    selTmass_pt3   = new TH2F(N1+"_selTmass_pt3", " Top Mass vs Pt for seleted solution >6J"  ,200,0.,400., 200,0,400 );
+
+    hRecott0   = new TH2F(N2+"hRecott0","Reco top mass w/ 4j", 200,0,400, 200,0,400);
+    hRecott1   = new TH2F(N2+"hRecott1","Reco top mass w/ 5j", 200,0,400, 200,0,400);
+    hRecott2   = new TH2F(N2+"hRecott2","Reco top mass w/ 6j", 200,0,400, 200,0,400);
+    hRecott3   = new TH2F(N2+"hRecott3","Reco top mass >= 7j", 200,0,400, 200,0,400);
+    hRecott    = new TH2F(N2+"hRecott" ,"Reco top mass -all ", 200,0,400, 200,0,400);
+
+    PtRecott0   = new TH1F(N2+"PtRecott0","Pt of Reco top mass w/ 4j", 200,0,400);
+    PtRecott1   = new TH1F(N2+"PtRecott1","Pt of Reco top mass w/ 5j", 200,0,400);
+    PtRecott2   = new TH1F(N2+"PtRecott2","Pt of Reco top mass w/ 6j", 200,0,400);
+    PtRecott3   = new TH1F(N2+"PtRecott3","Pt of Reco top mass >= 7j", 200,0,400);
+    PtRecott    = new TH1F(N2+"PtRecott" ,"Pt of Reco top mass -all ", 200,0,400);
+
+    WRecott0   = new TH2F(N2+"WRecott0","W vs dM of Reco top mass w/ 4j", 500,0,1000, 400,-199.5,200.5);
+    WRecott1   = new TH2F(N2+"WRecott1","W vs dM of Reco top mass w/ 5j", 500,0,1000, 400,-199.5,200.5);
+    WRecott2   = new TH2F(N2+"WRecott2","W vs dM of Reco top mass w/ 6j", 500,0,1000, 400,-199.5,200.5);
+    WRecott3   = new TH2F(N2+"WRecott3","W vs dM of Reco top mass >= 7j", 500,0,1000, 400,-199.5,200.5);
+    WRecott    = new TH2F(N2+"WRecott" ,"W vs dM of Reco top mass  -all", 500,0,1000, 400,-199.5,200.5);
 
  }
 
@@ -1506,12 +1452,34 @@ public:
     if ( idx == 1 ) N1 = "/Lep" ;
     if ( idx == 2 ) N1 = "/MC_Had" ;
     if ( idx == 3 ) N1 = "/Had" ;
+    TString N2 ;
+    if ( idx == 0 ) N2 = "/MC_" ;
+    if ( idx == 1 ) N2 = "/" ;
 
     allTmass_pt    = (TH2F *) file->Get(theFolder+N1+"_allTmass_pt");
     highPtTmass_pt = (TH2F *) file->Get(theFolder+N1+"_highPtTmass_pt");
-    selTmass_pt    = (TH2F *) file->Get(theFolder+N1+"_selTmass_pt");
     selTmass_Wmass = (TH2F *) file->Get(theFolder+N1+"_selTmass_Wmass");
+    selTmass_pt    = (TH2F *) file->Get(theFolder+N1+"_selTmass_pt");
+    selTmass_pt0   = (TH2F *) file->Get(theFolder+N1+"_selTmass_pt0");
+    selTmass_pt1   = (TH2F *) file->Get(theFolder+N1+"_selTmass_pt1");
+    selTmass_pt2   = (TH2F *) file->Get(theFolder+N1+"_selTmass_pt2");
+    selTmass_pt3   = (TH2F *) file->Get(theFolder+N1+"_selTmass_pt3");
 
+    hRecott0   = (TH2F *) file->Get(theFolder+N2+"_hRecott0");
+    hRecott1   = (TH2F *) file->Get(theFolder+N2+"_hRecott1");
+    hRecott2   = (TH2F *) file->Get(theFolder+N2+"_hRecott2");
+    hRecott3   = (TH2F *) file->Get(theFolder+N2+"_hRecott3");
+    hRecott    = (TH2F *) file->Get(theFolder+N2+"_hRecott");
+    PtRecott0  = (TH1F *) file->Get(theFolder+N2+"_PtRecott0");
+    PtRecott1  = (TH1F *) file->Get(theFolder+N2+"_PtRecott1");
+    PtRecott2  = (TH1F *) file->Get(theFolder+N2+"_PtRecott2");
+    PtRecott3  = (TH1F *) file->Get(theFolder+N2+"_PtRecott3");
+    PtRecott   = (TH1F *) file->Get(theFolder+N2+"_PtRecott");
+    WRecott0   = (TH2F *) file->Get(theFolder+N2+"_WRecott0");
+    WRecott1   = (TH2F *) file->Get(theFolder+N2+"_WRecott1");
+    WRecott2   = (TH2F *) file->Get(theFolder+N2+"_WRecott2");
+    WRecott3   = (TH2F *) file->Get(theFolder+N2+"_WRecott3");
+    WRecott    = (TH2F *) file->Get(theFolder+N2+"_WRecott");
  }
 
  /// Destructor
@@ -1519,9 +1487,28 @@ public:
 
     delete allTmass_pt;
     delete highPtTmass_pt;
-    delete selTmass_pt;
     delete selTmass_Wmass;
+    delete selTmass_pt;
+    delete selTmass_pt0;
+    delete selTmass_pt1;
+    delete selTmass_pt2;
+    delete selTmass_pt3;
 
+    delete hRecott0;
+    delete hRecott1;
+    delete hRecott2;
+    delete hRecott3;
+    delete hRecott;
+    delete PtRecott0;
+    delete PtRecott1;
+    delete PtRecott2;
+    delete PtRecott3;
+    delete PtRecott;
+    delete WRecott0;
+    delete WRecott1;
+    delete WRecott2;
+    delete WRecott3;
+    delete WRecott;
  }
 
  void Fill11a( double tmass, double pt ){
@@ -1534,22 +1521,101 @@ public:
     selTmass_pt->Fill( tmass, pt );
     selTmass_Wmass->Fill( tmass, wmass );
  }
+ void Fill11c0( double tmass, double pt) {
+    selTmass_pt0->Fill( tmass, pt );
+ }
+ void Fill11c1( double tmass, double pt) {
+    selTmass_pt1->Fill( tmass, pt );
+ }
+ void Fill11c2( double tmass, double pt) {
+    selTmass_pt2->Fill( tmass, pt );
+ }
+ void Fill11c3( double tmass, double pt) {
+    selTmass_pt3->Fill( tmass, pt );
+ }
 
- void Write( TString theFolder , TFile* file  ) {
+ void Fill11d(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott->Fill( lep_mt, had_mt );
+    PtRecott->Fill( PtTt );
+    WRecott->Fill( Wtt, Wt2 );
+ }
+ void Fill11d0(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott0->Fill( lep_mt, had_mt );
+    PtRecott0->Fill( PtTt );
+    WRecott0->Fill( Wtt, Wt2 );
+ }
+ void Fill11d1(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott1->Fill( lep_mt, had_mt );
+    PtRecott1->Fill( PtTt );
+    WRecott1->Fill( Wtt, Wt2 );
+ }
+ void Fill11d2(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott2->Fill( lep_mt, had_mt );
+    PtRecott2->Fill( PtTt );
+    WRecott2->Fill( Wtt, Wt2 );
+ }
+ void Fill11d3(double lep_mt, double had_mt, double PtTt, double Wtt, double Wt2 ){
+    hRecott3->Fill( lep_mt, had_mt );
+    PtRecott3->Fill( PtTt );
+    WRecott3->Fill( Wtt, Wt2 );
+ }
+
+ void Write( TString theFolder , TFile* file, int idx  ) {
 
     file->cd( theFolder );
 
     allTmass_pt->Write();
     highPtTmass_pt->Write();
-    selTmass_pt->Write();
     selTmass_Wmass->Write();
+    selTmass_pt->Write();
+    selTmass_pt0->Write();
+    selTmass_pt1->Write();
+    selTmass_pt2->Write();
+    selTmass_pt3->Write();
 
+    if ( idx == 0 || idx == 1 ) {
+       hRecott0->Write();
+       hRecott1->Write();
+       hRecott2->Write();
+       hRecott3->Write();
+       hRecott->Write();
+       PtRecott0->Write();
+       PtRecott1->Write();
+       PtRecott2->Write();
+       PtRecott3->Write();
+       PtRecott->Write();
+       WRecott0->Write();
+       WRecott1->Write();
+       WRecott2->Write();
+       WRecott3->Write();
+       WRecott->Write();
+    }
  }
 
   TH2F *allTmass_pt;
   TH2F *highPtTmass_pt;
-  TH2F *selTmass_pt;
   TH2F *selTmass_Wmass;
+  TH2F *selTmass_pt;
+  TH2F *selTmass_pt0;
+  TH2F *selTmass_pt1;
+  TH2F *selTmass_pt2;
+  TH2F *selTmass_pt3;
+
+  TH2F *hRecott0;
+  TH2F *hRecott1;
+  TH2F *hRecott2;
+  TH2F *hRecott3;
+  TH2F *hRecott;
+  TH1F *PtRecott0;
+  TH1F *PtRecott1;
+  TH1F *PtRecott2;
+  TH1F *PtRecott3;
+  TH1F *PtRecott;
+  TH2F *WRecott0;
+  TH2F *WRecott1;
+  TH2F *WRecott2;
+  TH2F *WRecott3;
+  TH2F *WRecott;
 
  };
 

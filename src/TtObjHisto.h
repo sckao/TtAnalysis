@@ -29,7 +29,6 @@ public:
     Jet2Et = new TH1F("Jet2Et", " ET of the 2nd highest Et jet ", 500,0.,500. ); 
     Jet3Et = new TH1F("Jet3Et", " ET of the 3rd highest Et jet ", 500,0.,500. ); 
     Jet4Et = new TH1F("Jet4Et", " ET of the 4th highest Et jet ", 500,0.,500. ); 
-    thirdCalEt = new TH1F("thirdCalEt", " ET of the 3rd highest Et jet ", 500,0.,500. ); 
 
     eta_njets  = new TH2F("eta_njets", " eta vs njets ", 91, -4.55, 4.55, 25, -0.5, 24.5);
 
@@ -45,6 +44,8 @@ public:
 
     isoEleCut = new TH2F("isoEleCut","N of isoEle vs N of SelectedJets  after isoMu =1 cut ", 21, -0.5, 20.5, 21, -0.5, 20.5 );
 
+    NloserJets = new TH1F("NloserJets", " # of Jets",35,-0.5,34.5);
+    loserJetEt = new TH1F("loserJetEt", " ET of the highest Et jet not be selected", 100,0.,50. ); 
  } 
 
  /// Destructor
@@ -57,7 +58,6 @@ public:
     delete Jet2Et; 
     delete Jet3Et; 
     delete Jet4Et; 
-    delete thirdCalEt;
     delete eta_njets;
 
     delete njets_dRMuJ;
@@ -68,6 +68,9 @@ public:
     delete allJ_selJ;
 
     delete isoEleCut;
+
+    delete NloserJets;
+    delete loserJetEt;
  }
 
  void Fill_1a( double dR ) {
@@ -77,12 +80,11 @@ public:
      njets_dRMuJ->Fill( njet, dR );
      dRMuJ_RelPt->Fill( dR, relPt );
  }
- void Fill_1c( double et1, double et2, double et3, double et4, double calEt3, double m3 ) {
+ void Fill_1c( double et1, double et2, double et3, double et4, double m3 ) {
     Jet1Et->Fill( et1 );
     Jet2Et->Fill( et2 );
     Jet3Et->Fill( et3 );
     Jet4Et->Fill( et4 );
-    thirdCalEt->Fill( calEt3 );
     m3_j3->Fill( m3, et3 );
  }
  void Fill_1d( double njets, double eta ) {
@@ -105,6 +107,11 @@ public:
     isoEleCut->Fill( NIsoEle, NSelJet );
  }
 
+ void Fill_1i( int NJet, double jetEt ){
+    NloserJets->Fill( NJet  );
+    loserJetEt->Fill( jetEt  );
+ }
+
  void Write( TString theFolder , TFile* file  ) {
 
     file->cd( theFolder );
@@ -116,7 +123,6 @@ public:
     Jet2Et->Write();
     Jet3Et->Write();
     Jet4Et->Write();
-    thirdCalEt->Write();
     eta_njets->Write();
     
     njets_dRMuJ->Write();
@@ -126,10 +132,12 @@ public:
     muNjets_dPhi2->Write();
 
     m3_j3->Write();
-
     allJ_selJ->Write();
-
     isoEleCut->Write();
+
+    NloserJets->Write();
+    loserJetEt->Write();
+
     file->cd("../");
 
  }
@@ -142,7 +150,6 @@ public:
   TH1F *Jet2Et;
   TH1F *Jet3Et;
   TH1F *Jet4Et;
-  TH1F *thirdCalEt;
   TH2F *eta_njets;
 
   TH2F *njets_dRMuJ;
@@ -156,6 +163,8 @@ public:
   TH2F *allJ_selJ;
 
   TH2F *isoEleCut;
+  TH1F *NloserJets;
+  TH1F *loserJetEt;
 
 };
 
@@ -163,23 +172,40 @@ class HOBJ2 {
 public:
  
  HOBJ2() {
-    PtResol     = new TH2F("PtResol",   "Pt Resol, pat vs evt ",150,-1.01, 1.99, 150, -1.01, 1.99 );
-    dPhi_NeuMET = new TH2F("dPhi_NeuMET", "dPhi(neu, MET),  pat vs evt ",160,-0.05, 3.15, 160, -0.05, 3.15 );
+    PtResol_pat = new TH1F("PtResol_pat","Pt Resol, patMET ", 150, -1.01, 1.99 );
+    PtResol_tc  = new TH1F("PtResol_tc", "Pt Resol, tcMET  ", 150, -1.01, 1.99 );
+    PtResol_evt = new TH1F("PtResol_evt","Pt Resol, evtMET ", 150, -1.01, 1.99 );
+
+    dPhiResol_pat = new TH1F("dPhiResol_pat", "dPhi(neu, MET),  pat ",160,-0.05, 3.15 );
+    dPhiResol_tc  = new TH1F("dPhiResol_pat", "dPhi(neu, MET),   tc ",160,-0.05, 3.15 );
+    dPhiResol_evt = new TH1F("dPhiResol_evt", "dPhi(neu, MET),  evt ",160,-0.05, 3.15 );
+
     Pt_dPhi_MET = new TH2F("Pt_dPhi_MET", " pat & evt,  PtResol vs  dPhi", 150,-1.01, 1.99, 160,-0.05, 3.15);
  }
 
  /// Destructor
  virtual ~HOBJ2() {
 
-    delete PtResol;
-    delete dPhi_NeuMET;
+    delete PtResol_pat;
+    delete PtResol_tc;
+    delete PtResol_evt;
+    delete dPhiResol_pat;
+    delete dPhiResol_tc;
+    delete dPhiResol_evt;
+
     delete Pt_dPhi_MET;
  }
 
- void Fill_2a( double patResol,  double evtResol, double theResol, double dPhi_neu_pat, double dPhi_neu_evt, double dPhi_pat_evt ){
+ void Fill_2a( double patResol,  double evtResol, double tcResol, double theResol, double dPhi_neu_pat, double dPhi_neu_evt, double dPhi_neu_tc, double dPhi_pat_evt ){
 
-    PtResol->Fill( patResol, evtResol );
-    dPhi_NeuMET->Fill( dPhi_neu_pat, dPhi_neu_evt );
+    PtResol_pat->Fill( patResol );
+    PtResol_tc->Fill( tcResol );
+    PtResol_evt->Fill( evtResol );
+
+    dPhiResol_pat->Fill( dPhi_neu_pat );
+    dPhiResol_tc->Fill( dPhi_neu_tc );
+    dPhiResol_evt->Fill( dPhi_neu_evt );
+
     Pt_dPhi_MET->Fill( theResol, dPhi_pat_evt );
  }
 
@@ -187,15 +213,25 @@ public:
 
     file->cd( theFolder );
 
-    PtResol->Write();
-    dPhi_NeuMET->Write();
+    PtResol_pat->Write();
+    PtResol_tc->Write();
+    PtResol_evt->Write();
+    dPhiResol_pat->Write();
+    dPhiResol_tc->Write();
+    dPhiResol_evt->Write();
+
     Pt_dPhi_MET->Write();
 
     file->cd("../");
  }
 
-  TH2F *PtResol;
-  TH2F *dPhi_NeuMET;
+  TH1F *PtResol_tc;
+  TH1F *PtResol_pat;
+  TH1F *PtResol_evt;
+  TH1F *dPhiResol_tc;
+  TH1F *dPhiResol_pat;
+  TH1F *dPhiResol_evt;
+
   TH2F *Pt_dPhi_MET;
 
 };

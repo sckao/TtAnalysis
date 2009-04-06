@@ -59,6 +59,8 @@ TtMET::TtMET(const edm::ParameterSet& iConfig)
    */
 
   muonSrc         = iConfig.getParameter<edm::InputTag> ("muonSource");
+  tcmetSrc        = iConfig.getParameter<edm::InputTag> ("tcMetSource");
+  metSrc          = iConfig.getParameter<edm::InputTag> ("metSource");
   caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
   genSrc          = iConfig.getParameter<edm::InputTag> ("genParticles"); 
 
@@ -94,7 +96,7 @@ void TtMET::MetTreeFeeder(Handle<std::vector<pat::MET> > patMet, NJet* jtree, in
   }
 }
 
-void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event& iEvent, HTOP2* histo2) {
+void TtMET::metAnalysis(const edm::Event& iEvent, HTOP2* histo2) {
 
  Handle<std::vector<pat::Muon> > muons;
  iEvent.getByLabel(muonSrc, muons);
@@ -105,6 +107,11 @@ void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event&
  Handle<std::vector<reco::GenParticle> > genParticles;
  iEvent.getByLabel(genSrc, genParticles);
 
+ Handle<std::vector<pat::MET> > patMet;
+ iEvent.getByLabel(metSrc, patMet);
+
+ Handle<std::vector<reco::MET> > tcmet;
+ iEvent.getByLabel(tcmetSrc, tcmet);
 
  for (std::vector<pat::MET>::const_iterator m1 = patMet->begin(); m1 != patMet->end(); m1++)
  {
@@ -136,18 +143,21 @@ void TtMET::metAnalysis(Handle<std::vector<pat::MET> > patMet, const edm::Event&
 
      double vPT = sqrt(vP4.Px()*vP4.Px() + vP4.Py()*vP4.Py());
      double vPhi= atan2(vP4.Py(), vP4.Px());
-     double MET_Res[3] = {100.0, 100.0, 100.0};
-     double Phi_Res[3] = {100.0, 100.0, 100.0};
+     double MET_Res[4] = {100.};
+     double Phi_Res[4] = {100.};
 
+     histo2->Fill2f( (*tcmet)[0].et(), (*m1).et(), (*tcmet)[0].phi(), (*m1).phi() );
      if ( vPT != 0 ) {
         MET_Res[0] = ((*m1).et() - vPT) / vPT ;
 	MET_Res[1] = ( vsc - vPT) / vPT ;
 	MET_Res[2] = ( vsc1 - vPT) / vPT ;
+        MET_Res[3] = ((*tcmet)[0].et() - vPT) / vPT ;
 
 	Phi_Res[0] = (*m1).phi() - vPhi;
 	Phi_Res[1] =  phic  - vPhi;
         Phi_Res[2] =  phic1 - vPhi;
-        histo2->Fill2b( MET_Res[0],MET_Res[1],MET_Res[2],Phi_Res[0],Phi_Res[1],Phi_Res[2] );
+	Phi_Res[3] = (*tcmet)[0].phi() - vPhi;
+        histo2->Fill2b( MET_Res[0],MET_Res[1],MET_Res[2],MET_Res[3],Phi_Res[0],Phi_Res[1],Phi_Res[2],Phi_Res[3] );
      }
  }
 
@@ -186,7 +196,7 @@ LorentzVector TtMET::CaloMET( const edm::Event& iEvent ) {
    return theMET;
 }
 
-LorentzVector  TtMET::METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets ) {
+LorentzVector  TtMET::METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets ) {
 
   double Psum[3] ={ 0.0 };
   for (size_t i=0; i < theLep.size(); i++ ) {
@@ -260,40 +270,47 @@ LorentzVector TtMET::METfromNeutrino( Handle<std::vector<reco::GenParticle> > ge
    return vp4;
 }
 
-void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const pat::Jet*> theJets,
-                            Handle<std::vector<pat::MET> > met, Handle<std::vector<reco::GenParticle> > genParticles, 
-                            HOBJ2* histo ) {
+void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets,
+                            Handle<std::vector<pat::MET> > met, Handle<std::vector<reco::MET> > tcmet, 
+                            Handle<std::vector<reco::GenParticle> > genParticles, HOBJ2* histo ) {
 
      LorentzVector noMET(0.,0.,0.,0.);
      LorentzVector patMET = (met->size() > 0) ?  (*met)[0].p4() : noMET ;
+     LorentzVector tcMET  = (tcmet->size() > 0) ?  (*tcmet)[0].p4() : noMET ;;
      LorentzVector evtMET = METfromObjects( theLep, theJets );
      LorentzVector neuMET = METfromNeutrino( genParticles );
 
      double patResol = 9. ;
      double evtResol = 9. ;
+     double tcResol  = 9. ;
      double theResol = 9. ;
      double dPhi_neu_pat = 9. ;
      double dPhi_neu_evt = 9. ;
+     double dPhi_neu_tc  = 9. ;
      double dPhi_pat_evt = 9. ;
 
      if ( neuMET.Pt() != 0. ) {
         patResol = ( patMET.Pt()/neuMET.Pt() ) - 1. ;
 	evtResol = ( evtMET.Pt()/neuMET.Pt() ) - 1. ;
+	tcResol  = (  tcMET.Pt()/neuMET.Pt() ) - 1. ;
         if ( patMET.Pt() != 0. && evtMET.Pt() != 0. ) {
 	   dPhi_neu_pat = tools->getdPhi( patMET, neuMET );
 	   dPhi_neu_evt = tools->getdPhi( evtMET, neuMET );
+	   dPhi_neu_tc  = tools->getdPhi(  tcMET, neuMET );
         }
         if ( patResol >= 1.98 ) patResol = 1.98 ;
         if ( evtResol >= 1.98 ) evtResol = 1.98 ;
+        if (  tcResol >= 1.98 )  tcResol = 1.98 ;
         if ( dPhi_neu_pat >= 3.142 ) dPhi_neu_pat = 3.142 ;
         if ( dPhi_neu_evt >= 3.142 ) dPhi_neu_evt = 3.142 ;
+        if ( dPhi_neu_tc  >= 3.142 ) dPhi_neu_tc  = 3.142 ;
      }
      if ( patMET.Pt() != 0. ) {
         theResol = ( evtMET.Pt()/patMET.Pt() ) - 1. ;
         dPhi_pat_evt = tools->getdPhi( patMET, evtMET );
      }
 
-     histo->Fill_2a( patResol,  evtResol, theResol, dPhi_neu_pat, dPhi_neu_evt, dPhi_pat_evt );
+     histo->Fill_2a( patResol,  evtResol, tcResol, theResol, dPhi_neu_pat, dPhi_neu_evt, dPhi_neu_tc, dPhi_pat_evt );
 
 }
 
@@ -317,7 +334,7 @@ void TtMET::MetAndMuon(Handle<std::vector<pat::MET> > met, std::vector<const rec
 
 }
 
-void TtMET::MetAndJets(Handle<std::vector<pat::MET> > met, std::vector<const pat::Jet*> theJets, HTOP2* histo2 ) {
+void TtMET::MetAndJets(Handle<std::vector<pat::MET> > met, std::vector<const reco::Candidate*> theJets, HTOP2* histo2 ) {
 
    if ( met->size() >  0 && theJets.size() > 1) {
 

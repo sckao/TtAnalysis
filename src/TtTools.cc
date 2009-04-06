@@ -80,10 +80,16 @@ double TtTools::getEta(double vx, double vy, double vz ) {
 double TtTools::getdPhi( LorentzVector v1, LorentzVector v2 ) {
 
   double ab = (v1.Px()*v2.Px()) + (v1.Py()*v2.Py()) ;
-  double al = sqrt( v1.Px()*v1.Px() +  v1.Py()*v1.Py() );
-  double bl = sqrt( v2.Px()*v2.Px() +  v2.Py()*v2.Py() );
+  double al = sqrt( (v1.Px()*v1.Px()) + (v1.Py()*v1.Py()) );
+  double bl = sqrt( (v2.Px()*v2.Px()) + (v2.Py()*v2.Py()) );
   double cosA = ab/(al*bl) ;
+
+  double dv = ab - al*bl ;
+  if ( dv > 0. && dv < 0.0001 ) cosA = 1. ;
   double df = acos(cosA) ;
+
+  bool normal = ( df >= 0. && df < 3.1415927 ) ? true : false ;
+  if ( !normal ) cout<<" df:"<<df<<" v1:"<<al<<" v2:"<<bl<<"  v1v2:"<<ab<<endl;
 
   return df;
 }
@@ -112,13 +118,19 @@ double TtTools::getdRy( LorentzVector v1, LorentzVector v2 ) {
 
   double dR = sqrt( (dY*dY) + (df*df) );
 
+  //if ( dR < 0.000001 ) dR = 0.0 ;
+  bool normal = ( dR <  9. ) ? true:false ;
+  if ( !normal ) cout <<" Y1:"<< aY <<" Y2:"<<bY<<" df:"<<df<< endl;
+
   return dR;
 }
 
 double TtTools::getY( LorentzVector v1 ){
 
     double ep = (v1.E() + v1.Pz()) / (v1.E() - v1.Pz()) ;
-    double Y = -0.5*log( ep  ) ;
+    double Y = 0.5*log( ep  ) ;
+    if ( (v1.E() - v1.Pz()) == 0. ) Y =  99.99;
+    if ( (v1.E() + v1.Pz()) == 0. ) Y = -99.99;
     return Y;
 }
 
@@ -190,3 +202,54 @@ double TtTools::getBeta( LorentzVector a ) {
 
 }
 
+std::vector<const pat::Jet*> TtTools::ReturnJetForm( std::vector<const reco::Candidate*> jCand, Handle<std::vector<pat::Jet> > patJet ){
+
+     std::vector<const pat::Jet*> emptyCont ;
+     std::vector<const pat::Jet*> jet_temp ;
+     std::vector<int> idx ;
+     bool fail = false ;
+     for (size_t i=0; i< jCand.size(); i++ ) {
+         int jdx = -1;
+         for ( size_t j=0; j<  patJet->size(); j++) {
+             double dx = jCand[i]->px() - (*patJet)[j].px() ;
+             double dy = jCand[i]->py() - (*patJet)[j].py() ;
+             double dz = jCand[i]->pz() - (*patJet)[j].pz() ;
+             double de = jCand[i]->energy() - (*patJet)[j].energy() ;
+             double dAll = sqrt( dx*dx + dy*dy + dz*dz + de*de ) ;
+             if ( dAll < 0.00001 ) {
+                jet_temp.push_back( &(*patJet)[j] );
+                jdx = static_cast<int>(j);
+             }
+         }
+         for (size_t k=0; k< idx.size(); k++ ) {
+             if (idx[k] == jdx ) fail = true ;
+         }
+         if ( jdx != -1 && !fail )  idx.push_back( jdx );
+     }
+     if ( jet_temp.size() != jCand.size() ) return emptyCont;
+     if ( fail ) return emptyCont;
+     return jet_temp;
+}
+
+// match the reco candidate with pat jets
+const pat::Jet* TtTools::ReturnJetForm( const reco::Candidate* jCand, Handle<std::vector<pat::Jet> > patJet, bool& goodmatching ){
+
+     const pat::Jet* patform ;
+     int idx = -1 ;
+     double dAll0 = 0.1;
+     for ( size_t j=0; j<  patJet->size(); j++) {
+         double dx = jCand->px() - (*patJet)[j].px() ;
+         double dy = jCand->py() - (*patJet)[j].py() ;
+         double dz = jCand->pz() - (*patJet)[j].pz() ;
+         double de = jCand->energy() - (*patJet)[j].energy() ;
+         double dAll = sqrt( dx*dx + dy*dy + dz*dz + de*de ) ;
+         if ( dAll < dAll0 ) {
+            idx = static_cast<int>(j);
+            dAll0 = dAll;
+         }
+     }
+     if ( idx != -1 ) patform =  &(*patJet)[idx] ;
+     if ( dAll0 < 0.0001 ) goodmatching = true; 
+
+     return patform ;
+}

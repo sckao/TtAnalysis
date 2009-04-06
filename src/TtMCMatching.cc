@@ -170,9 +170,31 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
    return matchedJets ;
 }
 
+// Global dR method
+/*
+std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticle> > genParticles,
+                                           std::vector<const pat::Jet*> selectedJets) {
+
+   // Accumulate the hadronic dauaghters from W
+   std::vector<reco::Particle> jetMom ;
+   for (int i=1; i<6; i++) {
+       std::vector<reco::Particle> tmpMom = ttDecay(genParticles, i) ;
+       for (std::vector<reco::Particle>::iterator it= tmpMom.begin(); it!= tmpMom.end(); it++){
+           jetMom.push_back( *it );
+           //if (fillhisto) cout<<"tmpMom sz"<<tmpMom.size() << " jmom:"<< it->pdgId() <<endl;
+       }
+   }
+   //if (fillhisto) cout<<"  === jetMom size == "<<jetMom.size() <<endl;
+
+   int qSize = static_cast<int>( jetMom.size() );
+   int jSize = static_cast<int>( selectedJets.size() );
+}
+*/
+
+
 // general matching for w jets and bjets 
 std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticle> > genParticles,
-                                           std::vector<const pat::Jet*> selectedJets,
+                                           std::vector<const reco::Candidate*> selectedJets,
                                            HTOP7* histo7, HTOP8* histo8, bool fillhisto ) {
 
    // Accumulate the hadronic dauaghters from W
@@ -186,11 +208,14 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
    }
    //if (fillhisto) cout<<"  === jetMom size == "<<jetMom.size() <<endl;
 
+   int qSize = static_cast<int>( jetMom.size() );
+   int jSize = static_cast<int>( selectedJets.size() );
+
    // make a map for jet index and dR with all parton
    std::vector< std::vector<IDPair> > Qs;
-   for( size_t i=0; i< jetMom.size(); i++ ) {
+   for( int i=0; i< qSize ; i++ ) {
       std::vector<IDPair> js ;
-      for( size_t j=0; j<selectedJets.size(); j++ ){
+      for( int j=0; j< jSize ; j++ ){
          double dR = tools->getdR( jetMom[i].p4(), selectedJets[j]->p4() ) ;
          IDPair jId_dR = make_pair(j,dR);
          js.push_back( jId_dR );
@@ -200,15 +225,15 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
    }
 
    // check the best matching for each parton
-   std::vector<int>  qMatch( jetMom.size() , -1 );
-   std::vector<bool> usedJet( selectedJets.size(), false );
+   std::vector<int>  qMatch( qSize , -1 );
+   std::vector<bool> usedJet( jSize, false );
 
    // loop index m => the order of match-sorting
-   for( size_t m=0; m<selectedJets.size(); m++ ) {
+   for( int m=0; m< jSize; m++ ) {
 
-      for( size_t j=0; j<selectedJets.size(); j++ ) {
+      for( int j=0; j< jSize; j++ ) {
 
-         if (usedJet[j]) continue;
+         if ( usedJet[j] ) continue;
          // look at the best matched jet for each parton
          std::vector<int> qCand;
          for( size_t i=0; i< Qs.size(); i++) {
@@ -227,32 +252,38 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
          if ( wj !=  -1 ) {
             qMatch[wj] = j ;
             usedJet[j] = true;
-
          }
-
       }
 
    }
 
    if (fillhisto) cout<<" ===== new matching ====== "<<endl;
    std::vector<jmatch> matchedJets ;
+   double dRsqr = 0;
+   //std::vector<const pat::Jet*> pat_selectedJets = tools->ReturnJetForm( selectedJets, patJet );
    for(size_t k=0; k < qMatch.size(); k++ ) {
       if (fillhisto) cout<<" q:"<< jetMom[k].pdgId() <<"  matchedJ:"<< qMatch[k] <<endl;
       int s = qMatch[k] ;
-      if ( s == -1 )continue;
+      if ( s == -1 ) continue;
+      //if ( pat_selectedJets.size() > 0 ) continue;
       jmatch theTjet;
       theTjet.trueJet= selectedJets[s] ;
       theTjet.mom    = jetMom[k] ;
       theTjet.MomIdx = jetMom[k].pdgId() ;
       theTjet.res_P  = ( selectedJets[s]->pt() /jetMom[k].pt()) - 1. ;
       theTjet.sumP4  = selectedJets[s]->p4() ;
+      theTjet.dR     = tools->getdR( selectedJets[s]->p4(), jetMom[k].p4() );
       theTjet.hasMatched = true ;
+       if (fillhisto) cout<<" matching dR:"<<theTjet.dR<<endl;
       matchedJets.push_back( theTjet );
       if ( fillhisto && abs(theTjet.MomIdx) == 5  ) histo7->Fill7h( jetMom[k].eta(), jetMom[k].phi(),
 		      selectedJets[s]->eta(), selectedJets[s]->phi(), jetMom[k].pt(), theTjet.res_P  );
       if ( fillhisto && abs(theTjet.MomIdx)  < 5  ) histo8->Fill8h( jetMom[k].eta(), jetMom[k].phi(),
 		      selectedJets[s]->eta(), selectedJets[s]->phi(), jetMom[k].pt(), theTjet.res_P  );
+      dRsqr +=  theTjet.dR*theTjet.dR  ;
+      
    }
+   if (fillhisto) cout<<" sum dR^2 = "<< dRsqr <<endl;
    if (fillhisto) cout<<" ======================== "<<endl;
 
    sort( matchedJets.begin(), matchedJets.end(), PidDecreasing );
@@ -552,7 +583,7 @@ int TtMCMatching::matchLeptonicW( Handle<std::vector<reco::GenParticle> > genPar
    }
 
    if ( wl != -1 ) {
-      LorentzVector lv = wSolutions[wl].p4 ;
+      LorentzVector lv = wSolutions[wl].q4v[1].second ;
 
       double ptRes = (lv.Pt()/neu[0].pt()) - 1 ;
       double pzRes = (lv.Pz()/neu[0].p4().Pz()) - 1 ;
@@ -704,7 +735,7 @@ std::vector<reco::Particle> TtMCMatching::ttPartons( Handle<std::vector<reco::Ge
 }
 
 std::vector<const reco::Candidate*> TtMCMatching::matchMuonfromB( Handle<std::vector<reco::GenParticle> > genParticles,
-                std::vector<const pat::Jet*> jets, std::vector<const reco::Candidate*> theMuons ,HTOP7* histo7, bool fillhisto ){
+                std::vector<const reco::Candidate*> jets, std::vector<const reco::Candidate*> theMuons ,HTOP7* histo7, bool fillhisto ){
 
    // Accumulate the candidates of leptonic dauaghters from B
    std::vector<reco::Particle> theB = ttDecay( genParticles, 5 ) ;
@@ -858,3 +889,4 @@ void TtMCMatching::CheckGenParticle(  Handle<std::vector<reco::GenParticle> > ge
    cout<<" "<<endl;
 
 }
+

@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtFormat.h,v 1.2 2009/01/15 14:58:02 sckao Exp $
+// $Id: TtFormat.h,v 1.8 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -70,7 +70,6 @@ struct iReco{
     LorentzVector p4;
     std::pair<int,int> from;
     std::pair<const reco::Candidate*, const reco::Candidate*> ptr;
-    //std::pair<LorentzVector, LorentzVector> q4;
     std::vector<iParton> q4v ;
     double dm; // fill pt for letponic W
     double mt; // only filled for leptonic W
@@ -82,11 +81,13 @@ struct jmatch {
        int MomIdx ;
        double res_P;
        LorentzVector sumP4 ;
-       std::vector<pat::Jet> assJets ;
-       pat::Jet leadingJet ;
-       const pat::Jet* trueJet ;
+       std::vector<pat::Jet> assJets ; // obsolete 
+       pat::Jet leadingJet ;           // obsolete
+       //const pat::Jet* trueJet ;
+       const reco::Candidate* trueJet ;
        reco::Particle mom ;
        bool hasMatched;
+       double dR;
 };
 
 struct iTt {
@@ -117,9 +118,9 @@ struct TtResult {
 
     std::vector<iReco>                   Tt ;
     std::vector<const reco::Candidate*>  Ls ;
-    std::vector<const pat::Jet*>         Js ;
-    std::vector<const pat::Jet*>         bJ ;
-    std::vector<const pat::Jet*>         WJ ;
+    std::vector<const reco::Candidate*>  Js ;
+    std::vector<const reco::Candidate*>  bJ ;
+    std::vector<const reco::Candidate*>  WJ ;
     bool isData;
 };
 

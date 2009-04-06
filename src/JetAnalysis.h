@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: JetAnalysis.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
+// $Id: JetAnalysis.h,v 1.3 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -132,7 +132,9 @@ class JetAnalysis : public edm::EDAnalyzer {
     std::string recoMuon;
     edm::InputTag electronSrc;
     edm::InputTag jetSrc;
+    edm::InputTag jptSrc;
     edm::InputTag metSrc;
+    edm::InputTag tcmetSrc;
     edm::InputTag genJetSrc;
     edm::InputTag jetObj;
     edm::InputTag genSrc;

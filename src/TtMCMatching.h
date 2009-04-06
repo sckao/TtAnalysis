@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMCMatching.h,v 1.7 2009/01/23 16:08:16 sckao Exp $
+// $Id: TtMCMatching.h,v 1.10 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -80,8 +80,8 @@ class TtMCMatching {
 
     //void matchJets_test(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<const pat::Jet*> selectedJets) ;
 
-    std::vector<jmatch> matchJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                    std::vector<const pat::Jet*> selectedJets, HTOP7* histo7, HTOP8* histo8, bool fillhisto );
+    std::vector<jmatch> matchJets(edm::Handle<std::vector<reco::GenParticle> > genParticles, 
+                    std::vector<const reco::Candidate*> selectedJets, HTOP7* histo7, HTOP8* histo8, bool fillhisto );
 
     std::vector<jmatch> matchWJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                    std::vector<const pat::Jet*> selectedWJets, HTOP8* histo8, bool fillhisto );
@@ -113,7 +113,7 @@ class TtMCMatching {
     std::vector<reco::Particle> genMuonFromB( edm::Handle<std::vector<reco::GenParticle> > genParticles, reco::Particle genB ) ;
 
     std::vector<const reco::Candidate*> matchMuonfromB( edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                std::vector<const pat::Jet*> jets, std::vector<const reco::Candidate*> isoMuons ,HTOP7* histo7, bool fillhisto ) ;
+                std::vector<const reco::Candidate*> jets, std::vector<const reco::Candidate*> isoMuons ,HTOP7* histo7, bool fillhisto ) ;
 
     void CheckGenParticle(  edm::Handle<std::vector<reco::GenParticle> > genParticles );
 

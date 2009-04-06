@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtTools.h,v 1.7 2009/01/23 16:08:16 sckao Exp $
+// $Id: TtTools.h,v 1.3 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -107,6 +107,9 @@ class TtTools {
     double getInvMass( std::vector<LorentzVector> vlist );
     double getInvMass( LorentzVector lv );
     double getInvMass( LorentzVector lv1, LorentzVector lv2 );
+
+    std::vector<const pat::Jet*> ReturnJetForm( std::vector<const reco::Candidate*> jCand, edm::Handle<std::vector<pat::Jet> > patJet );
+    const pat::Jet* ReturnJetForm( const reco::Candidate* jCand, edm::Handle<std::vector<pat::Jet> > patJet, bool& goodmatching );
 
    private:
 

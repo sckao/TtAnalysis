@@ -43,9 +43,11 @@ JetAnalysis::JetAnalysis(const edm::ParameterSet& iConfig)
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
+  jptSrc            = iConfig.getParameter<edm::InputTag> ("jptSource");
   genJetSrc         = iConfig.getParameter<edm::InputTag> ("genJetSource");
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles");
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
+  tcmetSrc          = iConfig.getParameter<edm::InputTag> ("tcMetSource");
   recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
   caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
   //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
@@ -145,8 +147,14 @@ void JetAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    Handle<std::vector<pat::Jet> > jets;
    iEvent.getByLabel(jetSrc, jets);
 
+   //Handle<std::vector<reco::CaloJet> > jets;
+   //iEvent.getByLabel(jptSrc, jets);
+
    Handle<std::vector<pat::MET> > met;
    iEvent.getByLabel(metSrc, met);
+
+   Handle<std::vector<reco::MET> > tcmet;
+   iEvent.getByLabel(tcmetSrc, tcmet);
 
    Handle<std::vector<reco::GenParticle> > genParticles;
    iEvent.getByLabel(genSrc, genParticles);
@@ -170,25 +178,32 @@ void JetAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
    //1. Jet Et threshold analysis
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
-   std::vector<const pat::Jet*> theJets1 = ttJet->JetSelection( jets, isoMu, 20, hJ_Et20 ) ;
-   std::vector<const pat::Jet*> theJets2 = ttJet->JetSelection( jets, isoMu, 25, hJ_Et25 ) ;
-   std::vector<const pat::Jet*> theJets3 = ttJet->JetSelection( jets, isoMu, 30, hJ_Et30 ) ;
+   std::vector<const reco::Candidate*> theJets1 = ttJet->JetSelection( jets, isoMu, 20, hJ_Et20 ) ;
+   std::vector<const reco::Candidate*> theJets2 = ttJet->JetSelection( jets, isoMu, 25, hJ_Et25 ) ;
+   std::vector<const reco::Candidate*> theJets3 = ttJet->JetSelection( jets, isoMu, 30, hJ_Et30 ) ;
 
    if ( pass > -1 ) {
       ttJet->MuonAndJet( theJets1, isoMu[0] , hJ_Et20 );
       ttJet->JetEtSpectrum( theJets1, hJ_Et20 );
       ttJet->JetdRAnalysis( theJets1, hJ_Et20 );
-      if ( theJets1.size() == 4 ) ttMET->METandNeutrino( isoMu, theJets1, met, genParticles, hMET_J20 );
-
+      if ( theJets1.size() == 4 ) {
+         ttMET->METandNeutrino( isoMu, theJets1, met, tcmet, genParticles, hMET_J20 );
+         std::vector<const reco::Candidate*> outJets1 = ttJet->SoftJetSelection( jets, isoMu, 20, hJ_Et20 ) ;
+      }
       ttJet->MuonAndJet( theJets2, isoMu[0] , hJ_Et25 );
       ttJet->JetEtSpectrum( theJets2, hJ_Et25 );
       ttJet->JetdRAnalysis( theJets2, hJ_Et25 );
-      if ( theJets2.size() == 4 ) ttMET->METandNeutrino( isoMu, theJets2, met, genParticles, hMET_J25 );
-
+      if ( theJets2.size() == 4 ) { 
+         ttMET->METandNeutrino( isoMu, theJets2, met, tcmet, genParticles, hMET_J25 );
+         std::vector<const reco::Candidate*> outJets2 = ttJet->SoftJetSelection( jets, isoMu, 25, hJ_Et25 ) ;
+      }
       ttJet->MuonAndJet( theJets3, isoMu[0] , hJ_Et30 );
       ttJet->JetEtSpectrum( theJets3, hJ_Et30 );
       ttJet->JetdRAnalysis( theJets3, hJ_Et30 );
-      if ( theJets3.size() == 4 ) ttMET->METandNeutrino( isoMu, theJets3, met, genParticles, hMET_J30 );
+      if ( theJets3.size() == 4 ) { 
+         ttMET->METandNeutrino( isoMu, theJets3, met, tcmet, genParticles, hMET_J30 );
+         std::vector<const reco::Candidate*> outJets3 = ttJet->SoftJetSelection( jets, isoMu, 30, hJ_Et30 ) ;
+      }
    }
 
    std::vector<const reco::Candidate*> isoEle = ttEle->IsoEleSelection( electrons );
@@ -197,7 +212,6 @@ void JetAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       hJ_Et25->Fill_1h( isoEle.size(), theJets2.size() );
       hJ_Et30->Fill_1h( isoEle.size(), theJets3.size() );
    }
-  
    
 }
 

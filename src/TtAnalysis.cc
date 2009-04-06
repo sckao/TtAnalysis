@@ -145,7 +145,7 @@ TtAnalysis::~TtAnalysis()
    for (int i=0; i<4; i++) {
      histos.hWs[i]->Write("Ws",theFile);
      theFile->cd();
-     histos.hTops[i]->Write("Tops",theFile);
+     histos.hTops[i]->Write("Tops",theFile, i );
      theFile->cd();
    } 
 
@@ -237,9 +237,9 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //MCMatching->CheckGenParticle( genParticles );
 
    // 1. Build semi-mu tt events
-   semiSol->BuildSemiTt(iEvent, iSetup, 1, histos );
+   semiSol->BuildSemiTt(iEvent, 1, histos );
    //semiSol->KeepBuildInfo( true );
-   semiSol->MCBuildSemiTt(iEvent, iSetup, 1, histos );
+   semiSol->MCBuildSemiTt(iEvent, 1, histos );
    //semiSol->KeepBuildInfo( false );
    //bool matchedpass =  ( pass == 4  ) ? true : false ;
    //semiSol->McRecoCompare( 1, 0, matchedpass, histos );
@@ -252,9 +252,9 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    }
  
    //3. Muon and Leptonic W analysis
-   std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
-   std::vector<const pat::Jet*> theJets = ttJet->JetSelection( jets, isoMu, 30 ) ;
-   if ( theJets.size() > 3 && pass > -1) {
+   std::vector<const reco::Candidate*> isoMu   = ttMuon->IsoMuonSelection( muons );
+   std::vector<const reco::Candidate*> theJets = ttJet->JetSelection( jets, isoMu, 30 ) ;
+   if ( pass > 3) {
       std::vector<iReco> lepW;
       LorentzVector metP4 = ttMET->METfromObjects( isoMu, theJets );
       semiSol->recoW( isoMu, metP4, lepW );
@@ -276,19 +276,19 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    if ( topo == 1) {
       ttJet->genJetInfo(genJets,genParticles, histos.hJet, histos.hBJet, histos.hWJet);
-      ttJet->matchedWJetsAnalysis( mcjets, isoMu, histos.hWJet );
+      ttJet->matchedWJetsAnalysis( mcjets, isoMu, jets, histos.hWJet );
    } 
    if ( pass > 3 && topo == 1 ) {
       ttJet->selectedWJetsAnalysis(jets, isoMu, histos.hWJet);
    }
    // looking for the leptonic b jet effect 
    if ( pass > 3 ) {
-      ttJet->matchedbJetsAnalysis( mcjets, isoMu, histos.hBJet );
+      ttJet->matchedbJetsAnalysis( mcjets, isoMu, jets, histos.hBJet );
       std::vector<const reco::Candidate*> isoMufromB = MCMatching->matchMuonfromB( genParticles, theJets, nonIsoMu, histos.hBJet,true );     
    }
 
    //5. MET from PAT
-   ttMET->metAnalysis(mets, iEvent, histos.hMET);
+   ttMET->metAnalysis( iEvent, histos.hMET);
    if ( pass > 3 ) {
       ttMET->MetAndMuon(mets, isoMu, histos.hMET, pass );
       ttMET->MetAndJets(mets, theJets, histos.hMET );
