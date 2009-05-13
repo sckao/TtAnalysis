@@ -14,10 +14,10 @@ void TtMassFit4( TString idx, const Int_t nM ) {
 
     TString plot = "p"+idx+"Scan.gif" ;
     TString title_plot = "para"+idx+"_InputMass";
-    TString hfolder = "tt_fall08j10";
+    TString hfolder = "tt_fall08k10";
 
-    FILE *pfile = fopen("paraf.log","r");
-    FILE *ffile = fopen("extrf.log","a");
+    FILE *pfile = fopen(hfolder+"/paraf.log","r");
+    FILE *ffile = fopen(hfolder+"/extrf.log","a");
 
     Double_t pa0[nM] ;
     Double_t pa1[nM] ;

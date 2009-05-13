@@ -60,13 +60,13 @@ public:
    double TemplateTest( TString mName, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sPred, Double_t *tPred, Double_t *bPred );
 
    void MoreCombinedFitting( int rbin, int lowBound, int upBound, int nMass );
-   void CombinedFitting( int rbin, int lowBound, int upBound );
+   void CombinedFitting( int rbin, int lowBound, int upBound, int nMass );
    double Chi2Test( TString mName1, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sgpar, Double_t *bgpar);
    double Chi2Test( TString mName1, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sgpar, Double_t *tbpar, Double_t *bgpar );
 
    void FitTester( TString mName, int rbin, int lowBound, int upBound );
    void TemplateDrawer( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp );
-   void SetFitParameters( double mass, Double_t* para );
+   void SetFitParameters( double mass, Double_t* para, int nPara );
    double MinimumChi2( int nMass, vector<double> chi2 );
    vector<TString> FillMassAssumption( int npoints );
 

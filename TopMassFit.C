@@ -28,12 +28,12 @@ void TopMassFit( TString algo, TString channel , int step){
 
   if ( step == 3 ) {
      //               signal   tt   wjets  QCD
-     Bool_t comp[4] ={false, false, true, false}; 
+     Bool_t comp[4] ={false, true, true, false}; 
      theFitter->TemplateDrawer(algo,10,110,330, comp) ;
   }
  
   if ( step == 4 ) theFitter->MoreCombinedFitting( 10, 110, 330, 9) ;
-  if ( step == 5 ) theFitter->CombinedFitting(5,110,350) ;
+  if ( step == 5 ) theFitter->CombinedFitting( 10, 110, 350, 9) ;
   if ( step == 6 ) theFitter->MultiTemplatesFitting(5,100,330) ;
   if ( step == 7 ) theFitter->TemplateFitting(5,100,330) ;
 
