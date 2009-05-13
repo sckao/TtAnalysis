@@ -8,6 +8,9 @@ class TemplateMassFit : public TObject {
 
 private:
 
+   FILE* logfile;
+   FILE* parfile;
+
    TFile* file0;
    TFile* file1;
    TFile* file2;
@@ -15,11 +18,8 @@ private:
    TH2D*  ttmass;
    TH2D*  ttMC;
    TH1D*  ttmass_sg;
-   TFile* file161;
-   TFile* file166;
-   TFile* file171;
-   TFile* file176;
-   TFile* file181;
+
+   TFile* thefile;
 
    TString aname;
    TString channel;
@@ -35,6 +35,9 @@ private:
    TString plot4;
    TString plot5;
    TString plot6;
+   TString plot7;
+   TString plot8;
+   TString plot9;
  
    TCanvas* c1;
    TCanvas* c2;
@@ -42,23 +45,34 @@ private:
    TCanvas* c4;
    TCanvas* c5;
    TCanvas* c6;
+   TCanvas* c7;
+   TCanvas* c8;
+   TCanvas* c9;
 
 public:
 
    TemplateMassFit( TString aname, TString channel );     
 
-   void showAll(int rbin);
-   void TemplateFitting( int rbin, int lowBound, int upBound );
+
    void MultiTemplatesFitting( int rbin, int lowBound, int upBound );
-   void MoreCombinedFitting( int rbin, int lowBound, int upBound );
-   void CombinedFitting( int rbin, int lowBound, int upBound );
-   void ScaleTemplates( double factor, TH1D* tmp, int B1, int B2 );
-   void SmoothTemplate( int type, TH1D* ds, TH1D* ds1, int lowBound, int upBound, Double_t *pars );
+   void TemplateFitting( int rbin, int lowBound, int upBound );
    double TemplateTest( TString mName, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sPred, Double_t *bPred);
    double TemplateTest( TString mName, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sPred, Double_t *tPred, Double_t *bPred );
+
+   void MoreCombinedFitting( int rbin, int lowBound, int upBound, int nMass );
+   void CombinedFitting( int rbin, int lowBound, int upBound );
    double Chi2Test( TString mName1, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sgpar, Double_t *bgpar);
    double Chi2Test( TString mName1, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sgpar, Double_t *tbpar, Double_t *bgpar );
+
+   void FitTester( TString mName, int rbin, int lowBound, int upBound );
    void TemplateDrawer( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp );
+   void SetFitParameters( double mass, Double_t* para );
+   double MinimumChi2( int nMass, vector<double> chi2 );
+   vector<TString> FillMassAssumption( int npoints );
+
+   void ScaleTemplates( double factor, TH1D* tmp, int B1, int B2 );
+   void ScaleTemplates( double lumi, double nEvents, int channel, TH1D* tmp );
+   void SmoothTemplate( int type, TH1D* ds, TH1D* ds1, int lowBound, int upBound, Double_t *pars );
 
    void combineBG( TString mName, TH1D* allbg, int rbin );
    void getSignal( TH1D* h_Sg, int rbin, TString mName );
@@ -66,17 +80,6 @@ public:
    void getData(TH1D* h_data, int rbin );
    void getFakeData(TH1D* h_data, THStack* ttstk, TH1D* dth0, TH1D* dth1, TH1D* dth2, TH1D* dth3, int rbin );
    void getFakeData(TH1D* h_data, int rbin );
-  
-   Double_t fitG( Double_t* x, Double_t* par);
-   Double_t fitLG( Double_t* x, Double_t* par);
-   Double_t fitGS( Double_t* x, Double_t* par);
-   Double_t fitTL( Double_t* x, Double_t* par);
-   Double_t fitLD( Double_t* x, Double_t* par);
-   Double_t fitSG( Double_t* x, Double_t* par);
-   Double_t fitBW( Double_t* x, Double_t* par);
-   Double_t fitData( Double_t* x, Double_t* par);
-   Double_t ConvBWGS( Double_t* x, Double_t* par);
-   Double_t ConvSGGS( Double_t* x, Double_t* par);
 
    ClassDef(TemplateMassFit, 1);
 
