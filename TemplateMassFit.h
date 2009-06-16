@@ -53,26 +53,27 @@ public:
 
    TemplateMassFit( TString aname, TString channel );     
 
-
    void MultiTemplatesFitting( int rbin, int lowBound, int upBound );
    void TemplateFitting( int rbin, int lowBound, int upBound );
    double TemplateTest( TString mName, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sPred, Double_t *bPred);
    double TemplateTest( TString mName, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sPred, Double_t *tPred, Double_t *bPred );
 
-   void MoreCombinedFitting( int rbin, int lowBound, int upBound, int nMass );
-   void CombinedFitting( int rbin, int lowBound, int upBound, int nMass );
-   double Chi2Test( TString mName1, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sgpar, Double_t *bgpar);
-   double Chi2Test( TString mName1, TH1D* theData, int rbin, int lowBound, int upBound, Double_t *sgpar, Double_t *tbpar, Double_t *bgpar );
+   void MoreCombinedFitting( int rbin, int lowBound, int upBound );
+   void CombinedFitting( int rbin, int lowBound, int upBound );
+
+   double Chi2Test(  TH1D* theData, int lowBound, int upBound, int nPar ); 
+   double getChi2( TH1D* theData,  TF1* theFunc, TF1* fS, TF1* fB, TF1* fW, double lowBound , double upBound, int nPar );
 
    void FitTester( TString mName, int rbin, int lowBound, int upBound );
    void TemplateDrawer( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp );
    void SetFitParameters( double mass, Double_t* para, int nPara );
-   double MinimumChi2( int nMass, vector<double> chi2 );
+
    vector<TString> FillMassAssumption( int npoints );
+   double MassDigi( TString mString );  
 
    void ScaleTemplates( double factor, TH1D* tmp, int B1, int B2 );
    void ScaleTemplates( double lumi, double nEvents, int channel, TH1D* tmp );
-   void SmoothTemplate( int type, TH1D* ds, TH1D* ds1, int lowBound, int upBound, Double_t *pars );
+   void SmoothTemplate( int type, TH1D* ds, TH1D* ds1, int lowBound, int upBound, Double_t *pars, Double_t *perr = NULL );
 
    void combineBG( TString mName, TH1D* allbg, int rbin );
    void getSignal( TH1D* h_Sg, int rbin, TString mName );

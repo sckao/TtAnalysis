@@ -47,7 +47,7 @@ Double_t MassFitFunction::fitLD(Double_t *x, Double_t *par) {
 }
 Double_t MassFitFunction::fitParabola( Double_t *x, Double_t *par ){
 
-     Double_t chi = (x[0] - par[0]) / (par[1]+1.);
+     Double_t chi = (x[0] - par[0]) / (par[1]+ 0.001);
      Double_t fV = chi*chi + par[2] ;
      return fV;
 }
@@ -79,9 +79,18 @@ Double_t MassFitFunction::fitSG(Double_t *x, Double_t *par) {
 
 Double_t MassFitFunction::fitData(Double_t *x, Double_t *par) {
 
-        //return fitBW(x,par) + fitGS(x, &par[3]) ;
-        return fitSG(x,par) + fitLD(x, &par[6]) + fitLD(x, &par[9]) ;
-        //return fitSG(x,par) + fitLD(x, &par[6]) ;
+     Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
+
+     Double_t A0 =  log( x[0] ) - par[4] ;
+     Double_t A1 =   (-1.*par[5]*A0*A0)  ;
+     Double_t LG_Val = par[3]*exp( A1 ) / x[0]  ;
+
+     Double_t ld1_Val = TMath::Landau(x[0],par[6],par[7]) ;
+
+     Double_t sg_Val = gs + LG_Val + (par[8]*ld1_Val)  ;
+     Double_t fitV = par[0]*sg_Val ;
+
+     return fitV ;
 }
 
 Double_t MassFitFunction::fitData1(Double_t *x, Double_t *par) {
