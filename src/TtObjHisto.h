@@ -41,6 +41,7 @@ public:
     m3_j3    = new TH2F("m3_j3", " m3 vs J3 ET ", 500, 0., 500., 500, 0., 500. );
 
     allJ_selJ = new TH2F("allJ_selJ", "N of All jets vs N of selected jets in a event", 21, -0.5, 20.5, 21, -0.5, 20.5);
+    nBJets    = new TH1F("nBJets", "N of BJets from Selected Jets ", 11, -0.5, 10.5);
 
     isoEleCut = new TH2F("isoEleCut","N of isoEle vs N of SelectedJets  after isoMu =1 cut ", 21, -0.5, 20.5, 21, -0.5, 20.5 );
 
@@ -66,6 +67,7 @@ public:
     delete m3_j3;
 
     delete allJ_selJ;
+    delete nBJets;
 
     delete isoEleCut;
 
@@ -99,8 +101,9 @@ public:
     NJets->Fill(njets);
  }
 
- void Fill_1g( int allJ, int selJ ) {
+ void Fill_1g( int allJ, int selJ, int nBJ ) {
     allJ_selJ->Fill( allJ, selJ );
+    nBJets->Fill( nBJ );
  }
 
  void Fill_1h( int NIsoEle, int NSelJet ){
@@ -133,6 +136,7 @@ public:
 
     m3_j3->Write();
     allJ_selJ->Write();
+    nBJets->Write();
     isoEleCut->Write();
 
     NloserJets->Write();
@@ -161,6 +165,7 @@ public:
   TH2F *m3_j3;
 
   TH2F *allJ_selJ;
+  TH1F *nBJets;
 
   TH2F *isoEleCut;
   TH1F *NloserJets;
@@ -175,12 +180,19 @@ public:
     PtResol_pat = new TH1F("PtResol_pat","Pt Resol, patMET ", 150, -1.01, 1.99 );
     PtResol_tc  = new TH1F("PtResol_tc", "Pt Resol, tcMET  ", 150, -1.01, 1.99 );
     PtResol_evt = new TH1F("PtResol_evt","Pt Resol, evtMET ", 150, -1.01, 1.99 );
+    PtResol_gen = new TH1F("PtResol_gen","Pt Resol, genMET ", 150, -1.01, 1.99 );
 
-    dPhiResol_pat = new TH1F("dPhiResol_pat", "dPhi(neu, MET),  pat ",160,-0.05, 3.15 );
-    dPhiResol_tc  = new TH1F("dPhiResol_pat", "dPhi(neu, MET),   tc ",160,-0.05, 3.15 );
-    dPhiResol_evt = new TH1F("dPhiResol_evt", "dPhi(neu, MET),  evt ",160,-0.05, 3.15 );
+    gen_pat_Resol = new TH1F("gen_pat_Resol","Pat Pt Resol w.r.t genMET ", 150, -1.01, 1.99 );
+    gen_evt_Resol = new TH1F("gen_evt_Resol","Event Pt Resol w.r.t genMET ", 150, -1.01, 1.99 );
 
-    Pt_dPhi_MET = new TH2F("Pt_dPhi_MET", " pat & evt,  PtResol vs  dPhi", 150,-1.01, 1.99, 160,-0.05, 3.15);
+    dPhiResol_pat = new TH1F("dPhiResol_pat", "dPhi(neu, MET),  pat ",320, -0.05, 3.15 );
+    dPhiResol_tc  = new TH1F("dPhiResol_tc", "dPhi(neu, MET),   tc ",320, -0.05, 3.15 );
+    dPhiResol_evt = new TH1F("dPhiResol_evt", "dPhi(neu, MET),  evt ",320, -0.05, 3.15 );
+    dPhiResol_gen = new TH1F("dPhiResol_gen", "dPhi(neu, MET),  gen ",320, -0.05, 3.15 );
+
+    gen_pat_dPhi = new TH1F("gen_pat_dPhi", " dPhi(pat, gen) ", 320, -0.05, 3.15 );
+    gen_evt_dPhi = new TH1F("gen_evt_dPhi", " dPhi(evt, gen) ", 320, -0.05, 3.15 );
+ 
  }
 
  /// Destructor
@@ -189,24 +201,36 @@ public:
     delete PtResol_pat;
     delete PtResol_tc;
     delete PtResol_evt;
+    delete PtResol_gen;
+    delete gen_pat_Resol;
+    delete gen_evt_Resol;
+
     delete dPhiResol_pat;
     delete dPhiResol_tc;
     delete dPhiResol_evt;
+    delete dPhiResol_gen;
+    delete gen_pat_dPhi;
+    delete gen_evt_dPhi;
 
-    delete Pt_dPhi_MET;
  }
 
- void Fill_2a( double patResol,  double evtResol, double tcResol, double theResol, double dPhi_neu_pat, double dPhi_neu_evt, double dPhi_neu_tc, double dPhi_pat_evt ){
+ void Fill_2a( double patResol,  double evtResol, double tcResol, double genResol, double genpat_Res, double genevt_Res,
+       double dPhi_neu_pat, double dPhi_neu_evt, double dPhi_neu_tc, double dPhi_neu_gen, double genpat_dPhi, double genevt_dPhi ){
 
     PtResol_pat->Fill( patResol );
     PtResol_tc->Fill( tcResol );
     PtResol_evt->Fill( evtResol );
+    PtResol_gen->Fill( genResol );
+    gen_pat_Resol->Fill( genpat_Res);
+    gen_evt_Resol->Fill( genevt_Res);
 
     dPhiResol_pat->Fill( dPhi_neu_pat );
     dPhiResol_tc->Fill( dPhi_neu_tc );
     dPhiResol_evt->Fill( dPhi_neu_evt );
+    dPhiResol_gen->Fill( dPhi_neu_gen );
+    gen_pat_dPhi->Fill( genpat_dPhi );
+    gen_evt_dPhi->Fill( genevt_dPhi );
 
-    Pt_dPhi_MET->Fill( theResol, dPhi_pat_evt );
  }
 
  void Write( TString theFolder , TFile* file  ) {
@@ -216,11 +240,16 @@ public:
     PtResol_pat->Write();
     PtResol_tc->Write();
     PtResol_evt->Write();
+    PtResol_gen->Write();
+    gen_pat_Resol->Write();
+    gen_evt_Resol->Write();
+
     dPhiResol_pat->Write();
     dPhiResol_tc->Write();
     dPhiResol_evt->Write();
-
-    Pt_dPhi_MET->Write();
+    dPhiResol_gen->Write();
+    gen_pat_dPhi->Write();
+    gen_evt_dPhi->Write();
 
     file->cd("../");
  }
@@ -228,11 +257,16 @@ public:
   TH1F *PtResol_tc;
   TH1F *PtResol_pat;
   TH1F *PtResol_evt;
+  TH1F *PtResol_gen;
+  TH1F *gen_pat_Resol;
+  TH1F *gen_evt_Resol;
   TH1F *dPhiResol_tc;
   TH1F *dPhiResol_pat;
   TH1F *dPhiResol_evt;
+  TH1F *dPhiResol_gen;
+  TH1F *gen_pat_dPhi;
+  TH1F *gen_evt_dPhi;
 
-  TH2F *Pt_dPhi_MET;
 
 };
 

@@ -96,7 +96,8 @@ class TtMET {
 
     void METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets,
                          edm::Handle<std::vector<pat::MET> > met, edm::Handle<std::vector<reco::MET> > tcmet, 
-                         edm::Handle<std::vector<reco::GenParticle> > genParticles, HOBJ2* histo );
+                         edm::Handle<std::vector<reco::GenMET> > genmet, edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                         HOBJ2* histo );
 
    private:
 
@@ -107,6 +108,7 @@ class TtMET {
     edm::InputTag muonSrc;
     edm::InputTag tcmetSrc;
     edm::InputTag metSrc;
+    edm::InputTag genmetSrc;
     edm::InputTag genSrc;
 
 

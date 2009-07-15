@@ -150,7 +150,6 @@ double TtTools::getInvMass( std::vector<LorentzVector> vlist ) {
     double mass = sqrt( mass2 );
 
     return mass;
-
 }
 
 double TtTools::getInvMass( LorentzVector lv ) {
@@ -161,7 +160,6 @@ double TtTools::getInvMass( LorentzVector lv ) {
      if (mass2 < 0. ) mass2 = 0;
      mass = sqrt(mass2) ;
      return mass;
-
 }
 
 double TtTools::getInvMass( LorentzVector lv1, LorentzVector lv2 ) {
@@ -177,7 +175,6 @@ double TtTools::getInvMass( LorentzVector lv1, LorentzVector lv2 ) {
     return mass;
 }
 
-
 double TtTools::getRelPt( LorentzVector a, LorentzVector b ) {
 
      // a x b = c
@@ -190,7 +187,6 @@ double TtTools::getRelPt( LorentzVector a, LorentzVector b ) {
      // a x b = |a|*|b|*sin(theta)
      double RelPt = (bl > 0 ) ? (cl/bl) : ct ;
      return RelPt ;
-
 }
 
 double TtTools::getBeta( LorentzVector a ) {
@@ -199,7 +195,6 @@ double TtTools::getBeta( LorentzVector a ) {
     double beta = ( a.E() <= 0.) ? -0.04 : p/a.E() ;
     if ( beta > 1. ) beta = 1.1 ;
     return beta ;
-
 }
 
 std::vector<const pat::Jet*> TtTools::ReturnJetForm( std::vector<const reco::Candidate*> jCand, Handle<std::vector<pat::Jet> > patJet ){
@@ -234,7 +229,7 @@ std::vector<const pat::Jet*> TtTools::ReturnJetForm( std::vector<const reco::Can
 // match the reco candidate with pat jets
 const pat::Jet* TtTools::ReturnJetForm( const reco::Candidate* jCand, Handle<std::vector<pat::Jet> > patJet, bool& goodmatching ){
 
-     const pat::Jet* patform ;
+     const pat::Jet* patform = NULL;
      int idx = -1 ;
      double dAll0 = 0.1;
      for ( size_t j=0; j<  patJet->size(); j++) {

@@ -130,8 +130,8 @@ class TtJet {
 
     void selectedWJetsAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> isoMuons, HTOP8* histo8 );
 
-    std::vector< const reco::Candidate* > WJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons );
-    std::vector< const reco::Candidate* > bJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons );    
+    std::vector< const reco::Candidate* > WJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons, double JetEtCut );
+    std::vector< const reco::Candidate* > bJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons, double JetEtCut, string bTagAlgo );    
 
     double NofJetConstituents( pat::Jet theJet );
     double EoverH( pat::Jet theJet );
@@ -146,31 +146,29 @@ class TtJet {
     FreeTrajectoryState getFTS(GlobalPoint GP, GlobalVector GV, int charge,
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HOBJ1* histo1 );
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::CaloJet> > Jpts, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HOBJ1* histo1 );
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::CaloJet> > Jpts, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
+    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL, string bTagAlgo = ""  );
+    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::CaloJet> > Jpts, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL );
+    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::GenJet> > jets, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, std::vector<bool>* bTags = NULL );
 
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::GenJet> > jets, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
-
-    std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold );
-    std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HOBJ1* histo1 );
+    std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, std::vector<bool>* bTags = NULL, string bTagAlgo="", HOBJ1* histo1 = NULL);
     std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<reco::CaloJet> > Jpt, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, HOBJ1* histo1 );
 
-    void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, HTOP7* histo7 );
+    void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, edm::Handle<std::vector<pat::Muon> > patMuon, HTOP7* histo7 );
 
     void JetTrigger( edm::Handle<std::vector<pat::Jet> > jets, edm::Handle <edm::TriggerResults> triggers);
 
    private:
 
     TtTools*       tools;
-    TtMuon*        fromTtMuon;
+    TtMuon*        ttMuon;
     TtMCMatching*  JetMatching; 
 
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;
     edm::InputTag genSrc;
     edm::InputTag jptSrc;
+    double bCut;
+    string bTagAlgo;
     //edm::ParameterSet tkParas; 
     //TrackAssociatorParameters theParameters; 
 

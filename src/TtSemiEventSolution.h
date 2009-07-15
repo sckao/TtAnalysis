@@ -103,27 +103,24 @@ class TtSemiEventSolution {
     void BuildSemiTt(const edm::Event & iEvent,   int topo, tHisto histos );
     void MCBuildSemiTt(const edm::Event & iEvent, int topo, tHisto histos );
 
-    bool recoW( std::vector<const reco::Candidate*> wjets, std::vector<iReco>& wCandidate  );
-    bool recoW( std::vector<const reco::Candidate*> wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 );
+    bool recoW( std::vector<const reco::Candidate*> wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 = NULL, std::vector<bool>* btags = NULL );
 
     bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
-                std::vector<iReco>& wCandidate );
+                std::vector<iReco>& wCandidate, HTOP10* hitso10 = NULL );
     bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
-                std::vector<iReco>& wCandidates, bool FoundWSolution );
-    bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
-                std::vector<iReco>& wCandidate, HTOP10* hitso10 );
+                std::vector<iReco>& wCandidates, bool FoundWSolution, HTOP10* hitso10 = NULL );
 
-    bool recoTop( std::vector<iReco> wCandidate, std::vector<const reco::Candidate*> bjets, std::vector<iReco>& tCandidate, bool btagging );
-    bool recoTop( std::vector<iReco> wCandidate, std::vector<const reco::Candidate*> bjets, std::vector<iReco>& tCandidate, bool btagging, HTOP11* histo11 );
+    bool recoTop( std::vector<iReco> wCandidate, std::vector<const reco::Candidate*> bjets, std::vector<iReco>& tCandidate, std::vector<bool>* btags = NULL , HTOP11* histo11 = NULL);
+    bool recoTop( std::vector<iReco> wCandidate, std::vector<const reco::Candidate*> bjets, std::vector<iReco>& tCandidate, bool btagging, HTOP11* histo11 = NULL );
 
     // with 2b tagging
     std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const reco::Candidate*> theWJets,
                   std::vector<const reco::Candidate*> thebJets, std::vector<const reco::Candidate*> theLep,
-                  LorentzVector metP4, tHisto histos  );
+                  LorentzVector metP4, tHisto histos );
  
-    // no b-tagging
+    // no b-tagging or 1 b-tagging
     std::vector<iReco> recoSemiLeptonicTtEvent(int topo, std::vector<const reco::Candidate*> theJets,
-                  std::vector<const reco::Candidate*> theLep, LorentzVector metP4, tHisto histos  );
+                  std::vector<const reco::Candidate*> theLep, LorentzVector metP4, tHisto histos, std::vector<bool>* btags = NULL   );
  
     void dmSortRecoObjects( std::vector<iReco>& objCand );
 
@@ -137,12 +134,12 @@ class TtSemiEventSolution {
 
     void KeepBuildInfo( bool isData );
 
-    void HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<Idx>& tList, iReco t2, iReco w2 );
+    void HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<Idx>& tList, iReco t2, iReco w2, bool btagging );
     
     void Algo_dmMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
     void Algo_PtMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
     void Algo_Beta( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> lepWs, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
-    void Algo_Zero( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
+    void Algo_Zero( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx, std::vector<bool>* bTags = NULL );
   
     void ResultRecord( int it, std::vector<Idx> twIdx, std::vector<iReco> lepTops, std::vector<bool>& usedLepT, 
                                                        std::vector<iReco> hadTops, std::vector<bool>& usedHadT,

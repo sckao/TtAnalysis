@@ -55,6 +55,7 @@
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h" 
 #include "DataFormats/JetReco/interface/GenJet.h" 
+#include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/Candidate/interface/Particle.h" 
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
@@ -135,11 +136,12 @@ class JetAnalysis : public edm::EDAnalyzer {
     edm::InputTag jptSrc;
     edm::InputTag metSrc;
     edm::InputTag tcmetSrc;
+    edm::InputTag genmetSrc;
     edm::InputTag genJetSrc;
     edm::InputTag jetObj;
     edm::InputTag genSrc;
     edm::InputTag caloSrc;
-
+    string bTagAlgo;
 
 };
 

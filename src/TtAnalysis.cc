@@ -38,7 +38,6 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   needTree          = iConfig.getUntrackedParameter<bool>   ("needTree");
   trigOn            = iConfig.getUntrackedParameter<bool>   ("trigOn");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
-  leptonFlavour     = iConfig.getParameter<std::string>   ("leptonFlavour");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
   photonSrc         = iConfig.getParameter<edm::InputTag> ("photonSource");
@@ -272,7 +271,6 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    std::vector<const pat::Jet*> tmpJets;
    std::vector<jmatch> mcjets  = MCMatching->matchJets(genParticles, theJets, histos.hBJet, histos.hWJet, false);
    ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histos.hMuon, true );
-   ttJet->bTagAnalysis( jets, histos.hBJet );
 
    if ( topo == 1) {
       ttJet->genJetInfo(genJets,genParticles, histos.hJet, histos.hBJet, histos.hWJet);
@@ -280,6 +278,7 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    } 
    if ( pass > 3 && topo == 1 ) {
       ttJet->selectedWJetsAnalysis(jets, isoMu, histos.hWJet);
+      ttJet->bTagAnalysis( jets, muons, histos.hBJet );
    }
    // looking for the leptonic b jet effect 
    if ( pass > 3 ) {

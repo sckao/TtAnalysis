@@ -95,7 +95,7 @@ class TtEvtSelector {
     int eventSelection(edm::Handle<std::vector<pat::Muon> > rMu, edm::Handle<std::vector<pat::Electron> > rE,
                        edm::Handle<std::vector<reco::CaloJet> > rJet, double jetEtThreshold );
 
-    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, LorentzVector& metp4, const edm::Event& iEvent, string MetType, string JetType );
+    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, LorentzVector& metp4, const edm::Event& iEvent, string MetType, string JetType, std::vector<bool>* bTags = NULL );
 
     int eventSelection( int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedWJets, std::vector<const reco::Candidate*>& selectedbJets, LorentzVector& metp4, const edm::Event& iEvent, string MetType );
 
@@ -118,7 +118,7 @@ class TtEvtSelector {
    edm::InputTag tcmetSrc;
    edm::InputTag jetSrc;
    edm::InputTag jptSrc;
-
+   string bTagAlgo;
 
 };
 

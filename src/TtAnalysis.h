@@ -54,10 +54,12 @@
 #include "DataFormats/CaloTowers/interface/CaloTowerCollection.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h" 
-#include "DataFormats/JetReco/interface/GenJet.h" 
+#include "DataFormats/JetReco/interface/GenJet.h"
+#include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/Candidate/interface/Particle.h" 
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
+#include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 //#include "DataFormates/TrackReco/interface/Track.h"

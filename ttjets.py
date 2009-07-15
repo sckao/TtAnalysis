@@ -9,7 +9,7 @@ process.load("Geometry.CommonDetUnit.globalTrackingGeometry_cfi")
 process.load("Geometry.CaloEventSetup.CaloGeometry_cff")
 
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.GlobalTag.globaltag = 'IDEAL_V9::All'
+process.GlobalTag.globaltag = 'IDEAL_V12::All'
 
 # for match muon in a jet by using trackAssociator
 #from TrackingTools.TrackAssociator.default_cfi import * 
@@ -19,75 +19,131 @@ process.source = cms.Source("PoolSource",
     debugVebosity = cms.untracked.uint32(10),
     skipEvents = cms.untracked.uint32(0),
     fileNames = cms.untracked.vstring(
-'file:/data/top/sckao/Fall08MGTtJets/TtJets_PATSkim1_1.root'
+
+'file:/home/cms/sckao/Top/CMSSW_2_2_13/src/TopPhysics/TtAnalysis/test/TMass/patTest_SCJ_TC.root'
+#'file:/home/cms/sckao/Top/CMSSW_2_2_13/src/TopPhysics/TtAnalysis/test/TMass/patTest_ICJ_TC.root'
+#'file:/home/cms/sckao/Top/CMSSW_2_2_13/src/TopPhysics/TtAnalysis/test/TMass/patTest_oldMET_skim.root'
+#'file:/home/cms/sckao/Data/FastPat2213/WJets_PAT_Test.root'
+
     )
 )
 
 # replace the source files from a file list
-# import PhysicsTools.TtAnalysis.ttanalysis_cfi as fileList
-import PhysicsTools.TtAnalysis.ttjetslist_skim2 as fileList
-process.source.fileNames = fileList.fileNames
+#import TopPhysics.TtAnalysis.ttjetslist_skim2 as fileList
+#process.source.fileNames = fileList.fileNames
 
 process.maxEvents = cms.untracked.PSet(
-    # 100/pb => 8992 ; 250/pb => 22480 
-    input = cms.untracked.int32(8992)
+    # 100/pb => 9191 
+    input = cms.untracked.int32(9191)
+    #input = cms.untracked.int32(24000)
 )
 process.MessageLogger = cms.Service("MessageLogger")
 
-process.ttAna = cms.EDFilter("TtAnalysis",
+#from PhysicsTools.PatAlgos.tools.trigTools import switchOffTriggerMatchingOld
+#switchOffTriggerMatchingOld( process )
+
+process.ttAna = cms.EDAnalyzer("TtAnalysis",
+
+    # for matching Muon in a Jet
+    #TrackAssociatorParameterBlock,
+    #TrackAssociatorParameters, 
+    debug    = cms.untracked.bool(False),
+    btag     = cms.untracked.bool(True),
+    bTagCut  = cms.untracked.double(2),
+    #bTagAlgo = cms.untracked.string('softMuonBJetTags'),
+    bTagAlgo = cms.untracked.string("trackCountingHighEffBJetTags"),
+    needTree = cms.untracked.bool(False),
+    trigOn   = cms.untracked.bool(False),
+    rootFileName = cms.untracked.string('pat2_SCJ_TC_btag_tt.root'),
+    genParticles = cms.InputTag("genParticles"),
+    #genJetSource = cms.InputTag("iterativeCone5GenJets"),
+    genJetSource = cms.InputTag("sisCone5GenJets"),
+    electronSource = cms.InputTag("cleanLayer1Electrons"),
+    photonSource   = cms.InputTag("cleanLayer1Photons"),
+    jetSource      = cms.InputTag("cleanLayer1Jets"),
+    jptSource      = cms.InputTag("ZSPJetCorJetIcone5"),
+    tcMetSource    = cms.InputTag("tcMet"),
+    metSource      = cms.InputTag("layer1METsTC"),
+    genmetSource   = cms.InputTag("genMet"),
+    muonSource     = cms.InputTag("cleanLayer1Muons"),
+    caloSource     = cms.InputTag("towerMaker"),
+    triggerSource  = cms.InputTag("TriggerResults","","HLT"),
+    #triggerSource  = cms.InputTag("TriggerResults","","PAT"),
+    #recoMuons      = cms.untracked.string('paramMuons'),
+    recoMuons      = cms.untracked.string('muons'),
+    recoAlgo       = cms.untracked.string('zero'),
+)
+
+process.ttAna1 = cms.EDAnalyzer("TtAnalysis",
 
     # for matching Muon in a Jet
     #TrackAssociatorParameterBlock,
     #TrackAssociatorParameters, 
     debug    = cms.untracked.bool(False),
     btag     = cms.untracked.bool(False),
+    bTagCut  = cms.untracked.double(2),
+    bTagAlgo = cms.untracked.string("trackCountingHighEffBJetTags"),
     needTree = cms.untracked.bool(False),
-    trigOn   = cms.untracked.bool(True),
-    rootFileName = cms.untracked.string('ttj_fall08.root'),
+    trigOn   = cms.untracked.bool(False),
+    rootFileName = cms.untracked.string('pat2_SCJ_TC_tt.root'),
     genParticles = cms.InputTag("genParticles"),
-    genJetSource = cms.InputTag("iterativeCone5GenJets"),
-    electronSource = cms.InputTag("selectedLayer1Electrons"),
-    photonSource   = cms.InputTag("selectedLayer1Photons"),
-    jetSource      = cms.InputTag("selectedLayer1Jets"),
-    metSource      = cms.InputTag("selectedLayer1METs"),
-    muonSource     = cms.InputTag("selectedLayer1Muons"),
+    genJetSource = cms.InputTag("sisCone5GenJets"),
+    electronSource = cms.InputTag("cleanLayer1Electrons"),
+    photonSource   = cms.InputTag("cleanLayer1Photons"),
+    jetSource      = cms.InputTag("cleanLayer1Jets"),
+    jptSource      = cms.InputTag("ZSPJetCorJetIcone5"),
+    tcMetSource    = cms.InputTag("tcMet"),
+    metSource      = cms.InputTag("layer1METsTC"),
+    genmetSource   = cms.InputTag("genMet"),
+    muonSource     = cms.InputTag("cleanLayer1Muons"),
     caloSource     = cms.InputTag("towerMaker"),
     triggerSource  = cms.InputTag("TriggerResults","","HLT"),
-    #triggerSource  = cms.InputTag("TriggerResults","","PAT"),
     recoMuons      = cms.untracked.string('muons'),
-    leptonFlavour  = cms.string('muon')
+    recoAlgo       = cms.untracked.string('zero'),
 )
 
-process.jetAna = cms.EDFilter("JetAnalysis",
+process.jetAna = cms.EDAnalyzer("JetAnalysis",
 
     debug    = cms.untracked.bool(False),
-    rootFileName = cms.untracked.string('ttj_JetEtAnalysis.root'),
+    bTagCut  = cms.untracked.double(2),
+    #bTagAlgo = cms.untracked.string('softMuonBJetTags'),
+    bTagAlgo = cms.untracked.string("trackCountingHighEffBJetTags"),
+    #bTagAlgo = cms.untracked.string('jetProbabilityBJetTags'),
+    rootFileName = cms.untracked.string('pat2_SCJ_TC_btag_jm.root'),
     genParticles = cms.InputTag("genParticles"),
-    genJetSource = cms.InputTag("iterativeCone5GenJets"),
-    electronSource = cms.InputTag("selectedLayer1Electrons"),
-    jetSource      = cms.InputTag("selectedLayer1Jets"),
-    metSource      = cms.InputTag("selectedLayer1METs"),
-    muonSource     = cms.InputTag("selectedLayer1Muons"),
+    #genJetSource = cms.InputTag("iterativeCone5GenJets"),
+    genJetSource = cms.InputTag("sisCone5GenJets"),
+    electronSource = cms.InputTag("cleanLayer1Electrons"),
+    jetSource      = cms.InputTag("cleanLayer1Jets"),
+    metSource      = cms.InputTag("layer1METsTC"),
+    genmetSource   = cms.InputTag("genMet"),
+    jptSource      = cms.InputTag("ZSPJetCorJetIcone5"),
+    tcMetSource    = cms.InputTag("tcMet"),
+    muonSource     = cms.InputTag("cleanLayer1Muons"),
     caloSource     = cms.InputTag("towerMaker"),
-    recoMuons      = cms.untracked.string('muons'),
+    #recoMuons      = cms.untracked.string('paramMuons')
+    recoMuons      = cms.untracked.string('muons')
 )
 
-process.muAna = cms.EDFilter("MuonAnalysis",
+process.muAna = cms.EDAnalyzer("MuonAnalysis",
 
     debug    = cms.untracked.bool(False),
     rootFileName = cms.untracked.string('ttj_IsoMuAnalysis.root'),
     genParticles = cms.InputTag("genParticles"),
     genJetSource = cms.InputTag("iterativeCone5GenJets"),
-    electronSource = cms.InputTag("selectedLayer1Electrons"),
-    jetSource      = cms.InputTag("selectedLayer1Jets"),
-    muonSource     = cms.InputTag("selectedLayer1Muons"),
-    metSource      = cms.InputTag("selectedLayer1METs"),
+    electronSource = cms.InputTag("cleanLayer1Electrons"),
+    jetSource      = cms.InputTag("cleanLayer1Jets"),
+    muonSource     = cms.InputTag("cleanLayer1Muons"),
+    metSource      = cms.InputTag("layer1METs"),
     caloSource     = cms.InputTag("towerMaker"),
-    recoMuons      = cms.untracked.string('muons'),
+    recoMuons      = cms.untracked.string('paramMuons')
 )
 
 
-process.p = cms.Path( process.ttAna + process.jetAna + process.muAna )
+#process.p = cms.Path( process.ttAna +  process.jetAna + process.muAna )
+#process.p = cms.Path( process.ttAna + process.ttAna1 + process.ttAna2 + process.ttAna3 )
+process.p = cms.Path( process.ttAna + process.ttAna1 + process.jetAna )
+#process.p = cms.Path( process.ttAna )
 #process.ttAna.TrackAssociatorParameters.useEcal = False
 #process.ttAna.TrackAssociatorParameters.useHcal = False
 #process.ttAna.TrackAssociatorParameters.useCalo = True

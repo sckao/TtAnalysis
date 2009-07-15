@@ -781,11 +781,11 @@ public:
     PtRes_lepW = new TH1F("PtRes_lepW"," Pt Res for matched leptonic W ",200,-1.005,0.995);
     PzRes_lepW = new TH1F("PzRes_lepW"," Pz Res for matched leptonic W ",200,-1.005,0.995);
  
-    mcTtMass   = new TH2F("mcTtMass"  ," mc Tt mass matched w/ reco cuts all", 200,0,400, 200,0,400);
-    mcTtMass0  = new TH2F("mcTtMass0" ," mc Tt mass matched w/ reco cuts  4j", 200,0,400, 200,0,400);
-    mcTtMass1  = new TH2F("mcTtMass1" ," mc Tt mass matched w/ reco cuts  5j", 200,0,400, 200,0,400);
-    mcTtMass2  = new TH2F("mcTtMass2" ," mc Tt mass matched w/ reco cuts  6j", 200,0,400, 200,0,400);
-    mcTtMass3  = new TH2F("mcTtMass3" ," mc Tt mass matched w/ reco cuts >7j", 200,0,400, 200,0,400);
+    mcTtMass   = new TH2F("mcTtMass"  ," mc Tt mass matched w/ reco cuts all", 480,0.,480., 480,0.,480.);
+    mcTtMass0  = new TH2F("mcTtMass0" ," mc Tt mass matched w/ reco cuts  4j", 480,0.,480., 480,0.,480.);
+    mcTtMass1  = new TH2F("mcTtMass1" ," mc Tt mass matched w/ reco cuts  5j", 480,0.,480., 480,0.,480.);
+    mcTtMass2  = new TH2F("mcTtMass2" ," mc Tt mass matched w/ reco cuts  6j", 480,0.,480., 480,0.,480.);
+    mcTtMass3  = new TH2F("mcTtMass3" ," mc Tt mass matched w/ reco cuts >7j", 480,0.,480., 480,0.,480.);
 
  } 
 
@@ -904,9 +904,12 @@ public:
 
     hRes_Pt   = new TH1F("hRes_Pt","Resolutio  of b jet pt ",400, -2., 2. ); 
     dR_RelPt_bmu = new TH2F("dR_RelPt_bmu","dRmin vs RelPt for b and  iso muon ",200, 0.,5., 100, 0.,200. );  
-    hdRbWj    = new TH1F("hdRbWj","dR for b and  W matched jets ",300, 0.,15. );  
-    hbDis_bCand  = new TH2F("hbDis_bCand","bCandidates jets JProb(x),TkCount(y)", 150,-0.1,1.4, 500,-20.,80.);
-    hbDis_all   = new TH2F("hbDis_all","all jets bDis JProb(x),TkCount(y) ",150,-0.1,1.4, 500,-20.,80.);
+    hdRbWj = new TH1F("hdRbWj","dR for b and  W matched jets ",300, 0.,15. );  
+    bDis_bj = new TH1F("bDis_bj","b Discriminator for matched b jets ", 200,-0.5,4.5 );
+    bDis    = new TH1F("bDis","b Discriminator for  selected jets ", 200,-0.5,4.5 );
+
+    bDis_dR_RelPt = new TH2F("bDis_dR_RelPt"," dR vs RelPt ",100, 0.,1., 300, 0.,60.);
+    bDis_phi_md0  = new TH2F("bDis_phi_md0" ," phi vs md0  ",630, 0.,3.15, 200,0.,0.4);
 
     hNTk_mc  = new TH1F("hNTk_mc"," # of charge track of a bjet", 50, -1.5, 48.5);
     hemE     = new TH1F("hemE"," em Energy fraction ", 150, -0.2, 1.3);
@@ -936,8 +939,11 @@ public:
     hRes_Pt = (TH1F *) file->Get(theFolder+"hRes_Pt");
     dR_RelPt_bmu = (TH2F *) file->Get(theFolder+"dR_RelPt_bmu");
     hdRbWj = (TH1F *) file->Get(theFolder+"hdRbWj");
-    hbDis_bCand =(TH2F *) file->Get(theFolder+"hbDis_bCand");
-    hbDis_all   =(TH2F *) file->Get(theFolder+"hbDis_all");
+    bDis_bj   = (TH1F *) file->Get(theFolder+"bDis_bj");
+
+    bDis   = (TH1F *) file->Get(theFolder+"bDis");
+    bDis_dR_RelPt =(TH2F *) file->Get(theFolder+"bDis_dR_RelPt");
+    bDis_phi_md0   =(TH2F *) file->Get(theFolder+"bDis_phi_md0");
 
     hNTk_mc = (TH1F *) file->Get(theFolder+"hNTK_mc");
     hemE    = (TH1F *) file->Get(theFolder+"hemE");
@@ -959,7 +965,6 @@ public:
 
     dR_RelPtg = (TH2F *) file->Get(theFolder+"dR_RelPtg");
     dR_RelPtr = (TH2F *) file->Get(theFolder+"dR_RelPtr");
-
  }
 
  /// Destructor
@@ -968,8 +973,10 @@ public:
     delete hRes_Pt;
     delete dR_RelPt_bmu;
     delete hdRbWj;
-    delete hbDis_bCand;
-    delete hbDis_all;
+    delete bDis_bj;
+    delete bDis;
+    delete bDis_dR_RelPt;
+    delete bDis_phi_md0;
 
     delete hNTk_mc;
     delete hR60_mc;
@@ -993,7 +1000,7 @@ public:
     delete dR_RelPtr;
  }
 
- void Fill7a(double pt, double eta, double EovH, int nCon, int n60, int n90, double area, size_t nTrk, double emE, double Res_pt, double bDisJProb, double bDisTkCount ){
+ void Fill7a(double pt, double eta, double EovH, int nCon, int n60, int n90, double area, size_t nTrk, double emE, double Res_pt, double muTag ){
 
     hNTk_mc->Fill(nTrk);
     hemE->Fill(emE);
@@ -1007,7 +1014,7 @@ public:
     hPt_Eta_mc->Fill(pt,eta);
 
     hRes_Pt->Fill(Res_pt);
-    hbDis_bCand->Fill(bDisJProb,bDisTkCount );
+    bDis_bj->Fill( muTag );
  }
  void Fill7b( double dR_bmu , double RelPt ){
     dR_RelPt_bmu->Fill(dR_bmu, RelPt);
@@ -1015,8 +1022,9 @@ public:
  void Fill7c( double dR_bwj ){
     hdRbWj->Fill(dR_bwj);
  }
- void Fill7d( double bDisJProb, double bDisTkCount ){
-    hbDis_all->Fill(bDisJProb,bDisTkCount );
+ void Fill7d( double dR, double RelPt, double phi, double md0 ){
+    bDis_dR_RelPt->Fill( dR, RelPt );
+    bDis_phi_md0->Fill( phi, md0 );
  }
 
  void Fill7e( double dR, double RelPt, double gdR, double gRelPt) {
@@ -1028,7 +1036,9 @@ public:
     gbJpt_h->Fill(pt, eta);
     gEovH->Fill(EovH);
  }
-
+ void Fill7g( double bDisValue ) {
+     bDis->Fill( bDisValue );
+ }
  void Fill7h(double eta_mc, double phi_mc, double eta_rc, double phi_rc, double pt, double ptResol) {
     hEta->Fill(eta_mc, eta_rc);
     hPhi->Fill(phi_mc, phi_rc);
@@ -1043,8 +1053,11 @@ public:
     hRes_Pt->Write();
     dR_RelPt_bmu->Write();
     hdRbWj->Write();
-    hbDis_bCand->Write();
-    hbDis_all->Write();
+
+    bDis_bj->Write();
+    bDis->Write();
+    bDis_dR_RelPt->Write();
+    bDis_phi_md0->Write();
 
     hNTk_mc->Write();
     hemE->Write();
@@ -1071,8 +1084,11 @@ public:
   TH1F *hRes_Pt;
   TH2F *dR_RelPt_bmu;
   TH1F *hdRbWj;
-  TH2F *hbDis_bCand;
-  TH2F *hbDis_all;
+
+  TH1F *bDis_bj;
+  TH1F *bDis;
+  TH2F *bDis_dR_RelPt;
+  TH2F *bDis_phi_md0;
 
   TH1F *hNTk_mc;
   TH1F *hemE;
@@ -1109,10 +1125,9 @@ public:
 
     hRes_Pt    = new TH1F("hRes_Pt", " Pt(jet) - Pt(q) / Pt(q)   ",400,-2.,2.);
 
-    hdRWjMu = new TH1F("hdRWjMu","dR for isoMuon and W matched jets ",200, -0.025,9.975 );  
     hdRWjj  = new TH2F("hdRWjj" ,"dR(Wq1, Wq2) , dR ( matched Wj1 , Wj2)  " ,200, -0.025,9.975 ,200, -0.025,9.975 );  
 
-    hbDis_WCand  = new TH2F("hbDis_WCand","bCandidates jets JProb(x),TkCount(y)", 150,-0.1,1.4, 500,-20.,80.);
+    bDis_dRWjMu  = new TH2F("bDis_dRWjMu","bCandidates jets JProb(x),TkCount(y)", 150,-0.1,1.4, 500,-20.,80.);
 
     gwJpt_h   = new TH2F("gwJpt_h"," gen w jet pt vs eta", 500,0,250, 71,-3.55,3.55);
     gEovH    = new TH1F("gEovH"," E/H for gen Jets", 500, -2., 23.);
@@ -1132,10 +1147,9 @@ public:
 
     hRes_Pt     = (TH1F *) file->Get(theFolder+"hRes_Pt");
 
-    hdRWjMu = (TH1F *) file->Get(theFolder+"hdRWjMu");
     hdRWjj  = (TH2F *) file->Get(theFolder+"hdRWjj");
 
-    hbDis_WCand =(TH2F *) file->Get(theFolder+"hbDis_WCand");
+    bDis_dRWjMu =(TH2F *) file->Get(theFolder+"bDis_dRWjMu");
 
     gwJpt_h = (TH2F *) file->Get(theFolder+"gwJpt_h");
     gEovH   = (TH1F *) file->Get(theFolder+"gEovH");
@@ -1155,10 +1169,9 @@ public:
     delete hWp_mass;
 
     delete hRes_Pt;
-    delete hdRWjMu;
     delete hdRWjj;
 
-    delete hbDis_WCand;
+    delete bDis_dRWjMu;
 
     delete gwJpt_h;
     delete gEovH;
@@ -1178,13 +1191,9 @@ public:
     hWp_mass->Fill(wp,wmass);
  }
 
- void Fill8c( double Res_Pt,  double bDisJProb, double bDisTkCount ){
+ void Fill8c( double Res_Pt,  double bDis, double dR_WjMu ){
     hRes_Pt->Fill(Res_Pt);
-    hbDis_WCand->Fill(bDisJProb,bDisTkCount );
- }
-
- void Fill8d( double dR_WjMu ){
-    hdRWjMu->Fill(dR_WjMu);
+    bDis_dRWjMu->Fill( bDis, dR_WjMu );
  }
 
  void Fill8f( double pt, double eta, double EovH) {
@@ -1212,10 +1221,9 @@ public:
     hWp_mass->Write();
 
     hRes_Pt->Write();
-    hdRWjMu->Write();
     hdRWjj->Write();
 
-    hbDis_WCand->Write();
+    bDis_dRWjMu->Write();
 
     gwJpt_h->Write();
     gEovH->Write();
@@ -1231,10 +1239,9 @@ public:
   TH2F *hWp_mass;
 
   TH1F *hRes_Pt;
-  TH1F *hdRWjMu;
   TH2F *hdRWjj;
 
-  TH2F *hbDis_WCand;
+  TH2F *bDis_dRWjMu;
 
   TH2F *gwJpt_h;
   TH1F *gEovH;
@@ -1259,6 +1266,7 @@ public:
     hWLepEff   = new TH2F("hWLepEff"," # of correctly matched lep. ", 4,-0.5,3.5, 120,-3.5,116.5 );
     hHLTBits   = new TH2F("hHLTBits","HLT Trigger bits(names) for hadronic tt", 166, -0.5, 165.5, 6,-0.5,5.5 );
     hHLTSelect = new TH1F("hHLTSelect","HLT Trigger Selected result "  , 15, -7.5, 7.5 );
+    NJ_NBTags  = new TH2F("NJ_NBTags"," NJets vs NBTags", 10, 0.5, 10.5, 10, -0.5, 9.5 );
 
  } 
 
@@ -1271,6 +1279,7 @@ public:
     hWLepEff   = (TH2F *) file->Get(theFolder+"hWLepEff");
     hHLTBits   = (TH2F *) file->Get(theFolder+"hHLTBits");
     hHLTSelect = (TH1F *) file->Get(theFolder+"hHLTSelect");
+    NJ_NBTags  = (TH2F *) file->Get(theFolder+"NJ_NBTags");
 
  }
 
@@ -1286,9 +1295,12 @@ public:
     delete hWLepEff;
     delete hHLTBits;
     delete hHLTSelect;
-   
+    delete NJ_NBTags;
  }
 
+ void Fill9e( int NJ, int NBTags ) {
+   NJ_NBTags->Fill( NJ, NBTags );
+ }
  void Fill9f(float count ) {
     hEvtEff->Fill( count );
  }
@@ -1320,6 +1332,7 @@ public:
     hWLepEff->Write();
     hHLTBits->Write();
     hHLTSelect->Write();
+    NJ_NBTags->Write();
 
  }
 
@@ -1330,6 +1343,7 @@ public:
   TH2F *hWLepEff;
   TH2F *hHLTBits;
   TH1F *hHLTSelect;
+  TH2F *NJ_NBTags;
 
 };
  
@@ -1416,26 +1430,26 @@ public:
     if ( idx == 0 ) N2 = "MC_" ;
     if ( idx == 1 ) N2 = "" ;
 
-    allTmass_pt    = new TH2F(N1+"_allTmass_pt",   " Top Mass vs Pt for all solutions" ,200,0.,400., 200,0,400 );
-    highPtTmass_pt = new TH2F(N1+"_highPtTmass_pt"," highest Pt Top Mass vs Pt"        ,200,0.,400., 200,0,400 );
-    selTmass_Wmass = new TH2F(N1+"_selTmass_Wmass"," Top Mass vs W Mass for seleted solution" ,200,0.,400., 200,0,400 );
-    selTmass_pt    = new TH2F(N1+"_selTmass_pt",   " Top Mass vs Pt for seleted solution >3J" ,200,0.,400., 200,0,400 );
-    selTmass_pt0   = new TH2F(N1+"_selTmass_pt0",  " Top Mass vs Pt for seleted solution =4J" ,200,0.,400., 200,0,400 );
-    selTmass_pt1   = new TH2F(N1+"_selTmass_pt1", " Top Mass vs Pt for seleted solution =5J"  ,200,0.,400., 200,0,400 );
-    selTmass_pt2   = new TH2F(N1+"_selTmass_pt2", " Top Mass vs Pt for seleted solution =6J"  ,200,0.,400., 200,0,400 );
-    selTmass_pt3   = new TH2F(N1+"_selTmass_pt3", " Top Mass vs Pt for seleted solution >6J"  ,200,0.,400., 200,0,400 );
+    allTmass_pt    = new TH2F(N1+"_allTmass_pt",   " Top Mass vs Pt for all solutions" ,480,0.,480., 480,0,480 );
+    highPtTmass_pt = new TH2F(N1+"_highPtTmass_pt"," highest Pt Top Mass vs Pt"        ,480,0.,480., 480,0,480 );
+    selTmass_Wmass = new TH2F(N1+"_selTmass_Wmass"," Top Mass vs W Mass for seleted solution" ,480,0.,480., 480,0,480 );
+    selTmass_pt    = new TH2F(N1+"_selTmass_pt",   " Top Mass vs Pt for seleted solution >3J" ,480,0.,480., 480,0,480 );
+    selTmass_pt0   = new TH2F(N1+"_selTmass_pt0",  " Top Mass vs Pt for seleted solution =4J" ,480,0.,480., 480,0,480 );
+    selTmass_pt1   = new TH2F(N1+"_selTmass_pt1", " Top Mass vs Pt for seleted solution =5J"  ,480,0.,480., 480,0,480 );
+    selTmass_pt2   = new TH2F(N1+"_selTmass_pt2", " Top Mass vs Pt for seleted solution =6J"  ,480,0.,480., 480,0,480 );
+    selTmass_pt3   = new TH2F(N1+"_selTmass_pt3", " Top Mass vs Pt for seleted solution >6J"  ,480,0.,480., 480,0,480 );
 
-    hRecott0   = new TH2F(N2+"hRecott0","Reco top mass w/ 4j", 200,0,400, 200,0,400);
-    hRecott1   = new TH2F(N2+"hRecott1","Reco top mass w/ 5j", 200,0,400, 200,0,400);
-    hRecott2   = new TH2F(N2+"hRecott2","Reco top mass w/ 6j", 200,0,400, 200,0,400);
-    hRecott3   = new TH2F(N2+"hRecott3","Reco top mass >= 7j", 200,0,400, 200,0,400);
-    hRecott    = new TH2F(N2+"hRecott" ,"Reco top mass -all ", 200,0,400, 200,0,400);
+    hRecott0   = new TH2F(N2+"hRecott0","Reco top mass w/ 4j", 480,0.,480., 480,0.,480.);
+    hRecott1   = new TH2F(N2+"hRecott1","Reco top mass w/ 5j", 480,0.,480., 480,0.,480.);
+    hRecott2   = new TH2F(N2+"hRecott2","Reco top mass w/ 6j", 480,0.,480., 480,0.,480.);
+    hRecott3   = new TH2F(N2+"hRecott3","Reco top mass >= 7j", 480,0.,480., 480,0.,480.);
+    hRecott    = new TH2F(N2+"hRecott" ,"Reco top mass -all ", 480,0.,480., 480,0.,480.);
 
-    PtRecott0   = new TH1F(N2+"PtRecott0","Pt of Reco top mass w/ 4j", 200,0,400);
-    PtRecott1   = new TH1F(N2+"PtRecott1","Pt of Reco top mass w/ 5j", 200,0,400);
-    PtRecott2   = new TH1F(N2+"PtRecott2","Pt of Reco top mass w/ 6j", 200,0,400);
-    PtRecott3   = new TH1F(N2+"PtRecott3","Pt of Reco top mass >= 7j", 200,0,400);
-    PtRecott    = new TH1F(N2+"PtRecott" ,"Pt of Reco top mass -all ", 200,0,400);
+    PtRecott0   = new TH1F(N2+"PtRecott0","Pt of Reco top mass w/ 4j", 480,0.,480.);
+    PtRecott1   = new TH1F(N2+"PtRecott1","Pt of Reco top mass w/ 5j", 480,0.,480.);
+    PtRecott2   = new TH1F(N2+"PtRecott2","Pt of Reco top mass w/ 6j", 480,0.,480.);
+    PtRecott3   = new TH1F(N2+"PtRecott3","Pt of Reco top mass >= 7j", 480,0.,480.);
+    PtRecott    = new TH1F(N2+"PtRecott" ,"Pt of Reco top mass -all ", 480,0.,480.);
 
     WRecott0   = new TH2F(N2+"WRecott0","W vs dM of Reco top mass w/ 4j", 500,0,1000, 400,-199.5,200.5);
     WRecott1   = new TH2F(N2+"WRecott1","W vs dM of Reco top mass w/ 5j", 500,0,1000, 400,-199.5,200.5);
