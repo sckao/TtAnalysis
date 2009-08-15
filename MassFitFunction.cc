@@ -163,3 +163,49 @@ Double_t MassFitFunction::ConvSGGS(Double_t *x, Double_t *par) {
    return step*sum ;
 }
 
+std::vector<bool> MassFitFunction::DataRejection( TF1* fitfunc, Double_t* x, Double_t* y, int N_data ) {
+
+     // calculate sigma of the fit
+     double dv=0.;
+     for ( int i=0; i< N_data; i++) {
+         double expy = fitfunc->Eval( x[i] );
+         dv += (y[i] - expy)*(y[i] - expy) ;
+     }
+     double sigma = sqrt( dv/( (N_data*1.) - 1.) ) ;
+
+     // test each point
+     std::vector<bool> rejV ;
+     for ( int i=0; i< N_data; i++) {
+         double expy = fitfunc->Eval( x[i] );
+         double dv1 = fabs( y[i] - expy ) ;
+         bool reject = DataRejection( sigma, dv1, N_data);   
+         rejV.push_back( reject );
+     }
+
+     return rejV;
+}
+
+// sigma : sigma of the data set w.r.t mean
+// deviation : the deviation of data and mean/prefit value
+// N_data : number of data point
+bool MassFitFunction::DataRejection(double sigma, double deviation, int N_data ) {
+
+    bool reject = false ;
+    /// gaussian probability for data point
+    double p_gaus = 0.0;
+    double k = 0.0;
+    for (int i=0; i != 10000; i++ ) {
+        k += ( deviation*0.0001) ;
+        double n1 = 1.0/ (sigma*sqrt(2.0*3.14159)) ;
+        double x2 = (-1.0*k*k)/(2.0*sigma*sigma) ;
+        double gaus1 = n1*exp(x2);
+        p_gaus += (gaus1*deviation*0.0001);
+    }
+
+    /// expected number outside the deviation of the distribution
+    double nExpected = (1.0-(p_gaus*2.0))*(N_data*1.0);
+
+    if ( nExpected < 0.99 ) reject = true;
+
+    return reject;
+}
