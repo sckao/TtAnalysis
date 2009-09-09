@@ -1,25 +1,23 @@
 #include "TemplateMassFit.h"
 
-TemplateMassFit::TemplateMassFit( TString aname, TString channel ){
+TemplateMassFit::TemplateMassFit( TString channel, int NBTag  ){
 
 
-  // For different mass &/ different algorithm
-  fname = aname ;
   // "Lep" or "Had"
   cname = channel ;
-  hname = channel+"_selTmass_pt0";
-  sname = "mcTtMass0";
-  hfolder = "AllTags0/";
 
+  // plot format
+  ptype  = ".gif";
 
-  plot1 = hfolder+"/"+channel+"_CombinedFit2_"+aname+".gif";
-  plot2 = hfolder+"/"+channel+"_CombinedFit_"+aname+".gif";
-  plot4 = hfolder+"/"+channel+"_TemplateFit_"+aname+".gif";
-  plot5 = hfolder+"/"+channel+"_Norm2_"+aname+".gif";
-  plot6 = hfolder+"/"+channel+"_TemplateFit2_"+aname+".gif";
-  plot9 = hfolder+"/"+channel+"_X2Test"+aname+".gif";
+  fitFunc  = new MassFitFunction();
+  fitInput = new MassFitInput( channel, NBTag );
+  fitInput->Initialize( &hfolder  );
 
-  fitFunc = new MassFitFunction();
+  plot1 = hfolder+"/"+channel+"_CombinedFit2_";
+  plot2 = hfolder+"/"+channel+"_CombinedFit_";
+  plot4 = hfolder+"/"+channel+"_TemplateFit_";
+  plot6 = hfolder+"/"+channel+"_TemplateFit2_";
+  plot9 = hfolder+"/"+channel+"_X2Test";
 
   gSystem->mkdir(hfolder);
   
@@ -37,13 +35,14 @@ TemplateMassFit::~TemplateMassFit(){
   delete c8;
   delete c9; 
   delete fitFunc;
+  delete fitInput;
 
 }
 
 // separate background : tt-wrong permutation,  wjets + qcd
-void TemplateMassFit::MoreCombinedFitting( int rbin, int lowBound, int upBound ){
+void TemplateMassFit::MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp, int NBTag ){
 
-  logfile = fopen(hfolder+"/Outputf.log","a"); 
+  FILE* logfile = fopen(hfolder+"/Outputf.log","a"); 
 
   gStyle->SetOptStat("i");
   gStyle->SetOptFit(111);
@@ -60,27 +59,30 @@ void TemplateMassFit::MoreCombinedFitting( int rbin, int lowBound, int upBound )
   // Get fake data information
   THStack* ttstk = new THStack("ttstk", "Combined Fitting"); 
   TH1D* fakedata = new TH1D("fakedata","", nbin, 0., 480.);
-  TH1D* dth0 = new TH1D("dth0","", nbin, 0., 480.);
-  TH1D* dth1 = new TH1D("dth1","", nbin, 0., 480.);
-  TH1D* dth2 = new TH1D("dth2","", nbin, 0., 480.);
-  TH1D* dth3 = new TH1D("dth3","", nbin, 0., 480.);
-  TH1D* dth4 = new TH1D("dth4","", nbin, 0., 480.);
-  TH1D* dth23 = new TH1D("dth23","", nbin, 0., 480.);
+  TH1D* dth0 = new TH1D("dth0","", nbin, 0., 480.);      // tt-signal
+  TH1D* dth1 = new TH1D("dth1","", nbin, 0., 480.);      // tt-wrong combination
+  TH1D* dth2 = new TH1D("dth2","", nbin, 0., 480.);      // w+jets
+  TH1D* dth3 = new TH1D("dth3","", nbin, 0., 480.);      // single top t-channel
+  TH1D* dth4 = new TH1D("dth4","", nbin, 0., 480.);      // single top tW-channel
+  THStack* dthb1 = new THStack("dthb1", "background group1 ");
+  THStack* dthb2 = new THStack("dthb2", "background group2 ");
+  TH1D* dtadd1 = new TH1D("dtadd1","", nbin, 0., 480.);      // single top tW-channel
+  TH1D* dtadd2 = new TH1D("dtadd2","", nbin, 0., 480.);      // single top tW-channel
 
-  getFakeData( rbin, fakedata, ttstk, dth0, dth1, dth2, dth3, dth4 );
+  fitInput->getFakeData( mName, rbin, fakedata, ttstk, dth0, dth1, dth2, dth3, dth4 );
 
   // pre-fit background
-  //TString theFileName = "mgtt_"+mName+".root" ;
-  fprintf(logfile," === Chi2 Test for   === \n" );
-  double bestMass = Chi2Test(fakedata, lowBound, upBound ,12 );
+  double statErr = 0;
+  double bestMass = Chi2Test(mName, fakedata, lowBound, upBound, 12, NBTag, &statErr, rbin );
   // Fit the data
   TF1 *func1 = new TF1("func1",MassFitFunction::fitData1, lowBound, upBound,12);
+  if ( cname == "Lep" ) func1 = new TF1("func1",MassFitFunction::fitData2, lowBound, upBound,12);
 
   // get the extrapolated parameters
   Double_t fpar[12];
-  SetFitParameters( bestMass, fpar, 12, -1 );
+  SetFitParameters( bestMass, fpar, 12, NBTag, rbin );
 
-  func1->SetParLimits(0,  25., 100.);
+  func1->SetParLimits(0,  5., 100.);
   func1->FixParameter(1, fpar[1] );
   func1->FixParameter(2, fpar[2] );
   func1->SetParLimits(3, fpar[3]- 0.1*fpar[3], fpar[3]+0.1*fpar[3] );
@@ -90,70 +92,92 @@ void TemplateMassFit::MoreCombinedFitting( int rbin, int lowBound, int upBound )
   func1->FixParameter(7, fpar[7] );
   func1->FixParameter(8, fpar[8] );
   func1->FixParameter(9, fpar[9] );
-  func1->SetParLimits(10,fpar[10]- 0.1*fpar[10], fpar[10]+0.1*fpar[10] );
-  func1->FixParameter(11, fpar[11] );
+  func1->FixParameter(10, fpar[10] );
+  func1->SetParLimits(11, fpar[11]- 0.1*fpar[11], fpar[11]+0.1*fpar[11] );
 
   c1->cd(1);
   ttstk->Draw();
-  func1->SetLineColor(4);
-  func1->SetLineStyle(2);
-  func1->SetLineWidth(3);
+  func1->SetLineColor(1);
+  func1->SetLineWidth(2);
   fakedata->Fit( func1, "R","sames",110,330);
+
+  TLegend *leg = new TLegend(.65, .4, .95, .75);
+  leg->AddEntry(dth0, "tt-correct", "f");
+  leg->AddEntry(dth1, "tt-wrong", "f");
+  leg->AddEntry(dth2, "wjets", "f");
+  leg->AddEntry(dth3, "SingleTop_t", "f");
+  leg->AddEntry(dth4, "SingleTop_tW", "f");
+  leg->Draw("same");
+
   c1->Update();
 
-  // Draw the expected signal
-  fprintf(logfile," ---------- Fitting Parameters --------- \n" );
   Double_t apars[12];
+  double m1 = MassDigi(mName);
   for (int i=0; i< 12; i++) { 
       apars[i]   = func1->GetParameter(i);
-      fprintf(logfile," p%d = %f \n", i, apars[i] );
   }
-  fprintf(logfile," =========== Fitting Done ========= \n" );
-  fprintf(logfile," \n" );
+  fprintf(logfile," %.2f %.2f %.2f \n", m1, apars[1], statErr );
 
+  // Draw the expected signal
+  c1->cd(2);
   TF1 *func2 = new TF1("func2",MassFitFunction::fitSG, 100, 360, 6 );
+  if ( cname == "Lep" ) func2 = new TF1("func2",MassFitFunction::fitSG1, 100, 360, 6 );
   for (int j=0; j<6; j++ ) {
       func2->FixParameter( j, apars[j] );
   }
   func2->SetLineColor(1);
-  func2->SetLineStyle(5);
   func2->SetLineWidth(3);
-  c1->cd(2);
   dth0->Draw();
   func2->Draw("sames");
   c1->Update();
 
-  // Draw the expected background
+  // Draw the expected background , background group 1
+  c1->cd(3);
   TF1 *func3 = new TF1("func3",MassFitFunction::fitLD, 100, 360, 3);
   func3->FixParameter(0, apars[0]*apars[10] );
   func3->FixParameter(1, apars[6] );
   func3->FixParameter(2, apars[7] );
   func3->SetLineColor(1);
-  func3->SetLineStyle(2);
   func3->SetLineWidth(3);
-  c1->cd(3);
-  dth1->Draw();
+
+  if ( comp[4] ) dthb1->Add( dth4 );
+  if ( comp[3] ) dthb1->Add( dth3 );
+  if ( comp[2] ) dthb1->Add( dth2 );
+  if ( comp[1] ) dthb1->Add( dth1 );
+  if ( comp[4] ) dtadd1->Add( dth4 );
+  if ( comp[3] ) dtadd1->Add( dth3 );
+  if ( comp[2] ) dtadd1->Add( dth2 );
+  if ( comp[1] ) dtadd1->Add( dth1 );
+  dthb1->Draw();
+  dtadd1->Draw("sames");
+
   func3->Draw("sames");
+
   c1->Update();
 
-  // Draw the expected background
+  // Draw the expected background , background group 2
+  c1->cd(4);
   TF1 *func4 = new TF1("func4",MassFitFunction::fitLD, 100, 360, 3);
   func4->FixParameter(0, apars[0]*apars[11] );
   func4->FixParameter(1, apars[8] );
   func4->FixParameter(2, apars[9] );
   func4->SetLineColor(1);
-  func4->SetLineStyle(2);
   func4->SetLineWidth(3);
-  c1->cd(4);
-  dth23->Add(dth2, 1);
-  dth23->Add(dth3, 1);
-  dth23->Add(dth4, 1);
-  dth23->SetFillColor(2);
-  dth23->Draw();
+  
+  if ( !comp[4] ) dthb2->Add( dth4 );
+  if ( !comp[3] ) dthb2->Add( dth3 );
+  if ( !comp[2] ) dthb2->Add( dth2 );
+  if ( !comp[1] ) dthb2->Add( dth1 );
+  if ( !comp[4] ) dtadd2->Add( dth4 );
+  if ( !comp[3] ) dtadd2->Add( dth3 );
+  if ( !comp[2] ) dtadd2->Add( dth2 );
+  if ( !comp[1] ) dtadd2->Add( dth1 );
+  dthb2->Draw();
+  dtadd2->Draw("sames");
   func4->Draw("sames");
   c1->Update();
 
-  c1->Print(plot1);
+  c1->Print(plot1+mName+ptype);
 
   fclose(logfile);
 
@@ -161,20 +185,24 @@ void TemplateMassFit::MoreCombinedFitting( int rbin, int lowBound, int upBound )
   delete func2;
   delete func3;
   delete func4;
+  delete leg;
   delete ttstk;
   delete dth0;
   delete dth1;
   delete dth2;
   delete dth3;
   delete dth4;
-  delete dth23;
+  delete dthb1;
+  delete dthb2;
+  delete dtadd1;
+  delete dtadd2;
   delete fakedata;
 }
 
 // combined all background : tt-wrong permutation, wjets and qcd
-void TemplateMassFit::CombinedFitting( int rbin, int lowBound, int upBound, int NBTag ){
+void TemplateMassFit::CombinedFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag ){
 
-  logfile = fopen(hfolder+"/Outputf.log","a"); 
+  FILE* logfile = fopen(hfolder+"/Outputf.log","a"); 
 
   gStyle->SetOptStat("i");
   gStyle->SetOptFit(111);
@@ -198,14 +226,16 @@ void TemplateMassFit::CombinedFitting( int rbin, int lowBound, int upBound, int 
   TH1D* dth4 = new TH1D("dth4","", nbin, 0., 480.);
   TH1D* dth123 = new TH1D("dt123","", nbin, 0., 480.);
 
-  getFakeData( rbin, fakedata, ttstk, dth0, dth1, dth2, dth3, dth4 );
+  fitInput->getFakeData( mName, rbin, fakedata, ttstk, dth0, dth1, dth2, dth3, dth4 );
 
-  double bestMass = Chi2Test(fakedata, lowBound, upBound ,9 , NBTag);
+  double statErr = 0;
+  double bestMass = Chi2Test(mName, fakedata, lowBound, upBound ,9 , NBTag, &statErr, rbin );
   // Fit the data
-  TF1 *func1 = new TF1("func1",MassFitFunction::fitData, lowBound, upBound,9);
+  TF1 *func1 = new TF1("func1",MassFitFunction::fitData1, lowBound, upBound,12);
+  if ( cname == "Lep" ) func1 = new TF1("func1",MassFitFunction::fitData2, lowBound, upBound, 12);
 
   Double_t fpar[12];
-  SetFitParameters( bestMass, fpar, 9, NBTag );
+  SetFitParameters( bestMass, fpar, 9, NBTag, rbin );
 
   func1->SetParLimits(0,  5., 200.);
   func1->FixParameter(1, fpar[1] );
@@ -213,35 +243,46 @@ void TemplateMassFit::CombinedFitting( int rbin, int lowBound, int upBound, int 
   func1->SetParLimits(3, fpar[3]- 0.1*fpar[3], fpar[3]+0.1*fpar[3] );
   func1->FixParameter(4, fpar[4] );
   func1->FixParameter(5, fpar[5] );
-  func1->FixParameter(6, fpar[8] );
-  func1->FixParameter(7, fpar[9] );
-  func1->SetParLimits(8, fpar[11]- 0.1*fpar[11], fpar[11]+0.1*fpar[11] );
+  func1->FixParameter(6, fpar[6] );
+  func1->FixParameter(7, fpar[7] );
+  func1->FixParameter(8, fpar[8] );
+  func1->FixParameter(9, fpar[9] );
+  func1->SetParLimits(10, fpar[10]- 0.1*fpar[10], fpar[10]+0.1*fpar[10] );
+  func1->FixParameter(11, fpar[11] );
 
   c3->cd(1);
   ttstk->Draw();
 
-  func1->SetLineColor(4);
-  func1->SetLineStyle(2);
+  func1->SetLineColor(kBlue+2);
+  func1->SetLineStyle(1);
   func1->SetLineWidth(2);
   fakedata->Fit( func1, "R","sames",lowBound,upBound);
   func1->Draw("same");
+
+  TLegend *leg = new TLegend(.65, .4, .95, .75);
+  leg->AddEntry(dth0, "tt-correct", "f");
+  leg->AddEntry(dth1, "tt-wrong", "f");
+  leg->AddEntry(dth2, "wjets", "f");
+  leg->AddEntry(dth3, "SingleTop_t", "f");
+  leg->AddEntry(dth4, "SingleTop_tW", "f");
+  leg->Draw("same");
+
   c3->Update();
 
   // Draw the expected signal
-  Double_t apars[9];
-  fprintf(logfile," ---------- Fitting Parameters --------- \n" );
-  for (int i=0; i< 9; i++) { 
+  Double_t apars[12];
+  double m1 = MassDigi(mName);
+  for (int i=0; i< 12; i++) { 
       apars[i]   = func1->GetParameter(i);
-      fprintf(logfile," p%d = %f \n", i, apars[i] );
   }
-  fprintf(logfile," ========== Fitting Finished =========== \n" );
+  fprintf(logfile," %.2f %.2f %.2f \n", m1, apars[1], statErr );
 
   TF1 *func2 = new TF1("func2",MassFitFunction::fitSG, 100, 360, 6 );
+  if ( cname == "Lep" ) func2 = new TF1("func2",MassFitFunction::fitSG1, 100, 360, 6 );
   for (int j=0; j<6; j++ ) {
       func2->FixParameter( j, apars[j] );
   }
   func2->SetLineColor(1);
-  func2->SetLineStyle(5);
   func2->SetLineWidth(3);
 
   c3->cd(2);
@@ -250,13 +291,12 @@ void TemplateMassFit::CombinedFitting( int rbin, int lowBound, int upBound, int 
   c3->Update();
 
   // Draw the expected background
- 
   TF1 *func3 = new TF1("func3",MassFitFunction::fitLD, 100, 360, 3);
-  func3->FixParameter(0, apars[8]*apars[0] );
+  func3->FixParameter(0, apars[10]*apars[0] );
   func3->FixParameter(1, apars[6] );
   func3->FixParameter(2, apars[7] );
   func3->SetLineColor(1);
-  func3->SetLineStyle(2);
+  //func3->SetLineStyle(2);
   func3->SetLineWidth(3);
 
   c3->cd(3);
@@ -269,11 +309,12 @@ void TemplateMassFit::CombinedFitting( int rbin, int lowBound, int upBound, int 
   func3->Draw("sames");
   c3->Update();
 
-  c3->Print(plot2);
+  c3->Print(plot2+mName+ptype);
 
   delete func1;
   delete func2;
   delete func3;
+  delete leg;
   delete ttstk;
   delete dth0;
   delete dth1;
@@ -288,9 +329,9 @@ void TemplateMassFit::CombinedFitting( int rbin, int lowBound, int upBound, int 
 
 
 // chi2 test + minimum chi2 fit, output best estimated mass
-double TemplateMassFit::Chi2Test( TH1D* theData, int lowBound, int upBound, int nPar, int NBTag ) {  
+double TemplateMassFit::Chi2Test( TString mName, TH1D* theData, int lowBound, int upBound, int nPar, int NBTag, Double_t* statErr, int rbin ) {  
 
-   gStyle->SetOptFit(11);
+   gStyle->SetOptFit(111);
    c9 = new TCanvas("c9","", 800, 600);
    c9->SetGrid();
    c9->SetFillColor(10);
@@ -302,48 +343,42 @@ double TemplateMassFit::Chi2Test( TH1D* theData, int lowBound, int upBound, int 
    Double_t fpar[12];
    double maxChi2 = 0. ;
    TF1 *func0 = new TF1("func0", MassFitFunction::fitData1, lowBound, upBound, 12);
+   if ( cname == "Lep" ) func0 = new TF1("func0", MassFitFunction::fitData2, lowBound, upBound, 12);
    TF1 *fS    = new TF1("fS"   , MassFitFunction::fitSG, lowBound, upBound, 6);
+   if ( cname == "Lep" ) fS    = new TF1("fS"   , MassFitFunction::fitSG1, lowBound, upBound, 6);
+
    TF1 *fW    = new TF1("fW", MassFitFunction::fitLD, lowBound, upBound, 3);
    TF1 *fB    = new TF1("fB", MassFitFunction::fitLD, lowBound, upBound, 3);
    for (int i =0; i < 16; i++ ) {
 
        // set up the mass assumption
        mAssumption[i] = 156. + (i*2.) ;
-       SetFitParameters( mAssumption[i], fpar, nPar, NBTag );
+       SetFitParameters( mAssumption[i], fpar, nPar, NBTag, rbin );
 
        // Fit the data
-       func0->SetParLimits(0,  25., 100.);
+       func0->SetParLimits(0,  10., 100.);
        func0->FixParameter(1, fpar[1] );
        func0->FixParameter(2, fpar[2] );
        func0->SetParLimits(3, fpar[3]-0.1*fpar[3], fpar[3]+0.1*fpar[3] );
        func0->FixParameter(4, fpar[4] );
        func0->FixParameter(5, fpar[5] );
-       if ( nPar == 12 ) {
-          func0->FixParameter(6, fpar[6] );
-          func0->FixParameter(7, fpar[7] );
-          func0->FixParameter(8, fpar[8] );
-          func0->FixParameter(9, fpar[9] );
-          func0->SetParLimits(10,fpar[10]-0.1*fpar[10], fpar[10]+0.1*fpar[10] );
-          func0->FixParameter(11,fpar[11]);
-       }
-       if ( nPar == 9 ) {
-          func0->FixParameter(6, fpar[8] );
-          func0->FixParameter(7, fpar[9] );
-          func0->SetParLimits(8, fpar[11]-0.1*fpar[11], fpar[11]+0.1*fpar[11] );
-       }
+       func0->FixParameter(6, fpar[6] );
+       func0->FixParameter(7, fpar[7] );
+       func0->FixParameter(8, fpar[8] );
+       func0->FixParameter(9, fpar[9] );
+       func0->SetParLimits(10,fpar[10]-0.1*fpar[10], fpar[10]+0.1*fpar[10] );
+       func0->FixParameter(11,fpar[11]);
 
        theData->Fit( func0, "RQ0","", lowBound, upBound);
 
        nChi2[i] = getChi2(theData, func0, fS, fB, fW, 130, 210, nPar );
-       //nChi2[i] = getChi2(theData, func0, 130,210);
-       //nChi2[i] =  func0->GetChisquare() ;
        if ( nChi2[i] > maxChi2 ) maxChi2 = nChi2[i] ;
    }
 
    double mErr[16]={0.};
    double x2Err[16]={0.};
    TGraph* x2test = new TGraph(16, mAssumption, nChi2);
-   /*
+   
    x2test->SetTitle(" chi2 test ");
    x2test->SetMarkerColor(4);
    x2test->SetMarkerStyle(21);
@@ -352,7 +387,8 @@ double TemplateMassFit::Chi2Test( TH1D* theData, int lowBound, int upBound, int 
    x2test->GetXaxis()->SetTitle(" input mass assumption ");
    x2test->GetYaxis()->SetTitle(" chi2  ");
    x2test->Draw("AP");
-   */
+
+
    TF1 *func5 = new TF1("func5",MassFitFunction::fitParabola, 154, 188, 3 );
    func5->SetParLimits(0, 150, 190);
    func5->SetParameter(1, 3.5 );
@@ -362,8 +398,9 @@ double TemplateMassFit::Chi2Test( TH1D* theData, int lowBound, int upBound, int 
    
    for (int i=0; i<16; i++) {
        if ( !rejList[i] ) x2Err[i] = 0.1 ;
-       if ( rejList[i] ) x2Err[i] = 10. ;
+       if (  rejList[i] ) x2Err[i] = 10. ;
    }
+
    TGraphErrors* x2testErr = new TGraphErrors(16, mAssumption, nChi2, mErr, x2Err );
    x2testErr->SetTitle(" chi2 test ");
    x2testErr->SetMarkerColor(4);
@@ -374,11 +411,30 @@ double TemplateMassFit::Chi2Test( TH1D* theData, int lowBound, int upBound, int 
    x2testErr->GetYaxis()->SetTitle(" chi2  ");
    x2testErr->Draw("AP");
    x2testErr->Fit( func5, "R", "sames",154,188 );
-   
+
+   // re-fit the chi2 curve
+   if ( func5->GetChisquare() > 650.  ) {
+      double p1 = func5->GetParameter(0);
+      double L1 = p1 - (p1 - 158)/2 ;
+      double H1 = p1 + (188 - p1)/2 ;
+      if ( p1 > 188 ) {
+         L1 = 171;
+         H1 = 188;
+      }
+      if ( p1 < 158 ) {
+         L1 = 158;
+         H1 = 171;
+      }
+      x2testErr->Fit( func5, "R", "sames", L1, H1 );
+   }
+
+
    c9->Update();
-   c9->Print(plot9);
+   c9->Print(plot9+mName+ptype);
 
    double massCandidate =  func5->GetParameter(0);
+   if (statErr != NULL ) *statErr = func5->GetParameter(1);
+
    gStyle->SetOptFit(111);
 
    delete fS;
@@ -398,11 +454,11 @@ double TemplateMassFit::getChi2( TH1D* theData1,  TF1* theFunc, TF1* fS, TF1* fB
       fS->FixParameter( s, theFunc->GetParameter(s) );
   }
 
-  fW->FixParameter( 0, theFunc->GetParameter(11) );
+  fW->FixParameter( 0, theFunc->GetParameter(11)*theFunc->GetParameter(0) );
   fW->FixParameter( 1, theFunc->GetParameter(8) );
   fW->FixParameter( 2, theFunc->GetParameter(9) );
 
-  fB->FixParameter( 0, theFunc->GetParameter(10) );
+  fB->FixParameter( 0, theFunc->GetParameter(10)*theFunc->GetParameter(0) );
   fB->FixParameter( 1, theFunc->GetParameter(6) );
   fB->FixParameter( 2, theFunc->GetParameter(7) );
 
@@ -418,11 +474,8 @@ double TemplateMassFit::getChi2( TH1D* theData1,  TF1* theFunc, TF1* fS, TF1* fB
       double theB = fB->Eval(k);
       //double theS = fS->Eval(k);
       double theH = theData1->GetBinContent(i);
-      //double x2 = ( theH - theF )*( theH - theF ) / (theF - theW) ; 
-      //double x2 = ( theH - theF )*( theH - theF ) / theF ; 
-      //double x2 = ( theH - theF )*( theH - theF ) / theS ; 
       double x2 = ( theH - theF )*( theH - theF ) / ( theF + theB + theW ); 
-      if ( nPar == 9 ) x2 = ( theH - theF )*( theH - theF ) / ( theF + theW ); 
+      if ( nPar == 9 ) x2 = ( theH - theF )*( theH - theF ) / ( theF + theB ); 
       chi2 += x2;
   }
   //chi2 = chi2 / ( b2+1 - b1 - 3 ) ;
@@ -430,7 +483,7 @@ double TemplateMassFit::getChi2( TH1D* theData1,  TF1* theFunc, TF1* fS, TF1* fB
   return chi2;
 }
 
-void TemplateMassFit::MultiTemplatesFitting( int rbin, int lowBound, int upBound ){
+void TemplateMassFit::MultiTemplatesFitting( TString mName, int rbin, int lowBound, int upBound ){
 
   gStyle->SetOptFit(111);
   gStyle->SetOptStat("nirm");
@@ -450,7 +503,7 @@ void TemplateMassFit::MultiTemplatesFitting( int rbin, int lowBound, int upBound
   TH1D* dth2 = new TH1D("dth2","", nbin, 0., 480.);
   TH1D* dth3 = new TH1D("dth3","", nbin, 0., 480.);
   TH1D* dth23 = new TH1D("dth23","", nbin, 0., 480.);
-  getFakeData( rbin, dt, ttstk, dth0, dth1, dth2, dth3 );
+  fitInput->getFakeData( mName, rbin, dt, ttstk, dth0, dth1, dth2, dth3 );
 
   // pre-fitting
   Double_t sPred[sz] ;
@@ -565,7 +618,7 @@ void TemplateMassFit::MultiTemplatesFitting( int rbin, int lowBound, int upBound
     hPred2->Fit( func2, "R","sames", 100, 380 );
     c6->Update();
 
-    c6->Print(plot6);
+    c6->Print(plot6+mName+ptype);
 
   delete hPred;
   delete hPred0;
@@ -584,7 +637,7 @@ void TemplateMassFit::MultiTemplatesFitting( int rbin, int lowBound, int upBound
 
 }
 
-void TemplateMassFit::TemplateFitting( int rbin, int lowBound, int upBound ){
+void TemplateMassFit::TemplateFitting( TString mName, int rbin, int lowBound, int upBound ){
 
   gStyle->SetOptFit(111);
   gStyle->SetOptStat("nirm");
@@ -604,7 +657,7 @@ void TemplateMassFit::TemplateFitting( int rbin, int lowBound, int upBound ){
   TH1D* dth2 = new TH1D("dth2","", nbin, 0., 480.);
   TH1D* dth3 = new TH1D("dth3","", nbin, 0., 480.);
   TH1D* dth123 = new TH1D("dth123","", nbin, 0., 480.);
-  getFakeData( rbin, dt, ttstk, dth0, dth1, dth2, dth3 );
+  fitInput->getFakeData( mName, rbin, dt, ttstk, dth0, dth1, dth2, dth3 );
 
   // pre-fitting
   Double_t sPred[sz] ;
@@ -702,7 +755,7 @@ void TemplateMassFit::TemplateFitting( int rbin, int lowBound, int upBound ){
     hPred1->Fit( func1, "R","sames", 100, 380 );
     c4->Update();
 
-    c4->Print(plot4);
+    c4->Print(plot4+mName+ptype);
 
   delete hPred;
   delete hPred0;
@@ -726,19 +779,19 @@ double TemplateMassFit::TemplateTest( TString mName, TH1D* theData, int rbin, in
  
   // tmp1: tt wrong combinatorics
   TH1D* tt = new TH1D("tt","", nbin, 0., 480.);
-  getBackground( tt, 1, rbin, fname );
+  fitInput->getBackground( tt, 1, rbin, mName );
 
   // tmp2: wjets and QCD 
   TH1D* wj = new TH1D("wj","", nbin, 0., 480.);
   TH1D* qm = new TH1D("qm","", nbin, 0., 480.);
   TH1D* bg = new TH1D("bg","", nbin, 0., 480.);
-  getBackground( wj, 2, rbin, fname );
-  getBackground( qm, 3, rbin, fname );
+  fitInput->getBackground( wj, 2, rbin, mName );
+  fitInput->getBackground( qm, 3, rbin, mName );
   bg->Add(wj,qm, 1., 0.);
 
   // get template signal distribution
   TH1D* sg = new TH1D("sg","", nbin, 0., 480.);
-  getSignal( sg, rbin , mName);
+  fitInput->getSignal( sg, rbin , mName);
 
   // normalize signal and background shape
   ScaleTemplates( 5000., sg, b1, b2 );
@@ -824,10 +877,10 @@ double TemplateMassFit::TemplateTest( TString mName, TH1D* theData, int rbin, in
  
   // combine all background channel for background template
   TH1D* bg = new TH1D("bg","", nbin, 0., 480.);
-  combineBG( mName, bg, rbin );
+  fitInput->combineBG( mName, bg, rbin );
   // get template signal distribution
   TH1D* sg = new TH1D("sg","", nbin, 0., 480.);
-  getSignal( sg, rbin , mName);
+  fitInput->getSignal( sg, rbin , mName);
 
   // normalize signal and background shape
   ScaleTemplates( 5000., sg, b1, b2 );
@@ -919,14 +972,14 @@ void TemplateMassFit::FitSignal( TString mName, int rbin, int lowBound, int upBo
   cout<<" b1:"<<b1<<" b2:"<<b2<<" size:"<< sz <<endl;
  
   // set up the y-axis max
-  double yMax = 120. *( rbin / 20. ) ;
+  double yMax = 180. *( rbin / 20. ) ;
   //double yMax = 220. *( rbin / 20. ) ;
 
   c7->cd(1);
 
   // tmp0: get template signal distribution
   TH1D* sg = new TH1D("sg","", nbin, 0., 480.);
-  getSignal( sg, rbin , mName );
+  fitInput->getSignal( sg, rbin , mName );
 
   sg->SetFillColor(7);
   //int maxbin = sg->GetMaximumBin() ;
@@ -938,23 +991,36 @@ void TemplateMassFit::FitSignal( TString mName, int rbin, int lowBound, int upBo
 
   TF1* func0 = new TF1("func0", MassFitFunction::fitLG , 80, 450, 3);
   TF1* func1 = new TF1("func1", MassFitFunction::fitGS , lowBound, upBound, 3);
-  TF1* func2 = new TF1("func2", MassFitFunction::fitSG , lowBound, upBound, 6);
+  TF1* func2 = new TF1("func2", MassFitFunction::fitSG , lowBound-20, upBound, 6);
+  if ( cname == "Lep" ) {
+     func0 = new TF1("func0", MassFitFunction::fitLD , 80, 450, 3);
+     func2 = new TF1("func2", MassFitFunction::fitSG1 , lowBound-20, upBound, 6);
+  }
+  TF1* func3 = new TF1("func3", MassFitFunction::fitLD , 0, 480, 3);
 
   // pre-set the value
+  // Hadronic top : gaus + log-normal
+  // Leptonic top : gaus + landau
   double p0 = 50. ;
   double p1 = m1  ;
   double p2 = 20. ;
   double p3 = 33. ; 
   double p4 = log(m1) + sqrt(1./20.) ;
   double p5 =  5. ;
-
+  if ( cname == "Lep" ) {
+     p3 = 1.8;
+     p4 = m1 ;
+     p5 = 30 ;
+  }
   // 1st Fit, Fix "mean" value for gaussisan & log-normal and allow normalization and width vary
+  func2->SetParLimits( 0, 10., p0+1.0*p0);
   func2->FixParameter( 1, p1 );
-  func2->SetParLimits(2, p2-0.3*p2, p2+1.0*p2);
-  func2->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
+  func2->SetParLimits( 2, p2-0.3*p2, p2+1.0*p2);
+  if ( cname == "Had" )  func2->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
+  if ( cname == "Lep" )  func2->SetParLimits(3, p3-0.3*p3, p3+0.3*p3);
+  
   func2->FixParameter(4, p4 );
-  if ( cname == "Had" ) func2->FixParameter(5, p5 );
-  if ( cname == "Lep" ) func2->FixParameter(5, 3. );
+  func2->FixParameter(5, p5 );
   
   sg->Fit( func2, "RQ0","", lowBound, upBound );
 
@@ -968,8 +1034,19 @@ void TemplateMassFit::FitSignal( TString mName, int rbin, int lowBound, int upBo
   func1->FixParameter(0, p0 );
   func1->FixParameter(1, p1 );
   func1->FixParameter(2, p2 );
+  func1->SetLineColor(4);
   func1->Draw("sames");
 
+  c7->Update();
+
+  c7->cd(4);
+  //p4 = m1 + 5 ;
+  //p5 = 30. ;
+  //func3->SetMaximum(90);
+  func3->FixParameter(0, p3*p0 );
+  func3->FixParameter(1, p4 );
+  func3->FixParameter(2, p5 );
+  func3->Draw();
   c7->Update();
 
   c7->cd(2);
@@ -980,7 +1057,7 @@ void TemplateMassFit::FitSignal( TString mName, int rbin, int lowBound, int upBo
 
   // 2nd Fit , Allow gaussian change
   func2->SetParLimits(0, p0-0.1*p0, p0+0.1*p0);
-  func2->SetParLimits(1, m1 - 1., m1 + 1. );
+  func2->SetParLimits(1, m1 - 5., m1 + 5. );
   func2->SetParLimits(2, p2-0.1*p2, p2+0.1*p2 );
   func2->SetParLimits(3, p3-0.05*p3,p3+0.05*p3);
   func2->FixParameter(4, p4 );
@@ -1017,6 +1094,8 @@ void TemplateMassFit::FitSignal( TString mName, int rbin, int lowBound, int upBo
   sg->SetMaximum( yMax );
   sg->Draw();
   sg->Fit( func2, "R","sames", lowBound, upBound); 
+  func2->Draw("sames");
+  //sg->Fit( func2, "R","sames", 100, upBound); 
 
   // print out covariant matrics
   /*
@@ -1068,6 +1147,7 @@ void TemplateMassFit::FitSignal( TString mName, int rbin, int lowBound, int upBo
   c3->Update();
   c3->Print(plot3);
 
+  delete func3;
   delete func2;
   delete func1;
   delete func0;
@@ -1087,97 +1167,181 @@ void TemplateMassFit::FitBackground( TString mName, int rbin, int lowBound, int 
   gStyle->SetStatTextColor(1);
 
   int nbin = 480./rbin ;
-
   double m1 = MassDigi(mName);
+  plot8 = hfolder+"/"+cname+"_BG_"+mName+".gif";
 
-  plot8 = hfolder+"/"+channel+"_BG_"+mName+".gif";
   // tmp1: tt wrong combinatorics
   TH1D* tt = new TH1D("tt","", nbin, 0., 480.);
   // tmp2: wjets, single Top t, single Top tW, QCD
   TH1D* wj  = new TH1D("wj" ,"", nbin, 0., 480.);
   TH1D* stt = new TH1D("stt","", nbin, 0., 480.);
   TH1D* stw = new TH1D("stw","", nbin, 0., 480.);
-  getBackground( tt, 1, rbin, mName );
-  getBackground( wj, 2, rbin, mName );
-  getBackground( stt, 3, rbin, mName );
-  getBackground( stw, 4, rbin, mName );
+  fitInput->getBackground( tt, 1, rbin, mName );
+  fitInput->getBackground( wj, 2, rbin, mName );
+  fitInput->getBackground( stt, 3, rbin, mName );
+  fitInput->getBackground( stw, 4, rbin, mName );
   // mix the background
-  TH1D* bg = new TH1D("bg","", nbin, 0., 480.);
-  if ( comp[1] ) bg->Add(tt,1.);
-  if ( comp[2] ) bg->Add(wj,1.);
-  if ( comp[3] ) bg->Add(stt,1.);
-  if ( comp[4] ) bg->Add(stw,1.);
+  TH1D* bg1  = new TH1D("bg1","Background group 1", nbin, 0., 480.);
+  if ( comp[1] ) bg1->Add(tt,1.);
+  if ( comp[2] ) bg1->Add(wj,1.);
+  if ( comp[3] ) bg1->Add(stt,1.);
+  if ( comp[4] ) bg1->Add(stw,1.);
+
+  TH1D* bg2 = new TH1D("bg2","Background group 2", nbin, 0., 480.);
+  if ( !comp[1] ) bg2->Add(tt,1.);
+  if ( !comp[2] ) bg2->Add(wj,1.);
+  if ( !comp[3] ) bg2->Add(stt,1.);
+  if ( !comp[4] ) bg2->Add(stw,1.);
+
   c8 = new TCanvas("c8","", 800, 600);
   c8->SetFillColor(10);
   c8->SetFillColor(10);
-  c8->Divide(1,2);
+  c8->Divide(2,2);
 
+  // show all background compositions
   c8->cd(1);
+  gStyle->SetOptStat("ni");
+  THStack* allbgstk = new THStack("allbgstk", "Sum of backgrounds");
 
-  // Draw the major background
+  stt->SetFillColor(4);
+  allbgstk->Add(stt);
+  stw->SetFillColor(6);
+  allbgstk->Add(stw);
+  wj->SetFillColor(2);
+  allbgstk->Add(wj);
+  tt->SetFillColor(7);
+  allbgstk->Add(tt);
+  allbgstk->Draw();
+
+  gStyle->SetStatY(0.30);
+  gStyle->SetStatTextColor(2);
+  wj->SetName(" W + Jets ");
+  wj->DrawCopy("sames");
+  c8->Update();
+  gStyle->SetStatY(0.50);
+  gStyle->SetStatTextColor(4);
+  stt->SetName("SingleTop_t");
+  stt->DrawCopy("sames");
+  c8->Update();
+  gStyle->SetStatY(0.70);
+  gStyle->SetStatTextColor(6);
+  stw->SetName("SingleTop_tW");
+  stw->DrawCopy("sames");
+  c8->Update();
+  gStyle->SetStatY(0.90);
+  gStyle->SetStatTextColor(7);
+  tt->SetName("Tt-Wrong");
+  tt->DrawCopy("sames");
+  c8->Update();
+
+  allbgstk->Draw("same");
+  c8->Update();
+  gStyle->SetStatTextColor(1);
+ 
+  // sum of backgrounds
+  c8->cd(3);
+  THStack* bg1stk = new THStack("bg1stk", "background group1 ");
+  if ( comp[3] ) bg1stk->Add(stt);
+  if ( comp[4] ) bg1stk->Add(stw);
+  if ( comp[2] ) bg1stk->Add(wj);
+  if ( comp[1] ) bg1stk->Add(tt);
+  bg1stk->Draw();
+
+  // Fit the combined backgrounds
+  gStyle->SetStatTextColor(1);
+  TF1* func1 = new TF1("func1", MassFitFunction::fitLD , 90, 380, 3);
+  func1->SetParLimits(0, 100., bg1->Integral() );
+  if (cname == "Had" ) func1->SetParLimits(1, m1-10, m1+20.);
+  if (cname == "Lep" ) func1->SetParLimits(1, m1-20, m1+15.);
+  func1->SetParLimits(2,  1., 100.);
+  func1->SetLineColor(1);
+  bg1->Fit( func1, "R","sames", lowBound, upBound );
+
+  c8->Update();
+
+  // sum of top related backgrounds
+  c8->cd(4);
+  gStyle->SetOptStat("ni");
+  THStack* bg2stk = new THStack("bg2stk", "background group 2");
+  if ( !comp[3] ) bg2stk->Add(stt);
+  if ( !comp[4] ) bg2stk->Add(stw);
+  if ( !comp[2] ) bg2stk->Add(wj);
+  if ( !comp[1] ) bg2stk->Add(tt);
+
+  bg2stk->Draw();
+
+  gStyle->SetStatTextColor(1);
+  // Fit the combined backgrounds
+  TF1* func2 = new TF1("func2", MassFitFunction::fitLD , 90, 380, 3);
+  func2->SetParLimits(0, 10., bg2->Integral() );
+  func2->SetParLimits(1, m1-10, m1+20.);
+  func2->SetParLimits(2,  1., 100.);
+  bg2->Fit( func2, "N0R","", lowBound, upBound );
+  double p0 = func2->GetParameter(0);
+  double p1 = func2->GetParameter(1);
+  double p2 = func2->GetParameter(2);
+  func2->SetParLimits(0, p0-0.1*p0, p0+0.1*p0 );
+  func2->SetParLimits(1, p1-0.1*p1, p1+0.1*p1 );
+  func2->SetParLimits(2, p2-0.1*p2, p2+0.1*p2 );
+  bg2->Fit( func2, "R","sames", lowBound, upBound );
+
+  if ( comp[1] && comp[2] && comp[3] && comp[4] ) {
+     bg2stk->Add(stt);
+     bg2stk->Add(stw);
+     bg2stk->Add(wj);
+     bg2stk->Draw();
+  }
+
+  c8->Update();
+
+  // Draw the tt-wrong combination background
+  c8->cd(2);
   tt->SetLineWidth(2);
-  tt->SetLineColor(4);
+  tt->SetTitle("tt-wrong combinations");
   tt->Draw();
 
   // Fit tt-wrong permutation
   TF1* func0 = new TF1("func0", MassFitFunction::fitLD , 90, 380, 3);
-  func0->SetParLimits(0, 100.,3000.);
-  func0->SetParLimits(1, m1-10, m1+20.);
+  func0->SetParLimits(0, 100., tt->Integral() );
+  if (cname == "Had" ) func1->SetParLimits(1, m1-10, m1+20.);
+  if (cname == "Lep" ) func1->SetParLimits(1, m1-20, m1+15.);
   func0->SetParLimits(2,  1., 100.);
-  func0->SetLineColor(4);
   func0->SetLineStyle(2);
   tt->Fit( func0, "R","sames", lowBound, upBound );
   c8->Update();
 
-  c8->cd(2);
-  bg->SetLineWidth(2);
-  bg->SetLineColor(1);
-  bg->Draw();
-  stt->SetLineColor(4);
-  stt->SetLineWidth(3);
-  stt->Draw("sames");
-  stw->SetLineColor(6);
-  stw->SetLineWidth(3);
-  stw->Draw("sames");
-  wj->SetLineColor(2);
-  wj->SetLineWidth(3);
-  wj->Draw("sames");
-  // Fit the combined backgrounds
-  TF1* func1 = new TF1("func1", MassFitFunction::fitLD , 90, 380, 3);
-  func1->SetParLimits(0, 100.,3000.);
-  func1->SetParLimits(1, m1-10, m1+20.);
-  func1->SetParLimits(2,  1., 100.);
-  func1->SetLineColor(1);
-  func1->SetLineStyle(2);
-  bg->Fit( func1, "R","sames", lowBound, upBound );
+  c8->Print(plot8);
 
-  // para[0~2] : tt wrong permutation 
-  // para[3~5] : combined backgrounds 
+
+  // para[0~2] : background group 1 / tt wrong permutation 
+  // para[3~5] : background group 2 / combined backgrounds 
   fprintf(bgpara," %.1f", m1 );
   for (int i=0; i<6; i++) {  
       if ( i < 3 ) {
-         fprintf(bgpara,"  %.3f  %.3f",  func0->GetParameter(i), func0->GetParError(i) );
-         if ( para != NULL ) para[i] = func0->GetParameter(i);
-         if ( perr != NULL ) perr[i] = func0->GetParError(i) ;
+         fprintf(bgpara,"  %.3f  %.3f",  func1->GetParameter(i), func1->GetParError(i) );
+         if ( para != NULL ) para[i] = func1->GetParameter(i);
+         if ( perr != NULL ) perr[i] = func1->GetParError(i) ;
       } else {
-         fprintf(bgpara,"  %.3f  %.3f",  func1->GetParameter(i-3), func1->GetParError(i-3) );
-         if ( para != NULL ) para[i] = func1->GetParameter(i-3);
-         if ( perr != NULL ) perr[i] = func1->GetParError(i-3) ;
+         fprintf(bgpara,"  %.3f  %.3f",  func2->GetParameter(i-3), func2->GetParError(i-3) );
+         if ( para != NULL ) para[i] = func2->GetParameter(i-3);
+         if ( perr != NULL ) perr[i] = func2->GetParError(i-3) ;
       }
   }
   fprintf(bgpara," \n" );
 
-  c8->Update();
-  c8->Print(plot8);
- 
-  delete bg;
+  delete bg1;
+  delete bg2;
   delete tt;
   delete wj;
   delete stt;
   delete stw;
   delete func0;
   delete func1;
+  delete func2;
   delete c8;
+  delete bg1stk;
+  delete bg2stk;
+  delete allbgstk;
 
   fclose(bgpara);
 }
@@ -1194,13 +1358,13 @@ void TemplateMassFit::GetAllCoeff( TString mName, int rbin, int lowBound, int up
      parfile = fopen(hfolder+"/paraf.log","a");
      errfile = fopen(hfolder+"/perrf.log","a");
      for ( int i =0; i< 6; i++) {
-         fprintf(parfile,"  %.2f",  sPar[i] );
-         fprintf(errfile,"  %.2f",  sErr[i] );
+         fprintf(parfile,"  %.3f",  sPar[i] );
+         fprintf(errfile,"  %.3f",  sErr[i] );
      }
      for ( int i =0; i< 6; i++) {
          if ( i != 0 && i != 3 ) {
-            fprintf(parfile,"  %.2f",  bPar[i] );
-            fprintf(errfile,"  %.2f",  bErr[i] );
+            fprintf(parfile,"  %.3f",  bPar[i] );
+            fprintf(errfile,"  %.3f",  bErr[i] );
          }
      }
 
@@ -1236,19 +1400,19 @@ void TemplateMassFit::TemplateDrawer( TString mName, int rbin, int lowBound, int
  
   // tmp0: get template signal distribution
   TH1D* sg = new TH1D("sg","", nbin, 0., 480.);
-  getSignal( sg, rbin , mName );
+  fitInput->getSignal( sg, rbin , mName );
   // tmp1: tt wrong combinatorics
   TH1D* tt = new TH1D("tt","", nbin, 0., 480.);
-  getBackground( tt, 1, rbin, mName );
+  fitInput->getBackground( tt, 1, rbin, mName );
   // tmp2: wjets and QCD 
   TH1D* wj  = new TH1D( "wj","", nbin, 0., 480.);
   TH1D* stt = new TH1D("stt","", nbin, 0., 480.);
   TH1D* stw = new TH1D("stw","", nbin, 0., 480.);
   TH1D* qm  = new TH1D( "qm","", nbin, 0., 480.);
   TH1D* bg  = new TH1D( "bg","", nbin, 0., 480.);
-  getBackground(  wj, 2, rbin, mName );
-  getBackground( stt, 3, rbin, mName );
-  getBackground( stw, 4, rbin, mName );
+  fitInput->getBackground(  wj, 2, rbin, mName );
+  fitInput->getBackground( stt, 3, rbin, mName );
+  fitInput->getBackground( stw, 4, rbin, mName );
   if ( comp[1] ) bg->Add(tt,  1.);
   if ( comp[2] ) bg->Add(wj,  1.);
   if ( comp[3] ) bg->Add(stt, 1.);
@@ -1382,37 +1546,9 @@ void TemplateMassFit::TemplateDrawer( TString mName, int rbin, int lowBound, int
 
 
 
-void TemplateMassFit::ScaleTemplates( double factor, TH1D* tmp, int B1, int B2 ){
-
-  double tmpN = tmp->Integral(B1,B2);
-  double Scal = factor / tmpN ;
-  tmp->Scale(Scal);
-  
-}
-
-// luminosity of data, nEvents of template
-void TemplateMassFit::ScaleTemplates( double lumi, double nEvents, int channel, TH1D* tmp ){
-
-  //**old for 100 /pb => ttbar signal = 8992 events ; wjets = 30393 ; QCD = 2841112
-  //**new for 100 /pb => ttbar signal = 9067 events ; wjets = 34000 ; 
-  //                     st_tw = 2730, st_t = 6360 
-  //                     
-  // channel #   => ttbar signal =  1 ; wjets = 2 ; Signle Top t_ch = 3 ; Single Top tW_ch = 4 ; QCD = 5
-  double lumiScale = lumi / 100 ;
-  double nBase = nEvents;
-  if ( channel == 1 ) nBase = 9067 ;
-  if ( channel == 2 ) nBase = 34000*1.402 ;
-  if ( channel == 3 ) nBase = 6360 ;
-  if ( channel == 4 ) nBase = 2730 ;
-  if ( channel == 5 ) nBase = 2841112 ;
-  double Scal = (nBase*lumiScale) / nEvents ;
-  tmp->Scale(Scal);
-  
-}
-
 void TemplateMassFit::SmoothTemplate( int type, TH1D* ds, TH1D* ds1, int lowBound, int upBound, Double_t* pars, Double_t* perr ){
 
-  TF1* func0;
+  TF1* func0 = NULL ;
   if (type == 0) {
      func0 = new TF1("func0", MassFitFunction::fitLD , 90, 380, 3);
      func0->SetParLimits(0, 100.,3000.);
@@ -1464,236 +1600,12 @@ void TemplateMassFit::SmoothTemplate( int type, TH1D* ds, TH1D* ds1, int lowBoun
 
 }
 
-void TemplateMassFit::combineBG( TString mName, TH1D* allbg, int rbin ) {
+void TemplateMassFit::ScaleTemplates( double factor, TH1D* tmp, int B1, int B2 ){
 
-  int nbin = 480./rbin ;
-  TH1D* tt = new TH1D("tt","", nbin, 0., 480.);
-  TH1D* wj = new TH1D("wj","", nbin, 0., 480.);
-  TH1D* qm = new TH1D("qm","", nbin, 0., 480.);
-
-  getBackground( tt, 1, rbin, mName );
-  getBackground( wj, 2, rbin, mName );
-  getBackground( qm, 3, rbin, mName );
-  allbg->Add(tt, 1.);
-  allbg->Add(wj, 1.);
-  allbg->Add(qm, 0.00);
-
-  delete tt;
-  delete wj;
-  delete qm;
-}
-
-void TemplateMassFit::getFakeData( int rbin, TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, TH1D* dth2, TH1D* dth3, TH1D* dth4, TH1D* dth5 ){
-
-  int nbin = 480./rbin ;
-
-  TFile *datafile1 = TFile::Open("pseud"+fname+"B0.root");
-  if (dth5 != NULL ) getFakeData(dth5, "pseud_QCDB0", rbin , 2.01 );
-  if (dth4 != NULL ) getFakeData(dth4, "pseud_STTWB0", rbin );
-  if (dth3 != NULL ) getFakeData(dth3, "pseud_STTB0", rbin );
-  if (dth2 != NULL ) getFakeData(dth2, "pseud_WJets_B0", rbin );
-
-  // pseudo data from ttbar
-  TH2D* hdata  = (TH2D *) datafile1->Get("Tops/"+hname);
-  TH1D* hdata_pj = hdata->ProjectionX("hdata_pj",1,480,"");
-  hdata_pj->Rebin(rbin);
-
-  TH2D* hMC   = (TH2D *) datafile1->Get("MObjs/"+sname);
-  TH1D* hMC_px = hMC->ProjectionX("hMC_px",1,480,"");
-  TH1D* hMC_py = hMC->ProjectionY("hMC_py",1,480,"");
-  hMC_px->Rebin(rbin);
-  hMC_py->Rebin(rbin);
-
-  TH1D* sg1 = new TH1D("sg1","", nbin, 0., 480.);
-  double theN = 0. ;
-  for (int i=0; i< nbin; i++) {
-      if ( cname == "Had" ) theN = hMC_py->GetBinContent(i);
-      if ( cname == "Lep" ) theN = hMC_px->GetBinContent(i);
-      sg1->SetBinContent(i,theN);
-  }
-  TH1D* tt1 = new TH1D("tt1","", nbin, 0., 480.);
-  tt1->Add(hdata_pj,sg1,1,-1);
-
-  // sum all the ingredients 
-  double allN[6] = {0.0};
-  for (int i=1; i< nbin; i++) {
-      allN[0] = sg1->GetBinContent(i);
-      allN[1] = tt1->GetBinContent(i);
-      if (dth2 != NULL ) allN[2] = dth2->GetBinContent(i);
-      if (dth3 != NULL ) allN[3] = dth3->GetBinContent(i);
-      if (dth4 != NULL ) allN[4] = dth4->GetBinContent(i);
-      if (dth5 != NULL ) allN[5] = dth5->GetBinContent(i);
-      double sumN = allN[0] + allN[1] + allN[2] + allN[3] + allN[4] + allN[5] ;
-      ttadd->SetBinContent( i, sumN );
-      dth0->SetBinContent( i, allN[0] );
-      dth1->SetBinContent( i, allN[1] );
-  }
-  if (dth5 != NULL ) dth5->SetFillColor(5);  // QCD
-  if (dth4 != NULL ) dth4->SetFillColor(6);  // single top tw channel
-  if (dth3 != NULL ) dth3->SetFillColor(4);  // single top t channel
-  if (dth2 != NULL ) dth2->SetFillColor(2);  // w+jets
-  dth1->SetFillColor(7);
-  dth0->SetFillColor(3);
-
-  if (dth5 != NULL ) ttstk->Add( dth5 );
-  if (dth4 != NULL ) ttstk->Add( dth4 );
-  if (dth3 != NULL ) ttstk->Add( dth3 );
-  if (dth2 != NULL ) ttstk->Add( dth2 );
-  ttstk->Add( dth1 );
-  ttstk->Add( dth0 );
-
-  delete hMC_px;
-  delete hMC_py;
-  delete hMC;
-  delete hdata_pj;
-  delete hdata;
-  delete tt1;
-  delete sg1;
+  double tmpN = tmp->Integral(B1,B2);
+  double Scal = factor / tmpN ;
+  tmp->Scale(Scal);
   
-  datafile1->Close();
-}
-
-void TemplateMassFit::getFakeData( TH1D* ttadd, TString thefileName, int rbin, double theScale ){
-
-  int nbin = 480./rbin ;
-  TFile *datafile0  = TFile::Open(thefileName+".root");
-
-  TH2D* fdata  = (TH2D *) datafile0->Get("Tops/"+hname);
-  TH1D* fdata_pj = fdata->ProjectionX("fdata_pj",1,480,"");
-  fdata_pj->Rebin(rbin);
-
-  ttadd->Add(fdata_pj, theScale);
-  ttadd->SetBinContent(nbin, 0.);
-  /*
-  for (int i=0; i< nbin; i++) {
-      double binContain = fdata_pj->GetBinContent(i);
-      ttadd->SetBinContent( i, binContain );
-  }
-  ttadd->Scale( theScale );
-  */
-  delete fdata_pj;
-  delete fdata;
-
-  datafile0->Close();
-
-}
-
-void TemplateMassFit::getData( TH1D* h_data, TString thefileName, int rbin ){
-
-  int nbin = 480./rbin ;
-
-  TFile *file0  = TFile::Open(thefileName+".root");
-  TH2D* hdata  = (TH2D *) file0->Get("Tops/"+hname);
-
-  TH1D* hdata_pj = hdata->ProjectionX("hdata_pj",1,200,"");
-  hdata_pj->Rebin(rbin);
-
-  double theN = 0. ;
-  for (int i=0; i< nbin; i++) {
-      theN  = hdata_pj->GetBinContent(i);
-      h_data->SetBinContent(i,theN);
-  }
-  delete hdata_pj;
-  delete hdata;
-  file0->Close();
-
-} 
-
-void TemplateMassFit::getSignal(TH1D* h_Sg, int rbin, TString mName ) {
-
-  int nbin = 480./rbin ;
-
-  //TString theFileName = "tt_"+mName+"c.root" ;
-  TString theFileName = "BTag_"+mName+"_TCHE5.root" ;
-
-  thefile  = TFile::Open( theFileName );
-  TH2D* ttMC  = (TH2D *) thefile->Get("MObjs/"+sname);
-
-  TH1D* ttMC_px = ttMC->ProjectionX("ttMC_px",0,-1,"");
-  TH1D* ttMC_py = ttMC->ProjectionY("ttMC_py",0,-1,"");
-  ttMC_px->Rebin(rbin);
-  ttMC_py->Rebin(rbin);
-  //ttMC_px->Scale(0.428);
-  //ttMC_py->Scale(0.428);
-  
-
-  double theN = 0. ;
-  for (int i=1; i< nbin; i++) {
-      if ( cname == "Had" ) theN = ttMC_py->GetBinContent(i);
-      if ( cname == "Lep" ) theN = ttMC_px->GetBinContent(i);
-      h_Sg->SetBinContent(i,theN);
-  }
-
-  //ScaleTemplates(100., 24000., 1., h_Sg );
-  ScaleTemplates(100., 12000., 1., h_Sg );
-
-  delete ttMC_px;
-  delete ttMC_py;
-  delete ttMC;
-  thefile->Close();
-}
-
-void TemplateMassFit::getBackground(TH1D* h_Bg, int type, int rbin, TString mName ){
-
-  int nbin = 480./rbin ;
-
-  TString theFileName1 = "BTag_"+mName+"_TCHE5.root" ;
-  TString theFileName2 = "BTag_WJets_TCHE5.root" ;
-  TString theFileName3 = "BTag_STT_TCHE5.root" ;
-  TString theFileName4 = "BTag_STTW_TCHE5.root" ;
-  TString theFileName5 = "BTag_QCD_TCHE5.root" ;
-
-  if (type == 1) thefile  = TFile::Open( theFileName1 );
-  if (type == 2) file2  = TFile::Open( theFileName2 );
-  if (type == 3) file2  = TFile::Open( theFileName3 );
-  if (type == 4) file2  = TFile::Open( theFileName4 );
-
-  if ( type == 1 ) ttmass = (TH2D *) thefile->Get("Tops/"+hname); 
-  if ( type >= 2 ) ttmass = (TH2D *) file2->Get("Tops/"+hname); 
-  
-  TH1D* ttmass_pj = ttmass->ProjectionX("ttmass_pj",1,480,"");
-  ttmass_pj->Rebin(rbin);
-
-  if( type == 1 ) {
-
-    TH1D* sgl = new TH1D("sgl","", nbin, 0., 480.);
-    TH2D* sgnl   = (TH2D *) thefile->Get("MObjs/"+sname);
-    TH1D* sgnl_px = sgnl->ProjectionX("sgnl_px",1,480,"");
-    TH1D* sgnl_py = sgnl->ProjectionY("sgnl_py",1,480,"");
-    sgnl_px->Rebin(rbin);
-    sgnl_py->Rebin(rbin);
-    double theN = 0. ;
-    for (int i=1; i< nbin; i++) {
-        if ( cname == "Had" ) theN = sgnl_py->GetBinContent(i);
-        if ( cname == "Lep" ) theN = sgnl_px->GetBinContent(i);
-        sgl->SetBinContent(i,theN);
-    }
-
-    ttmass_pj->Add(sgl, -1 );
-
-    delete sgnl;
-    delete sgnl_px;
-    delete sgnl_py;
-    delete sgl;
-  }
-
-  for (int i=1; i< nbin; i++) {
-      double theN = ttmass_pj->GetBinContent(i);
-      h_Bg->SetBinContent(i,theN);
-  }
-
-  // scale to 100 /pb
-  if ( type == 1 ) ScaleTemplates( 100., 12000.,  1, h_Bg );  // ttbar
-  if ( type == 2 ) ScaleTemplates( 100., 108980., 2, h_Bg );  // wjets
-  if ( type == 3 ) ScaleTemplates( 100., 45018.,  3, h_Bg );  // single top t
-  if ( type == 4 ) ScaleTemplates( 100., 25935.,  4, h_Bg );  // single top tW
-
-  delete ttmass_pj;
-  delete ttmass;
-
-  if (type == 1 ) thefile->Close();
-  if (type >= 2 ) file2->Close();
-
 }
 
 vector<TString> TemplateMassFit::FillMassAssumption( int npoints ){
@@ -1721,47 +1633,68 @@ double TemplateMassFit::MassDigi( TString mString ) {
   return mDigi ;
 }
 
-void TemplateMassFit::SetFitParameters( double mass, Double_t* para, int nPara, int NBTag ) {
+void TemplateMassFit::SetFitParameters( double mass, Double_t* para, int nPara, int NBTag, int rbin ) {
+
 
      //  0~2: gaus , 3~5: log-normal ,  6,7:landau ttwrong ,  8,9:landau Wjets , 10: tt-ttwrong ratio , 11: tt-Wjets ratio 
-     //                      p0      p1      p2     p3      p4     p5      p6     p7       p8      p9     p10      p11
+     //                      p0      p1      p2     p3      p4     p5       p6      p7       p8     p9      p10      p11
+     Double_t a0[12] =  { 12.389, 15.65, -10.689, 53.002,  4.379,  5.061, 92.660, 23.041, 196.402, 60.891, 29.205,  7.971 };
+     Double_t a1[12] =  {  0.288,  0.91,    0.19, -0.099,  0.006, -0.001,  0.556,  0.131,  0.000,   0.000, -0.061, -0.021 };
+     // Lep: value for No BTagging
+     Double_t f0[12] = {  41.246,  -1., -6.505,  2.336,   0.0,  31.796, 107.098, -0.886,  151.034,  38.422,  38.950,  13.727 };
+     Double_t f1[12] = {   0.092,   1.,  0.196, -0.007,   1.0,  -0.012,   0.316,  0.204,    0.023,  -0.003,  -0.002,  -0.020 };
 
-     // measured by 9 parameters                      
-     //Double_t b0[12] = { 26.736, 24.566, 23.000, 14.189, 5.550, 4.500, 91.761, 7.290, 116.716, 21.875, 25.346,  34.303 };
-     //Double_t b1[12] = {  0.232,  0.861,  0.000,  0.098, 0.000, 0.000,  0.554, 0.214,   0.426,  0.152, -0.051,  -0.066 };
-
-     // for 10 GeV Bin
-     //Double_t a0[12] = { 26.438, 26.270, 23.000, 2.764, 5.550, 4.500, 101.981, 8.633, 197.690, 59.470, 25.159, 10.000 };
-     //Double_t a1[12] = {  0.233,  0.851,  0.000, 0.166, 0.000, 0.000,   0.493, 0.206,   0.000,  0.000, -0.050, -0.021 };
-     Double_t a0[12] = { 26.438, 26.270,  5.545, 2.764, 5.550, 4.500, 101.981, 7.290, 197.690, 59.470, 25.159, 10.000 };
-     Double_t a1[12] = {  0.233,  0.851,  0.108, 0.166, 0.000, 0.000,   0.493, 0.214,   0.000,  0.000, -0.050, -0.021 };
-
-     // for 5 GeV Bin
-     //Double_t a0[12] = { 9.915, 25.160, 22.762, 17.651, 5.550, 4.500, 102.263, 9.471, 198.160, 57.9, 26.380, 10.579 };
-     //Double_t a1[12] = { 0.138,  0.860,  0.001,  0.069, 0.000, 0.000,   0.491, 0.201,   0.000,  0.0, -0.058, -0.025 };
-
-
-     // value for All BTagging
+     // Had: value for All BTagging
      //  0~2: gaus , 3~5: log-normal ,  6,7:landau ttwrong ,  8,9:landau/all Bg , 10: tt-ttwrong ratio , 11: tt-allBg ratio 
      //                      p0     p1      p2     p3     p4     p5      p6      p7      p8      p9     p10      p11
-     //measured by CSV8
-     //Double_t b0[12] = { -5.987, 5.768, -7.593, 51.243, 4.379, 4.803, 82.103, 23.808, 82.136, 24.728, 22.532,  22.613 };
-     //Double_t b1[12] = {  0.316, 0.969,  0.172, -0.101, 0.006, 0.001,  0.591,  0.117,  0.592,  0.114, -0.047,  -0.048 };
-     Double_t b0[12] = { -3.495, 7.495, -13.289, 67.106, 4.379,  5.162, 74.599, 14.40, 98.408, 20.172, 25.443,  38.488 };
-     Double_t b1[12] = {  0.284, 0.960,   0.202, -0.186, 0.006, -0.001,  0.642,  0.17,  0.502,  0.144, -0.063,  -0.104 };
-     // value for 1 BTagging
-     Double_t c0[12] = {  8.264, 10.812, -13.0, 42.157, 4.379,  5.285, 103.493, 12.790, 97.420, 17.041, 25.294, 38.586 };
-     Double_t c1[12] = {  0.128,  0.939,   0.2, -0.041, 0.006, -0.002,   0.480,  0.176,  0.526,  0.161, -0.046, -0.079 };
+     Double_t b0[12] = { -3.495, 7.507, -13.302, 66.885, 4.379,  5.177, 97.443, 17.985,   0.,    0.,  29.546,  0. };
+     Double_t b1[12] = {  0.284, 0.960,   0.202, -0.184, 0.006, -0.001,  0.522,  0.156,   0.,    0.,  -0.076,  0. };
+     // Lep: value for All BTagging
+     Double_t g0[12] = {  -4.506,  -1., 12.513,  1.185,  0.0,  31.356, 110.244, -5.392,   0.,    0.,  62.543,  0. };
+     Double_t g1[12] = {   0.268,   1.,  0.084,  0.000,  1.0,  -0.009,   0.308,  0.225,   0.,    0.,  -0.170,  0. };
+
+     // Had: value for 1 BTagging
+     Double_t c0[12] = {  8.225, 10.816, -13.0, 43.413, 4.379,  5.285, 101.584, 16.580,   0.,    0.,  29.127,  0. };
+     Double_t c1[12] = {  0.128,  0.939,   0.2, -0.049, 0.006, -0.002,   0.500,  0.162,   0.,    0.,  -0.054,  0. };
+     // Lep: value for 1 BTagging
+     Double_t h0[12] = {  12.558,  -1.498, 11.048,  1.185,  0.0,  32.059, 121.560, -1.993,   0.,    0.,  32.521,  0. };
+     Double_t h1[12] = {   0.096,   1.003,  0.214,  0.000,  1.0,  -0.013,   0.232,  0.209,   0.,    0.,   0.042,  0. };
+
      // value for 2 BTagging
-     Double_t d0[12] = { -14.213, -0.438, -10.402, 76.653, 4.379,  5.362, 30.953, 6.180, 62.611, 29.670, 22.394, 28.682 };
-     Double_t d1[12] = {  -0.170,  1.005,   0.175, -0.258, 0.006, -0.002,  0.868, 0.206,  0.713,  0.084, -0.079, -0.101 };
-     
+     // *** Had:
+     // 10 GeV Bin
+     Double_t d0[12] = { -14.213, -0.377, -10.394, 76.862, 4.379,  5.327, 42.436, 18.694,  0.,  0., 23.793,  0. };
+     Double_t d1[12] = {  -0.170,  1.005,   0.175, -0.259, 0.006, -0.002,  0.812,  0.142,  0.,  0., -0.083,  0. };
+     // 20 GeV Bin
+     Double_t j0[12] = { -20.639,  6.181, -11.187, 15.988, 4.374,  4.452, 33.826, -12.159,  0.,  0.,  9.555,   0. };
+     Double_t j1[12] = {   0.291,  0.967,   0.185,  0.093, 0.006,  0.003,  0.870,   0.333,  0.,  0.,  0.000,   0. };
+     // 20 GeV Bin, 12 parameters
+     Double_t e0[12] = { -20.639,  6.181, -11.187, 15.988, 4.374,  4.452, 16.027, -21.647, 99.958, -1.391, 22.120, 2.501 };
+     Double_t e1[12] = {   0.291,  0.967,   0.185,  0.093, 0.006,  0.003,  0.957,   0.376,  0.626,  0.299, -0.077, -0.01 };
+     // *** Lep: 
+     // 10 GeV Bin
+     Double_t i0[12] = {  -0.791, -1.388, 41.876,  1.185,   0.0,  30.738, 59.454, -18.817,   0.,    0.,  17.506,  0. };
+     Double_t i1[12] = {   0.085,  1.007, -0.114,  0.000,   1.0,  -0.004,  0.637,   0.282,   0.,    0.,   0.000,  0. };
+     //20 GeV Bin
+     Double_t k0[12] = {   6.194,  -5.040,   4.708,  1.185,  0.0,  25.131, 58.172, -20.989,   0.,    0.,  17.190,  0. };
+     Double_t k1[12] = {   0.134,   1.026,   0.108,  0.000,  1.0,   0.027,  0.644,   0.302,   0.,    0.,   0.000,  0. };
+
      for ( int i =0; i < 12; i++ ) {
-         if ( nPara == 12 && NBTag == -1 ) para[i] = a0[i] + a1[i]*mass ;
-         if ( nPara == 9 && NBTag == 0 ) para[i] = b0[i] + b1[i]*mass ;
-         if ( nPara == 9 && NBTag == 1 ) para[i] = c0[i] + c1[i]*mass ;
-         if ( nPara == 9 && NBTag == 2 ) para[i] = d0[i] + d1[i]*mass ;
-         if ( nPara != 9 && nPara != 12  ) para[i] = 0. ;
+         if ( cname == "Had" ) {
+            if ( nPara == 12 && NBTag == -1 ) para[i] = a0[i] + a1[i]*mass ;
+            if ( nPara ==  9 && NBTag ==  0 ) para[i] = b0[i] + b1[i]*mass ;
+            if ( nPara ==  9 && NBTag ==  1 ) para[i] = c0[i] + c1[i]*mass ;
+            if ( nPara ==  9 && NBTag ==  2 ) para[i] = d0[i] + d1[i]*mass ;
+            if ( nPara ==  9 && NBTag ==  2 && rbin == 20 ) para[i] = j0[i] + j1[i]*mass ;
+            if ( nPara == 12 && NBTag ==  2 ) para[i] = e0[i] + e1[i]*mass ;
+         }
+         if ( cname == "Lep" ) {
+            if ( nPara ==12 && NBTag == -1 ) para[i] = f0[i] + f1[i]*mass ;
+            if ( nPara == 9 && NBTag ==  0 ) para[i] = g0[i] + g1[i]*mass ;
+            if ( nPara == 9 && NBTag ==  1 ) para[i] = h0[i] + h1[i]*mass ;
+            if ( nPara == 9 && NBTag ==  2 ) para[i] = i0[i] + i1[i]*mass ;
+            if ( nPara == 9 && NBTag ==  2 && rbin == 20 ) para[i] = k0[i] + k1[i]*mass ;
+         }
      }
 
 }

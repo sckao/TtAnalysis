@@ -1,18 +1,25 @@
 #include "MassFitFunction.h"
 MassFitFunction::MassFitFunction(){
   
-  
 }
 
 MassFitFunction::~MassFitFunction(){
  
 }
+Double_t MassFitFunction::fitPoly(Double_t *x, Double_t *par) {
+
+         Double_t fitval =  par[0]
+                          + (par[1]* x[0] )
+                          + (par[2]* x[0]*x[0]  )
+                          + (par[3]* x[0]*x[0]*x[0] );
+
+         return fitval;
+}
 
 Double_t MassFitFunction::fitG( Double_t* x, Double_t* par){
 
-     Double_t A1 = (par[0]/x[0]) + (par[1]*x[0]) + par[2];
-     Double_t A2 =  exp( A1 ) ;
-     Double_t fitV = A2 ;
+     Double_t gs_Value = TMath::Gaus(x[0],par[1],par[2]) ;
+     Double_t fitV = par[0]*gs_Value*exp( 0.1*x[0] ) ; 
 
      return fitV;
 }
@@ -77,6 +84,13 @@ Double_t MassFitFunction::fitSG(Double_t *x, Double_t *par) {
      //return fitGS(x,par) + fitLG(x,&par[3]);
 }
 
+Double_t MassFitFunction::fitSG1(Double_t *x, Double_t *par) {
+
+     Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
+     Double_t cb_Val = gs + fitLD( x, &par[3] ) ;
+     return cb_Val = par[0] * cb_Val ;
+}
+
 Double_t MassFitFunction::fitData(Double_t *x, Double_t *par) {
 
      Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
@@ -105,13 +119,28 @@ Double_t MassFitFunction::fitData1(Double_t *x, Double_t *par) {
 
      Double_t ld2_Val = TMath::Landau(x[0],par[8],par[9]) ;
 
-     //Double_t sg_Val = gs + LG_Val + (17.14*ld1_Val) + (6.69*ld2_Val) ;
      Double_t sg_Val = gs + LG_Val + (par[10]*ld1_Val) + (par[11]*ld2_Val) ;
      Double_t fitV = par[0]*sg_Val ;
 
      return fitV ;
 }
 
+Double_t MassFitFunction::fitData2(Double_t *x, Double_t *par) {
+
+     Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
+
+
+     Double_t ld0_Val = TMath::Landau(x[0],par[4],par[5]) ;
+
+     Double_t ld1_Val = TMath::Landau(x[0],par[6],par[7]) ;
+
+     Double_t ld2_Val = TMath::Landau(x[0],par[8],par[9]) ;
+
+     Double_t sg_Val = gs + (par[3]*ld0_Val) + (par[10]*ld1_Val) + (par[11]*ld2_Val) ;
+     Double_t fitV = par[0]*sg_Val ;
+
+     return fitV ;
+}
 
 Double_t MassFitFunction::ConvBWGS(Double_t *x, Double_t *par) {
 

@@ -16,16 +16,19 @@ public:
 
    MassFitFunction();     
    ~MassFitFunction();     
-  
+ 
+   static Double_t fitPoly(Double_t *x, Double_t *par); 
    static Double_t fitG( Double_t* x, Double_t* par);
    static Double_t fitLG( Double_t* x, Double_t* par);
    static Double_t fitGS( Double_t* x, Double_t* par);
    static Double_t fitTL( Double_t* x, Double_t* par);
    static Double_t fitLD( Double_t* x, Double_t* par);
    static Double_t fitSG( Double_t* x, Double_t* par);
+   static Double_t fitSG1( Double_t* x, Double_t* par);
    static Double_t fitBW( Double_t* x, Double_t* par);
    static Double_t fitData( Double_t* x, Double_t* par);
    static Double_t fitData1( Double_t* x, Double_t* par);
+   static Double_t fitData2( Double_t* x, Double_t* par);
    static Double_t fitParabola( Double_t *x, Double_t *par);
    static Double_t ConvBWGS( Double_t* x, Double_t* par);
    static Double_t ConvSGGS( Double_t* x, Double_t* par);
