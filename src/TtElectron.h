@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtElectron.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
+// $Id: TtElectron.h,v 1.8 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -76,7 +76,7 @@ class TtElectron {
     ~TtElectron();
 
     /// Perform the real analysis
-    void ElectronTreeFeeder(edm::Handle<std::vector<pat::Electron> > patMu, NJet* jtree, int eventId );
+    void ElectronTreeFeeder(edm::Handle<std::vector<pat::Electron> > patMu, ObjNtp* jtree, int eventId );
     void ElectronAnalysis(edm::Handle<std::vector<pat::Electron> > patMu, HTOP4* histo4 );
 
     void matchedElectronAnalysis( std::vector<const reco::Candidate*> patMu, HOBJ4* histo4 );

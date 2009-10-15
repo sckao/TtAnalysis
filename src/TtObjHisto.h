@@ -185,13 +185,13 @@ public:
     gen_pat_Resol = new TH1F("gen_pat_Resol","Pat Pt Resol w.r.t genMET ", 150, -1.01, 1.99 );
     gen_evt_Resol = new TH1F("gen_evt_Resol","Event Pt Resol w.r.t genMET ", 150, -1.01, 1.99 );
 
-    dPhiResol_pat = new TH1F("dPhiResol_pat", "dPhi(neu, MET),  pat ",320, -0.05, 3.15 );
-    dPhiResol_tc  = new TH1F("dPhiResol_tc", "dPhi(neu, MET),   tc ",320, -0.05, 3.15 );
-    dPhiResol_evt = new TH1F("dPhiResol_evt", "dPhi(neu, MET),  evt ",320, -0.05, 3.15 );
-    dPhiResol_gen = new TH1F("dPhiResol_gen", "dPhi(neu, MET),  gen ",320, -0.05, 3.15 );
+    dPhiResol_pat = new TH1F("dPhiResol_pat", "dPhi(neu, MET),  pat ",315, -3.15, 3.15 );
+    dPhiResol_tc  = new TH1F("dPhiResol_tc", "dPhi(neu, MET),   tc  ",315, -3.15, 3.15 );
+    dPhiResol_evt = new TH1F("dPhiResol_evt", "dPhi(neu, MET),  evt ",315, -3.15, 3.15 );
+    dPhiResol_gen = new TH1F("dPhiResol_gen", "dPhi(neu, MET),  gen ",315, -3.15, 3.15 );
 
-    gen_pat_dPhi = new TH1F("gen_pat_dPhi", " dPhi(pat, gen) ", 320, -0.05, 3.15 );
-    gen_evt_dPhi = new TH1F("gen_evt_dPhi", " dPhi(evt, gen) ", 320, -0.05, 3.15 );
+    gen_pat_dPhi = new TH1F("gen_pat_dPhi", " dPhi(pat, gen) ", 315, -3.15, 3.15 );
+    gen_evt_dPhi = new TH1F("gen_evt_dPhi", " dPhi(evt, gen) ", 315, -3.15, 3.15 );
  
  }
 

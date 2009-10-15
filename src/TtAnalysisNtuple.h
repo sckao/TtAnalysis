@@ -8,136 +8,287 @@
  */
 
 #include "TTree.h"
+#include "TBranch.h"
 #include "TFile.h"
 #include "TString.h"
 #include <string>
 #include <iostream>
+//#include "TtFormat.h"
 
 using namespace std;
 
-class NJet {
+class ObjNtp {
 public:
- 
 
- NJet() {
-    jetT = new TTree("jetT"," jet infomaton tree");
-    BpatJ  = jetT->Branch("patJ" ,&patJ.eventId,"eventId/I:eta/D:phi:caloE:caloH:p:pt"); 
-    BpatMu = jetT->Branch("patMu",&patMu.eventId,"eventId/I:eta/D:phi:caloE:caloH:p:pt"); 
-    BpatGa = jetT->Branch("patGa",&patGa.eventId,"eventId/I:eta/D:phi:caloE:caloH:p:pt"); 
-    BpatNu = jetT->Branch("patNu",&patNu.eventId,"eventId/I:eta/D:phi:caloE:caloH:p:pt"); 
-    BpatE  = jetT->Branch("patE" ,&patE.eventId, "eventId/I:eta/D:phi:caloE:caloH:p:pt"); 
-    Bgen   = jetT->Branch("gen" ,&gen.eventId,"eventId/I:pdgId/I:eta/D:phi:energy:pt"); 
+ ObjNtp( TString treeName ) {
+
+    objTree = new TTree( treeName ,"");
+ 
+    objTree->Branch("evtId" ,&evtId,  "evtId/I");
+    objTree->Branch("objId" ,&objId,  "objId/I");
+    objTree->Branch("qCut"  ,&qCut,   "qCut/D");
+    objTree->Branch("px"    ,&px,     "px/D");
+    objTree->Branch("py"    ,&py,     "py/D");
+    objTree->Branch("pz"    ,&pz,     "pz/D");
+    objTree->Branch("E"     ,&E,      "E/D");
+    objTree->Branch("pt"    ,&pt,     "pt/D");
+
  } 
 
  /// Destructor
- virtual ~NJet() {
-    delete jetT;
+ virtual ~ObjNtp() {
+    delete objTree;
  }
 
+ 
+ void FillB( int eventId, int objectId, double qCutVal, double _px, double _py, double _pz, double _E, double _pt ) {
+      evtId = eventId ;
+      objId = objectId;
+      qCut  = qCutVal ;
+      px    = _px     ;
+      py    = _py     ;
+      pz    = _pz     ;
+      E     = _E      ;
+      pt    = _pt     ;
+      objTree->Fill();
+ }
 
- void FillBpatJ(int eventId, double eta, double phi, double caloE, double caloH, double p,double pt ) 
- {
-      patJ.eventId = eventId;
-      patJ.eta   = eta;
-      patJ.phi   = phi;
-      patJ.caloE = caloE;
-      patJ.caloH = caloH;
-      patJ.p     = p;
-      patJ.pt    = pt;
-      BpatJ->Fill();
- }
- void FillBpatE(int eventId, double eta, double phi, double caloE, double caloH, double p,double pt ) 
- {
-      patE.eventId = eventId;
-      patE.eta   = eta;
-      patE.phi   = phi;
-      patE.caloE = caloE;
-      patE.caloH = caloH;
-      patE.p     = p;
-      patE.pt    = pt;
-      BpatE->Fill();
- }
-  
- void FillBpatGa(int eventId, double eta, double phi, double caloE, double caloH, double p,double pt ) 
- {
-      patGa.eventId = eventId;
-      patGa.eta   = eta;
-      patGa.phi   = phi;
-      patGa.caloE = caloE;
-      patGa.caloH = caloH;
-      patGa.p     = p;
-      patGa.pt    = pt;
-      BpatGa->Fill();
- }
- 
- void FillBpatNu(int eventId, double eta, double phi, double caloE, double caloH, double p,double pt ) 
- {
-      patNu.eventId = eventId;
-      patNu.eta   = eta;
-      patNu.phi   = phi;
-      patNu.caloE = caloE;
-      patNu.caloH = caloH;
-      patNu.p     = p;
-      patNu.pt    = pt;
-      BpatNu->Fill();
- }
- void FillBpatMu(int eventId, double eta, double phi, double caloE, double caloH, double p,double pt ) 
- {
-      patMu.eventId = eventId;
-      patMu.eta   = eta;
-      patMu.phi   = phi;
-      patMu.caloE = caloE;
-      patMu.caloH = caloH;
-      patMu.p     = p;
-      patMu.pt    = pt;
-      BpatMu->Fill();
- }
- 
- void FillBgen(int eventId, int pdgId, double eta, double phi, double energy, double pt ) 
- {
-      gen.eventId = eventId;
-      gen.pdgId  = pdgId;
-      gen.eta    = eta;
-      gen.phi    = phi;
-      gen.energy = energy;
-      gen.pt     = pt;
-      Bgen->Fill();
- }
 
  void Write() {
-      jetT->Write();
+      objTree->Write();
  }
 
- TTree *jetT;
- TBranch *BpatJ;
- TBranch *Bgen;
- TBranch *BpatMu;
- TBranch *BpatGa;
- TBranch *BpatNu;
- TBranch *BpatE;
+ TTree *objTree;
 
 private:
 
- struct TreeObj {
-        int eventId;
-        double eta;
-        double phi;
-        double caloE;
-        double caloH;
-        double p;
-        double pt;
- } patJ,patMu,patE,patNu,patGa;
-
- struct TreeMC {
-        int eventId;
-        int pdgId;
-        double eta;
-        double phi;
-        double energy;
-        double pt;
- } gen;
+     int evtId;
+     int objId;
+     double qCut;
+     double px;      
+     double py;      
+     double pz;      
+     double E;      
+     double pt;      
 
 };
 
 
+class SolNtp {
+public:
+
+ SolNtp( TString treeName ) {
+
+    solTree = new TTree( treeName ,"");
+ 
+    solTree->Branch("evtId"   ,&evtId,    "evtId/I");
+    solTree->Branch("JId"     ,&JId,      "JId[5]/I");
+    solTree->Branch("iniId"   ,&iniId,    "iniId/I");
+    solTree->Branch("entSz"   ,&entSz,    "entSz/I");
+    solTree->Branch("entId"   ,&entId,    "entId/I");
+    solTree->Branch("nJ"      ,&nJ,       "nJ/I");
+    solTree->Branch("probW"   ,&probW,    "probW/D");
+    solTree->Branch("probM"   ,&probM,    "probM/D");
+    solTree->Branch("probTt"  ,&probTt,   "probTt/D");
+    solTree->Branch("hadTM"   ,&hadTM,    "hadTM/D");
+    solTree->Branch("lepTM"   ,&lepTM,    "lepTM/D");
+    solTree->Branch("hadWM"   ,&hadWM,    "hadWM/D");
+    solTree->Branch("lepWM"   ,&lepWM,    "lepWM/D");
+
+ } 
+
+ /// Destructor
+ virtual ~SolNtp() {
+    delete solTree;
+ }
+
+ 
+ void FillB( int eventId, int wj1, int wj2, int bjh, int bjl, int ni, int _iniId, int _entSz, int _entId, int _nJ, double _probW, double _probM, double _probTt, double _hadTM, double _lepTM, double _hadWM, double _lepWM ) {
+      evtId   = eventId ;
+      JId[0]  = wj1 ;
+      JId[1]  = wj2 ;
+      JId[2]  = bjh ;
+      JId[3]  = bjl ;
+      JId[4]  = ni  ;
+      iniId   = _iniId ;
+      entSz   = _entSz ;
+      entId   = _entId ;
+      nJ      = _nJ ;
+      probW   = _probW  ;
+      probM   = _probM  ;
+      probTt  = _probTt ;
+      hadTM   = _hadTM ;
+      lepTM   = _lepTM ;
+      hadWM   = _hadWM ;
+      lepWM   = _lepWM ;
+      solTree->Fill();
+ }
+
+
+ void Write() {
+      solTree->Write();
+ }
+
+ TTree *solTree;
+
+private:
+
+     int evtId;
+     int JId[5];
+     int iniId;
+     int entSz;
+     int entId;
+     int nJ;
+     double probW;
+     double probM;
+     double probTt;
+     double hadTM;      
+     double lepTM;      
+     double hadWM;      
+     double lepWM;      
+
+};
+
+// deceased version
+class TtNtp {
+public:
+ 
+
+ TtNtp() {
+
+    topTree = new TTree("topTree"," Ttbar infomaton tree");
+    genB     = topTree->Branch("gen"    ,&gen.evtId,   "evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
+    selJetB  = topTree->Branch("selJet" ,&selJet.evtId,"evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
+    selMuB   = topTree->Branch("selMu"  ,&selMu.evtId, "evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
+    solNeuB  = topTree->Branch("solNeu" ,&solNeu.evtId,"evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
+    solTtB   = topTree->Branch("solTt"  ,&solTt.evtId, "evtId/I:wj1:wj2:bjh:bjl:prob/D:hadTM:lepTM:hadWM:lepWM"); 
+    mcmTtB   = topTree->Branch("mcmTt"  ,&mcmTt.evtId, "evtId/I:wj1:wj2:bjh:bjl:prob/D:hadTM:lepTM:hadWM:lepWM"); 
+
+ } 
+
+ /// Destructor
+ virtual ~TtNtp() {
+    delete topTree;
+ }
+
+ // Fill topTree
+ void FillB_gen( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
+      gen.evtId  = evtId;
+      gen.objId  = objId;
+      gen.qCut   = qCut;
+      gen.px     = px;
+      gen.py     = py;
+      gen.pz     = pz;
+      gen.E      = E ;
+      gen.pt     = pt;
+      genB->Fill();
+ }
+
+ void FillB_selJet( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
+      selJet.evtId = evtId ;
+      selJet.objId = objId ;
+      selJet.qCut  = qCut  ;
+      selJet.px    = px ;
+      selJet.py    = py ;
+      selJet.pz    = pz ;
+      selJet.E     = E ;
+      selJet.pt    = pt ;
+      selJetB->Fill();
+ }
+
+ void FillB_selMu( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
+      selMu.evtId = evtId ;
+      selMu.objId = objId ;
+      selMu.qCut  = qCut  ;
+      selMu.px    = px ;
+      selMu.py    = py ;
+      selMu.pz    = pz ;
+      selMu.E     = E ;
+      selMu.pt    = pt ;
+      selMuB->Fill();
+ }
+
+ void FillB_solNeu( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
+      solNeu.evtId = evtId ;
+      solNeu.objId = objId ;
+      solNeu.qCut  = qCut  ;
+      solNeu.px    = px ;
+      solNeu.py    = py ;
+      solNeu.pz    = pz ;
+      solNeu.E     = E ;
+      solNeu.pt    = pt ;
+      solNeuB->Fill();
+ }
+
+ void FillB_solTt( int evtId, int wj1, int wj2, int bjh, int bjl, double prob, double hadTM, double lepTM, double hadWM, double lepWM ) {
+      solTt.evtId = evtId ;
+      solTt.wj1   = wj1 ;
+      solTt.wj2   = wj2 ;
+      solTt.bjh   = bjh ;
+      solTt.bjl   = bjl ;
+      solTt.prob  = prob  ;
+      solTt.hadTM = hadTM ;
+      solTt.lepTM = lepTM ;
+      solTt.hadWM = hadWM ;
+      solTt.lepWM = lepWM ;
+      //solTtB->Fill();
+ }
+
+ void FillB_mcmTt( int evtId, int wj1, int wj2, int bjh, int bjl, double prob, double hadTM, double lepTM, double hadWM, double lepWM ) {
+      mcmTt.evtId = evtId ;
+      mcmTt.wj1   = wj1 ;
+      mcmTt.wj2   = wj2 ;
+      mcmTt.bjh   = bjh ;
+      mcmTt.bjl   = bjl ;
+      mcmTt.prob  = prob  ;
+      mcmTt.hadTM = hadTM ;
+      mcmTt.lepTM = lepTM ;
+      mcmTt.hadWM = hadWM ;
+      mcmTt.lepWM = lepWM ;
+      mcmTtB->Fill();
+ }
+ 
+ void Fill() {
+      topTree->Fill();
+ }
+
+ void Write() {
+      topTree->Write();
+ }
+
+ TTree *topTree;
+ TBranch *genB;
+ TBranch *selJetB;
+ TBranch *selMuB;
+ TBranch *solNeuB;
+ TBranch *solTtB;
+ TBranch *mcmTtB;
+
+private:
+
+ struct ObjPar {
+        int evtId;
+        int objId;
+        double qCut;
+        double px;      
+        double py;      
+        double pz;      
+        double E;      
+        double pt;      
+ } selJet,selMu,solNeu,gen;
+
+ struct EvtSol {
+        int evtId;
+        int wj1;
+        int wj2;
+        int bjh;
+        int bjl;
+        double prob;
+        double hadTM;
+        double lepTM;
+        double hadWM;
+        double lepWM;
+ } solTt, mcmTt;
+
+};
 #endif

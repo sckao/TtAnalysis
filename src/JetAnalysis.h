@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: JetAnalysis.h,v 1.3 2009/03/07 14:22:25 sckao Exp $
+// $Id: JetAnalysis.h,v 1.5 2009/07/15 12:36:26 sckao Exp $
 //
 //
 
@@ -88,8 +88,8 @@
 //
 class TtEvtSelector;
 class TtMuon;
-class TtJet;
 class TtMET;
+class TtJet;
 
 class JetAnalysis : public edm::EDAnalyzer {
    public:
@@ -127,6 +127,7 @@ class JetAnalysis : public edm::EDAnalyzer {
     // Switch for debug output
     bool debug;
     int evtIt;
+    double JEScale;
 
     std::string rootFileName;
     edm::InputTag muonSrc;

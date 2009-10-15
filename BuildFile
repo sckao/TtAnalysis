@@ -12,14 +12,3 @@
 
 <flags EDM_PLUGIN=1>
 
-<export>
-   <lib name=PhysicsToolsTtAnalysis>
-</export>
-
-<export>
-   <lib name=PhysicsToolsJetAnalysis>
-</export>
-
-<export>
-   <lib name=PhysicsToolsMuonAnalysis>
-</export>

@@ -39,6 +39,7 @@ JetAnalysis::JetAnalysis(const edm::ParameterSet& iConfig)
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
+  JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
@@ -178,37 +179,43 @@ void JetAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    evtIt++;
 
    // 0. select the semi-lep events and objects
-   int pass = evtSelected->eventSelection(muons, electrons, jets, 20.);
-   //int topo = evtSelected->MCEvtSelection(genParticles);
+   int pass = evtSelected->eventSelection( 1, 20., iEvent, "patMET", "patJets" );
+
+   int topo = evtSelected->MCEvtSelection(genParticles);
 
    //1. Jet Et threshold analysis
+   std::vector<bool> bTags1;
+   std::vector<bool> bTags2;
+   std::vector<bool> bTags3;
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
-   std::vector<const reco::Candidate*> theJets1 = ttJet->JetSelection( jets, isoMu, 20, hJ_Et20 ) ;
-   std::vector<const reco::Candidate*> theJets2 = ttJet->JetSelection( jets, isoMu, 25, hJ_Et25 ) ;
-   std::vector<const reco::Candidate*> theJets3 = ttJet->JetSelection( jets, isoMu, 30, hJ_Et30 ) ;
+   std::vector<const reco::Candidate*> theJets1 = ttJet->JetSelection( jets, isoMu, 20, JEScale, hJ_Et20, &bTags1, bTagAlgo ) ;
+   std::vector<const reco::Candidate*> theJets2 = ttJet->JetSelection( jets, isoMu, 25, JEScale, hJ_Et25, &bTags2, bTagAlgo ) ;
+   std::vector<const reco::Candidate*> theJets3 = ttJet->JetSelection( jets, isoMu, 30, JEScale, hJ_Et30, &bTags3, bTagAlgo ) ;
+
+   if ( topo == 1 ) {
+      ttMET->METandNeutrino( isoMu, theJets1, met, tcmet, genmet, genParticles, hMET_J20 );
+      ttMET->METandNeutrino( isoMu, theJets2, met, tcmet, genmet, genParticles, hMET_J25 );
+      ttMET->METandNeutrino( isoMu, theJets3, met, tcmet, genmet, genParticles, hMET_J30 );
+   }
 
    if ( pass > -1 ) {
-      std::vector<bool> bTags;
       ttJet->MuonAndJet( theJets1, isoMu[0] , hJ_Et20 );
       ttJet->JetEtSpectrum( theJets1, hJ_Et20 );
       ttJet->JetdRAnalysis( theJets1, hJ_Et20 );
       if ( theJets1.size() == 4 ) {
-         ttMET->METandNeutrino( isoMu, theJets1, met, tcmet, genmet, genParticles, hMET_J20 );
-         std::vector<const reco::Candidate*> outJets1 = ttJet->SoftJetSelection( jets, isoMu, 20, &bTags, bTagAlgo, hJ_Et20 ) ;
+         std::vector<const reco::Candidate*> outJets1 = ttJet->SoftJetSelection( jets, isoMu, 20, JEScale, &bTags1, bTagAlgo, hJ_Et20 ) ;
       }
       ttJet->MuonAndJet( theJets2, isoMu[0] , hJ_Et25 );
       ttJet->JetEtSpectrum( theJets2, hJ_Et25 );
       ttJet->JetdRAnalysis( theJets2, hJ_Et25 );
       if ( theJets2.size() == 4 ) { 
-         ttMET->METandNeutrino( isoMu, theJets2, met, tcmet, genmet, genParticles, hMET_J25 );
-         std::vector<const reco::Candidate*> outJets2 = ttJet->SoftJetSelection( jets, isoMu, 25, &bTags, bTagAlgo, hJ_Et25 ) ;
+         std::vector<const reco::Candidate*> outJets2 = ttJet->SoftJetSelection( jets, isoMu, 25, JEScale, &bTags2, bTagAlgo, hJ_Et25 ) ;
       }
       ttJet->MuonAndJet( theJets3, isoMu[0] , hJ_Et30 );
       ttJet->JetEtSpectrum( theJets3, hJ_Et30 );
       ttJet->JetdRAnalysis( theJets3, hJ_Et30 );
       if ( theJets3.size() == 4 ) { 
-         ttMET->METandNeutrino( isoMu, theJets3, met, tcmet, genmet, genParticles, hMET_J30 );
-         std::vector<const reco::Candidate*> outJets3 = ttJet->SoftJetSelection( jets, isoMu, 30, &bTags, bTagAlgo, hJ_Et30 ) ;
+         std::vector<const reco::Candidate*> outJets3 = ttJet->SoftJetSelection( jets, isoMu, 30, JEScale, &bTags3, bTagAlgo, hJ_Et30 ) ;
       }
    }
 

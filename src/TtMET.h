@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMET.h,v 1.10 2009/03/07 14:22:25 sckao Exp $
+// $Id: TtMET.h,v 1.12 2009/07/15 12:36:26 sckao Exp $
 //
 //
 
@@ -79,7 +79,7 @@ class TtMET {
     ~TtMET();
 
     /// Perform the real analysis
-    void MetTreeFeeder(edm::Handle<std::vector<pat::MET> > patMet, NJet* jtree, int eventId ); 
+    //void MetTreeFeeder(edm::Handle<std::vector<pat::MET> > patMet, TtNtp* jtree, int eventId ); 
 
     void metAnalysis(const edm::Event & iEvent, HTOP2* histo2);
 

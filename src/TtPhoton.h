@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id$
+// $Id: TtPhoton.h,v 1.5 2009/01/15 14:58:02 sckao Exp $
 //
 //
 
@@ -75,7 +75,7 @@ class TtPhoton {
     ~TtPhoton();
 
     /// Perform the real analysis
-    void PhotonTreeFeeder(edm::Handle<std::vector<pat::Photon> > patMu, NJet* jtree, int eventId );
+    void PhotonTreeFeeder(edm::Handle<std::vector<pat::Photon> > patMu, ObjNtp* gtree, int eventId );
     void PhotonAnalysis(edm::Handle<std::vector<pat::Photon> > patMu, HTOP5* histo5 );
 
    private:

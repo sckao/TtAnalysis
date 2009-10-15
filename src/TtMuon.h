@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMuon.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
+// $Id: TtMuon.h,v 1.9 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -78,7 +78,7 @@ class TtMuon {
     ~TtMuon();
 
     /// Perform the real analysis
-    void MuonTreeFeeder(edm::Handle<std::vector<pat::Muon> > patMu, NJet* jtree, int eventId );
+    //void MuonTreeFeeder(edm::Handle<std::vector<pat::Muon> > patMu, TtNtp* jtree, int eventId );
 
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu, HOBJ3* histo1,  HOBJ3* histo2 );
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );

@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtAnalysis.h,v 1.10 2009/03/07 14:22:25 sckao Exp $
+// $Id: TtAnalysis.h,v 1.13 2009/07/15 12:36:26 sckao Exp $
 //
 //
 
@@ -83,12 +83,12 @@
 #include "TtFormat.h"
 
 #include "TFile.h"
+#include "TTree.h"
 #include "TVector3.h"
 #include <vector>
 #include <map>
 #include <string>
 #include <utility>
-
 
 //
 // class decleration
@@ -106,7 +106,6 @@ class TtSemiEventSolution;
 class TtAnalysis : public edm::EDAnalyzer {
    public:
     /// Constructor
-  
 
     explicit TtAnalysis(const edm::ParameterSet&);
     /// Destructor
@@ -114,8 +113,6 @@ class TtAnalysis : public edm::EDAnalyzer {
 
     /// Perform the real analysis
     void analyze(const edm::Event & iEvent, const edm::EventSetup& iSetup);
-
-
 
    private:
       // ----------member data ---------------------------
@@ -130,8 +127,7 @@ class TtAnalysis : public edm::EDAnalyzer {
     TtEfficiency*  ttEff;
     TtSemiEventSolution* semiSol;
 
-    // Histograms
-    NJet  *t_Jet;
+    // Histograms & Trees
     tHisto histos ;
 
     // The file which will store the histos
@@ -144,6 +140,7 @@ class TtAnalysis : public edm::EDAnalyzer {
     bool needTree; 
     bool trigOn;
     int evtIt;
+    double JEScale;
 
     std::string rootFileName;
     std::string leptonFlavour;

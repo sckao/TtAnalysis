@@ -79,27 +79,34 @@ static bool PtDecreasing(const reco::Particle s1, const reco::Particle s2) { ret
 static bool PidDecreasing( jmatch s1, jmatch s2) { return ( s1.MomIdx > s2.MomIdx ); }
 static bool dRIncreasing( IDPair s1, IDPair s2) { return ( s1.second < s2.second ); }
 
-void TtMCMatching::MCTreeFeeder(Handle<std::vector<reco::GenParticle> > genParticles , NJet* jtree, int eventId ){
+void TtMCMatching::MCTreeFeeder(Handle<std::vector<reco::GenParticle> > genParticles , ObjNtp* genTree, int evtId ){
 
    for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-       if ( abs((*it).pdgId()) != 24) continue;
-       bool WfromT = false;
-       for (size_t q=0; q< (*it).numberOfMothers(); q++) {
-           const reco::Candidate *mom = (*it).mother(q) ;
-           if ( abs(mom->pdgId()) != 6 ) continue;
-           WfromT = true ;
-       }
-       if ( !WfromT ) continue;
 
-       std::vector<LorentzVector> qm ;
-       for (size_t q=0; q< (*it).numberOfDaughters(); ++q) {
-           const reco::Candidate *dau = (*it).daughter(q) ;
-           if( abs(dau->pdgId()) > 6 ) continue;
-           qm.push_back( dau->p4() );
-           jtree->FillBgen( eventId, dau->pdgId(), dau->eta(), dau->phi(), dau->energy(), dau->pt() );
+       // record top
+       if ( abs((*it).pdgId()) == 6) genTree->FillB( evtId, it->pdgId(), -1, it->px(), it->py(), it->pz(), it->energy(), it->pt() );
+
+       // record W
+       if ( abs((*it).pdgId()) == 24) {
+          for (size_t q=0; q< (*it).numberOfMothers(); q++) {
+              const reco::Candidate *mom = (*it).mother(q) ;
+              if ( abs(mom->pdgId()) != 6 ) continue;
+              genTree->FillB( evtId, it->pdgId(), -1, it->px(), it->py(), it->pz(), it->energy(), it->pt() );
+          }
+       }
+       // record b or w-decays
+       bool wjParton = ( abs((*it).pdgId()) < 6 ) ? true : false ;
+       bool wLepton = ( abs((*it).pdgId()) < 17 && abs((*it).pdgId()) > 10 ) ? true : false ;
+       if ( wjParton || wLepton ) {
+          for (size_t q=0; q< (*it).numberOfMothers(); q++) {
+              const reco::Candidate *mom = (*it).mother(q) ;
+              bool fromT = ( abs(mom->pdgId()) ==  6 ) ? true : false ;
+              bool fromW = ( abs(mom->pdgId()) == 24 ) ? true : false ;
+              if ( fromT || fromW ) genTree->FillB( evtId, it->pdgId(), -1, it->px(), it->py(), it->pz(), it->energy(), it->pt() );
+          }
        }
    } 
-
+       
 } 
 
 std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenParticle> > genParticles,
@@ -156,10 +163,11 @@ std::vector<jmatch> TtMCMatching::matchWJets( Handle<std::vector<reco::GenPartic
        if (wj != -1) {
           jmatch theWjet;
 	  theWjet.trueJet= selectedWJets[wj] ;
+	  theWjet.Idx    = wj ;
 	  theWjet.mom    = jetMom[j] ;
 	  theWjet.MomIdx = jetMom[j].pdgId() ;
 	  theWjet.res_P  = (selectedWJets[wj]->pt() /jetMom[j].pt()) - 1. ;
-	  theWjet.sumP4  = selectedWJets[wj]->p4() ;
+	  theWjet.p4  = selectedWJets[wj]->p4() ;
 	  theWjet.hasMatched = true ;
           matchedJets.push_back( theWjet );
           if ( fillhisto ) histo8->Fill8h( jetMom[j].eta(), jetMom[j].phi(), selectedWJets[wj]->eta(), selectedWJets[wj]->phi()
@@ -195,8 +203,9 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
 // general matching for w jets and bjets 
 std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticle> > genParticles,
                                            std::vector<const reco::Candidate*> selectedJets,
-                                           HTOP7* histo7, HTOP8* histo8, bool fillhisto ) {
+                                           HTOP7* histo7, HTOP8* histo8 ) {
 
+  bool fillhisto = ( histo7 != NULL && histo8 != NULL ) ? true : false ;
    // Accumulate the hadronic dauaghters from W
    std::vector<reco::Particle> jetMom ;
    for (int i=1; i<6; i++) {
@@ -267,12 +276,13 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
       if ( s == -1 ) continue;
       //if ( pat_selectedJets.size() > 0 ) continue;
       jmatch theTjet;
-      theTjet.trueJet= selectedJets[s] ;
-      theTjet.mom    = jetMom[k] ;
-      theTjet.MomIdx = jetMom[k].pdgId() ;
-      theTjet.res_P  = ( selectedJets[s]->pt() /jetMom[k].pt()) - 1. ;
-      theTjet.sumP4  = selectedJets[s]->p4() ;
-      theTjet.dR     = tools->getdR( selectedJets[s]->p4(), jetMom[k].p4() );
+      theTjet.trueJet = selectedJets[s] ;
+      theTjet.mom     = jetMom[k] ;
+      theTjet.MomIdx  = jetMom[k].pdgId() ;
+      theTjet.Idx     = s ;
+      theTjet.res_P   = ( selectedJets[s]->pt() /jetMom[k].pt()) - 1. ;
+      theTjet.p4      = selectedJets[s]->p4() ;
+      theTjet.dR      = tools->getdR( selectedJets[s]->p4(), jetMom[k].p4() );
       theTjet.hasMatched = true ;
        if (fillhisto) cout<<" matching dR:"<<theTjet.dR<<endl;
       matchedJets.push_back( theTjet );
@@ -283,8 +293,8 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
       dRsqr +=  theTjet.dR*theTjet.dR  ;
       
    }
-   if (fillhisto) cout<<" sum dR^2 = "<< dRsqr <<endl;
-   if (fillhisto) cout<<" ======================== "<<endl;
+   if ( fillhisto ) cout<<" sum dR^2 = "<< dRsqr <<endl;
+   if ( fillhisto ) cout<<" ======================== "<<endl;
 
    sort( matchedJets.begin(), matchedJets.end(), PidDecreasing );
    return matchedJets ;
@@ -341,10 +351,11 @@ std::vector<jmatch> TtMCMatching::matchbJets( Handle<std::vector<reco::GenPartic
        if (bj != -1) {
           jmatch thebjet;
 	  thebjet.trueJet= selectedbJets[bj] ;
+	  thebjet.Idx    = bj ;
 	  thebjet.mom    = jetMom[j] ;
 	  thebjet.MomIdx = jetMom[j].pdgId() ;
 	  thebjet.res_P  = ( selectedbJets[bj]->pt() /jetMom[j].pt()) - 1. ;
-	  thebjet.sumP4  = selectedbJets[bj]->p4() ;
+	  thebjet.p4  = selectedbJets[bj]->p4() ;
 	  thebjet.hasMatched = true ;
           matchedJets.push_back( thebjet );
           if ( fillhisto ) histo7->Fill7h( jetMom[j].eta(), jetMom[j].phi(), selectedbJets[bj]->eta(), selectedbJets[bj]->phi()
@@ -357,18 +368,8 @@ std::vector<jmatch> TtMCMatching::matchbJets( Handle<std::vector<reco::GenPartic
 
 }
 
-/*
-std::vector<const reco::Candidate*> TtMCMatching::matchGenJet(Handle<std::vector<reco::GenParticle> > genParticles, Handle<std::vector<reco::GenJet> > genJets, HTOP6* histo6 ) {
-
-   // Accumulate the b quark from t
-   std::vector<iTt> ttobjs = TtObjects(genParticles);
-   std::vector<reco::Particle> jetMom = ttPartons(genParticles, 5) ;
-
-}
-*/
-
 std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<reco::GenParticle> > genParticles,
-                          std::vector<const reco::Candidate*> isoMuons ,HTOP3* histo3, bool fillhisto ){
+                          std::vector<const reco::Candidate*> isoMuons ,HTOP3* histo3 ){
 
    // Accumulate the leptonic dauaghters from W
    std::vector<reco::Particle> mcMuon = ttDecay(genParticles, 13) ;
@@ -388,7 +389,7 @@ std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<
       if (usedMuon != -1) {
          matchList.push_back( usedMuon ); 
          double ptRes2 = (isoMuons[usedMuon]->pt()/mcMuon[i].pt()) - 1. ;
-         if (fillhisto) histo3->Fill3b( mcMuon[i].eta(),  mcMuon[i].phi(), isoMuons[usedMuon]->eta(), isoMuons[usedMuon]->phi()
+         if ( histo3 != NULL ) histo3->Fill3b( mcMuon[i].eta(),  mcMuon[i].phi(), isoMuons[usedMuon]->eta(), isoMuons[usedMuon]->phi()
                                        ,mcMuon[i].pt(), ptRes2 );
       }
 
@@ -407,96 +408,9 @@ std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<
    return matchedMuon ;
 }
 
-std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<reco::GenParticle> > genParticles,
-           Handle<std::vector<pat::Muon> > muons, HTOP3* histo3, bool fillhisto ){
-
-   // Accumulate the leptonic dauaghters from W
-   std::vector<reco::Particle> mcMuon = ttDecay(genParticles, 13) ;
-
-   // find the matched muon 
-   std::vector<int> matchList;
-   for (size_t i=0; i< mcMuon.size(); i++) {
-
-      // matching pat::muons with parton
-      double dR0    = 9.;
-      double ptRes0 = 9.;
-      int theMuon = -1;
-      for (size_t j=0; j < muons->size(); j++ ) {
-          bool matched = matchingGeneral( (*muons)[j].p4() , mcMuon[i].p4(), dR0, ptRes0 );
-          if ( matched && (*muons)[j].charge() == mcMuon[i].charge() ) theMuon = static_cast<int>(j);
-      }
-      if (theMuon != -1) {
-         matchList.push_back( theMuon ); 
-         double ptRes2 = ((*muons)[theMuon].pt()/mcMuon[i].pt()) - 1. ;
-         if (fillhisto) histo3->Fill3b( mcMuon[i].eta(),  mcMuon[i].phi(), (*muons)[theMuon].eta(), (*muons)[theMuon].phi()
-                                       ,mcMuon[i].pt(), ptRes2 );
-      }
-    
-   }
-   // using one more loops to check whether double counting 
-   std::vector<const reco::Candidate*> matchedMuon ;
-
-   std::vector<bool> used;
-   for (size_t k=0; k < muons->size(); k++ ) {
-       used.push_back(false);
-   }
-   for (std::vector<int>::const_iterator it= matchList.begin(); it != matchList.end(); it++) { 
-       if ( used[*it] ) continue;
-       matchedMuon.push_back( &(*muons)[*it] );  
-       used[*it] = true;
-   }
-
-   if ( matchedMuon.size() > 2 ) cout<<" WRONG MATCHING "<<endl;
-
-   return matchedMuon ;
-}
 
 std::vector<const reco::Candidate*> TtMCMatching::matchElectron(Handle<std::vector<reco::GenParticle> > genParticles,
-                                        Handle<std::vector<pat::Electron> > electrons, HTOP4* histo4, bool fillhisto ){
-
-   // Accumulate the hadronic dauaghters from W
-   std::vector<reco::Particle> mcElectron = ttDecay(genParticles, 11) ;
-
-   // find the matched electron 
-   std::vector<int> matchList;
-   for (size_t i=0; i< mcElectron.size(); i++) {
-
-      // matching pat::electrons with parton
-      double dR0 = 99.;
-      double ptRes0 =99.;
-      int theElectron = -1;
-      for (size_t j=0; j < electrons->size(); j++ ) {
-          bool matched = matchingGeneral( (*electrons)[j].p4() , mcElectron[i].p4(), dR0, ptRes0 );
-          if ( matched && (*electrons)[j].charge() == mcElectron[i].charge() ) theElectron = static_cast<int>(j);
-      }
-      if (theElectron != -1) {
-         matchList.push_back( theElectron ); 
-         double ptRes2 = ((*electrons)[theElectron].pt()/mcElectron[i].pt()) - 1. ;
-         if (fillhisto) histo4->Fill4g( mcElectron[i].eta(), mcElectron[i].phi(), (*electrons)[theElectron].eta(), 
-                                       (*electrons)[theElectron].phi() ,mcElectron[i].pt(), ptRes2 );
-      }
-   }
-
-   // using one more loops to check whether double counting 
-   std::vector<bool> used;
-   std::vector<const reco::Candidate*> matchedElectron ;
-   for (size_t k=0; k < electrons->size(); k++ ) {
-       used.push_back(false);
-   }
-   for (std::vector<int>::const_iterator it= matchList.begin(); it != matchList.end(); it++) { 
-       if ( used[*it] ) continue;
-       matchedElectron.push_back( &(*electrons)[*it] );  
-       used[*it] = true;
-   }
-
-   //std::vector<pat::Electron> matchedElectron ;
-   if ( matchedElectron.size() > 2 ) cout<<" WRONG MATCHING "<<endl;
-
-   return matchedElectron ;
-}
-
-std::vector<const reco::Candidate*> TtMCMatching::matchElectron(Handle<std::vector<reco::GenParticle> > genParticles,
-                                           std::vector<const reco::Candidate*> isoEle, HTOP4* histo4, bool fillhisto ){
+                                           std::vector<const reco::Candidate*> isoEle, HTOP4* histo4 ){
 
    // Accumulate the hadronic dauaghters from W
    std::vector<reco::Particle> mcElectron = ttDecay(genParticles, 11) ;
@@ -516,8 +430,8 @@ std::vector<const reco::Candidate*> TtMCMatching::matchElectron(Handle<std::vect
       if (theElectron != -1) {
          matchList.push_back( theElectron ); 
          double ptRes2 = (isoEle[theElectron]->pt()/mcElectron[i].pt()) - 1. ;
-         if (fillhisto) histo4->Fill4g( mcElectron[i].eta(), mcElectron[i].phi(), isoEle[theElectron]->eta(), 
-                                       isoEle[theElectron]->phi() ,mcElectron[i].pt(), ptRes2 );
+         if ( histo4 != NULL ) histo4->Fill4g( mcElectron[i].eta(), mcElectron[i].phi(), isoEle[theElectron]->eta(), 
+                                               isoEle[theElectron]->phi() ,mcElectron[i].pt(), ptRes2 );
       }
     
    }
@@ -549,7 +463,6 @@ int TtMCMatching::matchLeptonicW( Handle<std::vector<reco::GenParticle> > genPar
    if ( nu_m.size() == 1 && nu_e.size() == 0 ) neu = nu_m ;
    if ( nu_m.size() == 0 && nu_e.size() == 1 ) neu = nu_e ;
    if ( neu.size() == 0 ) return wl;
-   cout<<" nu_m:"<< nu_m.size() <<" nu_e:"<<nu_e.size()<<" p4:"<< neu[0].p4()<<endl;
 
    double dR0 = 9.;
    double ptRes0 = 9.;
@@ -558,7 +471,6 @@ int TtMCMatching::matchLeptonicW( Handle<std::vector<reco::GenParticle> > genPar
        bool matched = matchingGeneral( neu[0].p4() , reco_neu.second , dR0 , ptRes0 );
        if ( matched )  wl = static_cast<int>(j) ;
    }
-   cout<<" selected w: "<< wl <<endl;
    return wl;
 
 }
@@ -581,14 +493,19 @@ int TtMCMatching::matchLeptonicW( Handle<std::vector<reco::GenParticle> > genPar
        bool matched = matchingGeneral( neu[0].p4() , reco_neu.second , dR0 , ptRes0 );
        if ( matched )  wl = static_cast<int>(j) ;
    }
+   // validation for neutrino pz
+   if ( wSolutions.size() > 1 && neu.size() > 0 ) {
+      LorentzVector lv0 = wSolutions[0].q4v[1].second ;
+      LorentzVector lv1 = wSolutions[1].q4v[1].second ;
+      histo6->Fill6e( lv0.Pz(), lv1.Pz() );
+   }
 
    if ( wl != -1 ) {
       LorentzVector lv = wSolutions[wl].q4v[1].second ;
 
       double ptRes = (lv.Pt()/neu[0].pt()) - 1 ;
       double pzRes = (lv.Pz()/neu[0].p4().Pz()) - 1 ;
-
-      histo6->Fill6d( dR0, ptRes, pzRes );
+      histo6->Fill6d( dR0, ptRes, pzRes, neu[0].p4().Pz(), lv.Pz() );
    }
    return wl;
 }

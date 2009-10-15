@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtFormat.h,v 1.8 2009/03/07 14:22:25 sckao Exp $
+// $Id: TtFormat.h,v 1.10 2009/07/15 12:36:26 sckao Exp $
 //
 //
 
@@ -45,6 +45,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TtAnalysisHisto.h"
+#include "TtAnalysisNtuple.h"
 
 #include "TFile.h"
 #include "TVector3.h"
@@ -57,7 +58,6 @@
 // class decleration
 //
 typedef math::XYZTLorentzVector LorentzVector;
-typedef std::pair<int, LorentzVector> iParton;
 // hfPos[0]:eta, hfPos[1]:phi, hfPos[2]:pt
 typedef std::vector<double> hfPos ;
 typedef std::vector<int> Idx;
@@ -65,29 +65,33 @@ typedef std::pair<int, double> IDPair;
 
 enum ttChannel{ hadronic, semiMuon, dilep, semiElectron, semiTau, other };
 
-//
+// iParton< pdgId, p4 >
+typedef std::pair<int, LorentzVector> iParton;
+// mostly for reco W and reco T
 struct iReco{
     LorentzVector p4;
     std::pair<int,int> from;
     std::pair<const reco::Candidate*, const reco::Candidate*> ptr;
     std::vector<iParton> q4v ;
-    double dm; // fill pt for letponic W
-    double mt; // only filled for leptonic W
-    double pt; 
+    double prob;
 };
 
 // information of matched jets 
 struct jmatch {
        int MomIdx ;
-       double res_P;
-       LorentzVector sumP4 ;
-       std::vector<pat::Jet> assJets ; // obsolete 
-       pat::Jet leadingJet ;           // obsolete
-       //const pat::Jet* trueJet ;
+       int Idx ;                          // Index of selected recoJet collection
+       double res_P;                      // momentum resolution
+       LorentzVector p4 ;
        const reco::Candidate* trueJet ;
        reco::Particle mom ;
        bool hasMatched;
        double dR;
+};
+
+struct iProb {
+    double W  ;
+    double dM ;
+    double Tt ;
 };
 
 struct iTt {
@@ -111,7 +115,15 @@ struct tHisto {
     HTOP9 *hTop;
     HTOP10 *hWs[4];   // 0: Lep-MC , 1: Lep-Reco , 2: Had-MC , 3: Had-Reco
     HTOP11 *hTops[4]; // 0: Lep-MC , 1: Lep-Reco , 2: Had-MC , 3: Had-Reco
+};
 
+struct tNtuple {
+    ObjNtp  *muTree ;  // Tree hold muon solutions
+    ObjNtp  *jetTree ; // Tree hold jet  solutions
+    ObjNtp  *neuTree ; // Tree hold neutrino solutions
+    ObjNtp  *genTree ; // Tree hold gen information
+    SolNtp  *solTree ; // Tree hold all the solutions
+    SolNtp  *mcmTree ; // Tree hold MC-matching solutions
 };
 
 struct TtResult {
@@ -121,7 +133,9 @@ struct TtResult {
     std::vector<const reco::Candidate*>  Js ;
     std::vector<const reco::Candidate*>  bJ ;
     std::vector<const reco::Candidate*>  WJ ;
+    std::vector<LorentzVector> metP4;
     bool isData;
+
 };
 
 #endif

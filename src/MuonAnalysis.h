@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: MuonAnalysis.h,v 1.6 2009/01/15 14:58:02 sckao Exp $
+// $Id: MuonAnalysis.h,v 1.2 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -127,6 +127,7 @@ class MuonAnalysis : public edm::EDAnalyzer {
     // Switch for debug output
     bool debug;
     int evtIt;
+    double JEScale;
 
     std::string rootFileName;
     std::string recoMuon;

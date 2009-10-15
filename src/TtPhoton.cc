@@ -60,14 +60,18 @@ TtPhoton::~TtPhoton()
 //typedef std::pair<double, pat::Jet> ptjet ;
 
 // ------------ method called to for each event  ------------
-void TtPhoton::PhotonTreeFeeder(Handle<std::vector<pat::Photon> > patGamma, NJet* jtree, int eventId ) {
+void TtPhoton::PhotonTreeFeeder(Handle<std::vector<pat::Photon> > patGamma, ObjNtp* gTree, int eventId ) {
 
+ int i=0 ;
  for (std::vector<pat::Photon>::const_iterator it = patGamma->begin(); it!= patGamma->end(); it++) {
+     i++;
+     /*
      const reco::IsoDeposit* caloE = it->ecalIsoDeposit(); 
      const reco::IsoDeposit* caloH = it->hcalIsoDeposit(); 
      double emE = caloE->candEnergy() ;
      double hdE = caloH->candEnergy() ;
-     jtree->FillBpatGa( eventId, it->eta(), it->phi(), emE, hdE, it->p(), it->pt() );
+     */
+     gTree->FillB( eventId, i, -1., it->px(), it->py(), it->pz(), it->energy(), it->pt() );
  }
 
 }
@@ -75,6 +79,7 @@ void TtPhoton::PhotonTreeFeeder(Handle<std::vector<pat::Photon> > patGamma, NJet
 void TtPhoton::PhotonAnalysis(Handle<std::vector<pat::Photon> > patGamma, HTOP5* histo5  ) {
 
  for (std::vector<pat::Photon>::const_iterator it = patGamma->begin(); it!= patGamma->end(); it++) {
+     if ( it->pt() < 20. ) continue;
      histo5->Fill5a( it->pt(), it->eta() );
  }
 

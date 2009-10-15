@@ -94,6 +94,20 @@ double TtTools::getdPhi( LorentzVector v1, LorentzVector v2 ) {
   return df;
 }
 
+double TtTools::get_dPhi( LorentzVector v1, LorentzVector v2 ) {
+
+  double axb = (v1.Px()*v2.Py()) - (v1.Py()*v2.Px()) ;
+  double ab = (v1.Px()*v2.Px()) + (v1.Py()*v2.Py()) ;
+  double al = sqrt( (v1.Px()*v1.Px()) + (v1.Py()*v1.Py()) );
+  double bl = sqrt( (v2.Px()*v2.Px()) + (v2.Py()*v2.Py()) );
+  double cosA = ab/(al*bl) ;
+
+  double df = acos(cosA) ;
+  if ( axb < 0 ) df = -1.*df ;
+
+  return df;
+}
+
 double TtTools::getdR( LorentzVector v1, LorentzVector v2 ) {
 
   double df = getdPhi(v1, v2);
@@ -132,6 +146,19 @@ double TtTools::getY( LorentzVector v1 ){
     if ( (v1.E() - v1.Pz()) == 0. ) Y =  99.99;
     if ( (v1.E() + v1.Pz()) == 0. ) Y = -99.99;
     return Y;
+}
+
+// for leptonic W
+double TtTools::getMt( LorentzVector v1,  LorentzVector v2 ) {
+
+     double Et = ( v1.Et() + v2.Et() ) ;
+     double px = ( v1.Px() + v2.Px() ) ;
+     double py = ( v1.Py() + v2.Py() ) ;
+     double Pt = sqrt( (px*px) + (py*py) ) ;
+     double Mt2 = (Et*Et) - (Pt*Pt) ;
+     double Mt = ( Mt2 > 0. ) ? sqrt(Mt2) : 0 ;
+
+     return Mt ;
 }
 
 double TtTools::getInvMass( std::vector<LorentzVector> vlist ) {

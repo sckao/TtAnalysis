@@ -85,7 +85,8 @@ TtMET::~TtMET()
 
 // ------------ method called to for each event  ------------
 
-void TtMET::MetTreeFeeder(Handle<std::vector<pat::MET> > patMet, NJet* jtree, int eventId ) {
+/*
+void TtMET::MetTreeFeeder(Handle<std::vector<pat::MET> > patMet, TtNtp* jtree, int eventId ) {
 
   for (std::vector<pat::MET>::const_iterator m1 = patMet->begin(); m1 != patMet->end(); m1++)
   {
@@ -94,7 +95,7 @@ void TtMET::MetTreeFeeder(Handle<std::vector<pat::MET> > patMet, NJet* jtree, in
 
      jtree->FillBpatNu( eventId, m1->eta(), m1->phi(), emMET, hdMET, m1->p(), m1->pt() );
   }
-}
+}*/
 
 void TtMET::metAnalysis(const edm::Event& iEvent, HTOP2* histo2) {
 
@@ -312,15 +313,15 @@ void TtMET::METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vec
 
         gen_pat_Resol = ( patMET.Pt()/genMET.Pt() ) - 1. ;
         gen_evt_Resol = ( evtMET.Pt()/genMET.Pt() ) - 1. ;
-        gen_pat_dPhi  = tools->getdPhi( patMET , genMET ) ;
-        gen_evt_dPhi  = tools->getdPhi( evtMET , genMET ) ;
+        gen_pat_dPhi  = tools->get_dPhi( patMET , genMET ) ;
+        gen_evt_dPhi  = tools->get_dPhi( evtMET , genMET ) ;
         //gen_pat_dPhi  = (*met)[0].phi() - (*genmet)[0].phi() ;
         //gen_evt_dPhi  = evtPhi - (*genmet)[0].phi() ;
 
-        dPhi_neu_pat = tools->getdPhi( patMET, neuMET );
-	dPhi_neu_evt = tools->getdPhi( evtMET, neuMET );
-	dPhi_neu_tc  = tools->getdPhi(  tcMET, neuMET );
-	dPhi_neu_gen = tools->getdPhi( genMET, neuMET );
+        dPhi_neu_pat = tools->get_dPhi( patMET, neuMET );
+	dPhi_neu_evt = tools->get_dPhi( evtMET, neuMET );
+	dPhi_neu_tc  = tools->get_dPhi(  tcMET, neuMET );
+	dPhi_neu_gen = tools->get_dPhi( genMET, neuMET );
 	//dPhi_neu_pat = (*met)[0].phi() - neuPhi ;
 	//dPhi_neu_evt = evtPhi - neuPhi ;
 	//dPhi_neu_tc  = (*tcmet)[0].phi() - neuPhi ;

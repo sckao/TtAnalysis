@@ -1,3 +1,6 @@
+#ifndef MassFitFunction_H
+#define MassFitFunction_H
+
 #include "TObject.h"
 #include <vector>
 #include <stdio.h>
@@ -40,7 +43,7 @@ public:
 
 };
 
-#if !defined(__CINT__)
-    ClassImp(MassFitFunction);
+//#if !defined(__CINT__)
+//    ClassImp(MassFitFunction);
 #endif
 

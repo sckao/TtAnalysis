@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtTools.h,v 1.3 2009/03/07 14:22:25 sckao Exp $
+// $Id: TtTools.h,v 1.5 2009/07/15 12:36:26 sckao Exp $
 //
 //
 
@@ -98,12 +98,15 @@ class TtTools {
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
     double getEta(double vx, double vy, double vz );
+    // get_dphi : dPhi with sign ...
+    double get_dPhi(  LorentzVector v1, LorentzVector v2 );
     double getdPhi(  LorentzVector v1, LorentzVector v2 );
     double getdR(  LorentzVector v1, LorentzVector v2 );
     double getdRy(  LorentzVector v1, LorentzVector v2 );
     double getY( LorentzVector v1 );
     double getRelPt( LorentzVector a, LorentzVector b );
     double getBeta( LorentzVector a );
+    double getMt( LorentzVector lv1, LorentzVector lv2 );
     double getInvMass( std::vector<LorentzVector> vlist );
     double getInvMass( LorentzVector lv );
     double getInvMass( LorentzVector lv1, LorentzVector lv2 );

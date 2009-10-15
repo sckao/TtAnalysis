@@ -79,8 +79,8 @@ TtMuon::~TtMuon()
 static bool PtDecreasing(const reco::Candidate* s1, const reco::Candidate* s2) { return ( s1->pt() > s2->pt() ); }
 
 // ------------ method called to for each event  ------------
-
-void TtMuon::MuonTreeFeeder(Handle<std::vector<pat::Muon> > patMu, NJet* jtree, int eventId ) {
+/*
+void TtMuon::MuonTreeFeeder(Handle<std::vector<pat::Muon> > patMu, TtNtp* jtree, int eventId ) {
 
  for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
 
@@ -91,7 +91,7 @@ void TtMuon::MuonTreeFeeder(Handle<std::vector<pat::Muon> > patMu, NJet* jtree, 
  }
 
 }
-
+*/
 
 std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector<pat::Muon> > patMu, HOBJ3* histo1, HOBJ3* histo2 ) {
 

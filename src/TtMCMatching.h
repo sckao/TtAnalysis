@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMCMatching.h,v 1.10 2009/03/07 14:22:25 sckao Exp $
+// $Id: TtMCMatching.h,v 1.12 2009/07/15 12:36:26 sckao Exp $
 //
 //
 
@@ -76,12 +76,10 @@ class TtMCMatching {
     ~TtMCMatching();
 
     /// Perform the real analysis
-    void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, NJet* jtree, int eventId);
-
-    //void matchJets_test(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<const pat::Jet*> selectedJets) ;
+    void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, ObjNtp* genTree, int eventId);
 
     std::vector<jmatch> matchJets(edm::Handle<std::vector<reco::GenParticle> > genParticles, 
-                    std::vector<const reco::Candidate*> selectedJets, HTOP7* histo7, HTOP8* histo8, bool fillhisto );
+                    std::vector<const reco::Candidate*> selectedJets, HTOP7* histo7 = NULL, HTOP8* histo8 = NULL);
 
     std::vector<jmatch> matchWJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                    std::vector<const pat::Jet*> selectedWJets, HTOP8* histo8, bool fillhisto );
@@ -90,14 +88,10 @@ class TtMCMatching {
                                    std::vector<const pat::Jet*> selectedbJets, HTOP7* histo7, bool fillhisto );
 
     std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3, bool fillhisto);
-    std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        edm::Handle<std::vector<pat::Muon> > muons, HTOP3* histo3, bool fillhisto);
+                                        std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3 = NULL );
 
     std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        std::vector<const reco::Candidate*> isoEle, HTOP4* histo4, bool fillhisto);
-    std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        edm::Handle<std::vector<pat::Electron> > electrons, HTOP4* histo4, bool fillhisto);
+                                        std::vector<const reco::Candidate*> isoEle, HTOP4* histo4 = NULL );
 
     int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution );
     int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution, HTOP6* histo6 );

@@ -60,15 +60,18 @@ TtElectron::~TtElectron()
 //typedef std::pair<double, pat::Jet> ptjet ;
 
 // ------------ method called to for each event  ------------
-void TtElectron::ElectronTreeFeeder(Handle<std::vector<pat::Electron> > patEle, NJet* jtree, int eventId ) {
+void TtElectron::ElectronTreeFeeder(Handle<std::vector<pat::Electron> > patEle, ObjNtp* eTree, int eventId ) {
 
+ int i =0 ;
  for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
-
+     i++;
+     /*
      double caloE = it->caloEnergy() ;
      double HovE = it->hadronicOverEm() ;
      double emE   = caloE / ( 1. + HovE ) ;
      double hdE   = emE * HovE  ;
-     jtree->FillBpatE( eventId, it->eta(), it->phi(), emE, hdE, it->p(), it->pt() );
+     */
+     eTree->FillB( eventId, i, -1, it->px(), it->py(), it->pz(), it->energy(),  it->pt() );
  }
 
 }
@@ -76,6 +79,7 @@ void TtElectron::ElectronTreeFeeder(Handle<std::vector<pat::Electron> > patEle, 
 void TtElectron::ElectronAnalysis(Handle<std::vector<pat::Electron> > patEle, HTOP4* histo4  ) {
 
  for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
+     if ( it->pt() < 20. ) continue;
      histo4->Fill4a( it->pt(), it->eta() );
  }
 

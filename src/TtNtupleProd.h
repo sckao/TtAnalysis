@@ -1,11 +1,11 @@
-#ifndef TtEvtSelector_H
-#define TtEvtSelector_H
+#ifndef TtNtupleProd_H
+#define TtNtupleProd_H
 // -*- C++ -*-
 //
-// Package:    TtEvtSelector
-// Class:      TtEvtSelector
+// Package:    TtNtupleProd
+// Class:      TtNtupleProd
 // 
-/**\class TtEvtSelector TtEvtSelector.cc PhysicsTools/TtAnalysis/src/TtEvtSelector.cc
+/**\class TtNtupleProd TtNtupleProd.cc PhysicsTools/TtNtupleProd/src/TtNtupleProd.cc
 
  Description: <one line class summary>
 
@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtEvtSelector.h,v 1.12 2009/07/15 12:36:26 sckao Exp $
+// $Id: TtNtupleProd.h,v 1.13 2009/07/15 12:36:26 sckao Exp $
 //
 //
 
@@ -29,12 +29,10 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Framework/interface/EventSetup.h"
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/InputTag.h"
-
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
 #include "DataFormats/PatCandidates/interface/Particle.h"
@@ -42,30 +40,36 @@
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 #include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "FWCore/Framework/interface/TriggerNames.h"
 
-#include "DataFormats/MuonReco/interface/Muon.h" 
-
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h" 
+#include "DataFormats/JetReco/interface/GenJet.h"
+#include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/Candidate/interface/Particle.h" 
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
+#include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
-#include "TtAnalysisHisto.h"
-#include "TtAnalysisNtuple.h"
-#include "TtMuon.h"
-#include "TtElectron.h"
-#include "TtMET.h"
-#include "TtJet.h"
+//#include "DataFormates/TrackReco/interface/Track.h"
+//#include "DataFormates/TrackReco/interface/TrackFwd.h"
+
+//#include "AnalysisDataFormats/TopObjects/interface/TtGenEvent.h"
+//#include "AnalysisDataFormats/TopObjects/interface/TtSemiEvtSolution.h"
+
 #include "TtMCMatching.h"
+#include "TtSemiEventSolution.h"
 #include "TtFormat.h"
+#include "TtAnalysisNtuple.h"
 
 #include "TFile.h"
+#include "TTree.h"
+#include "TVector3.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -73,48 +77,44 @@
 
 //
 // class decleration
-/*
-class TtMuon;
-class TtMET;
-class TtElectron;
-*/
-class TtJet;
+//
+class TtMCMatching;
+class TtSemiEventSolution;
 
-class TtEvtSelector {
+class TtNtupleProd : public edm::EDAnalyzer {
    public:
     /// Constructor
-    explicit TtEvtSelector(const edm::ParameterSet& );
-    //explicit TtEvtSelector();
+
+    explicit TtNtupleProd(const edm::ParameterSet&);
     /// Destructor
-    ~TtEvtSelector();
+    ~TtNtupleProd();
 
     /// Perform the real analysis
-
-    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, string JetType, std::vector<bool>* bTags = NULL , std::vector<double>* bDisList = NULL );
-
-    int eventSelection( int topo, double JetEtCut, const edm::Event& iEvent, string MetType, string JetType );
-
-    int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
-
-    bool HLTSemiSelection( edm::Handle <edm::TriggerResults> triggers, int setup );
-    void TriggerStudy( edm::Handle <edm::TriggerResults> triggers, int topo, int setup, HTOP9* histo9 );
+    void analyze(const edm::Event & iEvent, const edm::EventSetup& iSetup);
 
    private:
+      // ----------member data ---------------------------
 
-   TtMuon*       ttMuon;
-   TtElectron*   ttEle;
-   TtJet*        ttJet;
-   TtMET*        ttMET;
-   TtMCMatching* mcMatch;
+    TtMCMatching*         MCMatching;
+    TtSemiEventSolution*  semiSol;
 
-   double JEScale;
-   edm::InputTag muonSrc;
-   edm::InputTag electronSrc;
-   edm::InputTag metSrc;
-   edm::InputTag tcmetSrc;
-   edm::InputTag jetSrc;
-   edm::InputTag jptSrc;
-   string bTagAlgo;
+    // Histograms & Trees
+    tNtuple ntuples ;
+    // The file which will store the histos
+    TFile *theFile;
+
+    bool exclude;
+
+    // Switch for debug output
+    bool debug;
+    bool needTree; 
+    bool trigOn;
+    int  evtIt;
+    double JEScale;
+
+    string rootFileName;
+    edm::InputTag genSrc;
+    //edm::InputTag triggerSrc;
 
 };
 
