@@ -173,7 +173,6 @@ void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, int topo, int e
 
    // store information in ntuples
    if ( ntuples != NULL && pass == 4) {
-      evt_cout++;
       for (size_t i=0; i< selectedJets.size(); i++) {
           double b_dis = ( bDisList.size() == selectedJets.size() ) ? bDisList[i] : -1 ;
           (*ntuples).jetTree->FillB( evtId, i, b_dis, selectedJets[i]->px(), selectedJets[i]->py(), selectedJets[i]->pz(), 

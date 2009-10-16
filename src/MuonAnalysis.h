@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: MuonAnalysis.h,v 1.2 2009/03/07 14:22:25 sckao Exp $
+// $Id: MuonAnalysis.h,v 1.3 2009/10/15 06:47:16 sckao Exp $
 //
 //
 
@@ -44,7 +44,7 @@
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
-#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+//#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "FWCore/Framework/interface/TriggerNames.h"
 

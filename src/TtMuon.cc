@@ -230,6 +230,7 @@ std::vector<double> TtMuon::MuonEtCorrection( Handle<std::vector<pat::Muon> > mu
      return ptcorr ;
 }
 
+/*
 void TtMuon::MuonTrigger( Handle<std::vector<pat::Muon> >patMu, Handle <edm::TriggerResults> triggers ) {
 
    for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
@@ -240,7 +241,6 @@ void TtMuon::MuonTrigger( Handle<std::vector<pat::Muon> >patMu, Handle <edm::Tri
           cout<<"  ObjType:"<< trigInfo[i].triggerObjectType() <<endl;
           cout<<" filter name:"<<trigInfo[i].filterName() <<endl; 
        }
-       /*
        if ( trigInfo.size() < 1) continue;
        edm::TriggerNames trigNames( *triggers );
        for (size_t i=0; i< triggers->size(); i++ ) {
@@ -248,10 +248,10 @@ void TtMuon::MuonTrigger( Handle<std::vector<pat::Muon> >patMu, Handle <edm::Tri
            cout<<" path("<<i<<") accepted ? "<< triggered ;
            cout<<" trigName: "<< trigNames.triggerName(i)<<endl;
        }
-       */
    }
 
 }
+*/
 
 void TtMuon::matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HOBJ3* histo ) {
 

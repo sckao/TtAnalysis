@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtNtupleProd.h,v 1.13 2009/07/15 12:36:26 sckao Exp $
+// $Id: TtNtupleProd.h,v 1.1 2009/10/15 06:47:17 sckao Exp $
 //
 //
 
@@ -43,7 +43,7 @@
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
-#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+//#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "FWCore/Framework/interface/TriggerNames.h"
 

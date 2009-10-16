@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMuon.h,v 1.9 2009/03/07 14:22:25 sckao Exp $
+// $Id: TtMuon.h,v 1.10 2009/10/15 06:47:17 sckao Exp $
 //
 //
 
@@ -43,7 +43,7 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
-#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h" 
+//#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h" 
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "FWCore/Framework/interface/TriggerNames.h"
 
@@ -88,7 +88,7 @@ class TtMuon {
 
     std::vector<double> MuonEtCorrection( edm::Handle<std::vector<pat::Muon> > mu );
 
-    void MuonTrigger( edm::Handle<std::vector<pat::Muon> >patMu, edm::Handle <edm::TriggerResults> triggers);
+    //void MuonTrigger( edm::Handle<std::vector<pat::Muon> >patMu, edm::Handle <edm::TriggerResults> triggers);
 
     void matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HOBJ3* histo  ); 
 

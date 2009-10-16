@@ -191,25 +191,25 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
       if ( abs(j1->MomIdx)  == 5 ) continue;
       //pat::Jet truth =  *(j1->trueJet) ;
       const reco::Candidate* truth =  j1->trueJet ;
-      reco::Particle jmom = j1->mom;
+      const reco::Candidate* jmom  = j1->mom;
 
       int flv =  j1->MomIdx ;
       if ( flv == 2 || flv == 4 || flv == -1 || flv == -3 ) {
          if ( wpjj.size()==0 ) { 
             wpjj.push_back( truth->p4() );
-            wpqq.push_back( jmom.p4() );
+            wpqq.push_back( jmom->p4() );
          } else if ( wpjj.size()==1 ) {
             wpjj.push_back( truth->p4() );
-            wpqq.push_back( jmom.p4() );
+            wpqq.push_back( jmom->p4() );
          } 
       }
       if ( flv == -2 || flv == -4 || flv == 1 || flv == 3 ) { 
          if ( wnjj.size()==0 ) {
             wnjj.push_back( truth->p4() );
-            wnqq.push_back( jmom.p4() );
+            wnqq.push_back( jmom->p4() );
          } else if ( wnjj.size()==1 ) {
             wnjj.push_back( truth->p4() );
-            wnqq.push_back( jmom.p4() );
+            wnqq.push_back( jmom->p4() );
          }
       }
 
@@ -227,7 +227,7 @@ void TtJet::matchedWJetsAnalysis( std::vector<jmatch> mcwjets , std::vector<cons
          wnjj.clear();
          wnqq.clear();
       }
-      double res_Pt  = (truth->pt() - jmom.pt()) / jmom.pt() ;
+      double res_Pt  = (truth->pt() - jmom->pt()) / jmom->pt() ;
 
       //bool goodTransfer = false;
       //const pat::Jet* pat_truth = tools->ReturnJetForm( truth, patJets,  goodTransfer );
@@ -260,7 +260,7 @@ void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcjets, std::vector<const 
       //bool goodTransfer = false;
       //const pat::Jet* truth = tools->ReturnJetForm( reco_truth, patJets,  goodTransfer );
       const pat::Jet* truth = dynamic_cast<const pat::Jet*>( reco_truth ) ;
-      reco::Particle jmom = j1->mom;
+      const reco::Candidate* jmom = j1->mom;
       
       double towerArea = 0.;
       double EovH = -1.;
@@ -274,7 +274,7 @@ void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcjets, std::vector<const 
          nTracks= assTk.size();
       }
 
-      double Res_Pt = (truth->pt() - jmom.pt()) / jmom.pt() ; 
+      double Res_Pt = (truth->pt() - jmom->pt()) / jmom->pt() ; 
       double softMuTag = truth->bDiscriminator( bTagAlgo ) ;
 
       histo7->Fill7a( truth->pt(), truth->eta(), nTracks, emEF, Res_Pt, softMuTag );
@@ -571,7 +571,7 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
    }
    Done = true ;
 }
-
+/*
 void TtJet::JetTrigger( Handle<std::vector<pat::Jet> > jets, Handle <edm::TriggerResults> triggers ) {
 
    for (std::vector<pat::Jet>::const_iterator it = jets->begin(); it!= jets->end(); it++) {
@@ -583,17 +583,9 @@ void TtJet::JetTrigger( Handle<std::vector<pat::Jet> > jets, Handle <edm::Trigge
           cout<<" filter name:"<<trigInfo[i].filterName() <<endl;
        }
    }
-   /*
-   edm::TriggerNames trigNames( *triggers );
-   for (size_t i=0; i< triggers->size(); i++ ) {
-
-       string triggered = triggers->accept(i) ? "Yes" : "No" ;
-
-       cout<<" path("<<i<<") accepted ? "<< triggered ;
-       cout<<" trigName: "<< trigNames.triggerName(i)<<endl;
-   }*/
 
 }
+*/
 
 // reco jet Correction, no btagging information
 std::vector<const reco::Candidate*> TtJet::JetSelection( Handle<std::vector<reco::CaloJet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, double fScale, HOBJ1* histo, std::vector<bool>* bTags ) {

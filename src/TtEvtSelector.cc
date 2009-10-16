@@ -234,9 +234,9 @@ int TtEvtSelector::MCEvtSelection( Handle<std::vector<reco::GenParticle> > genPa
 
    // type 4: tau+jets type 3:electron+jest 2: di-lep, 1:muon+jets, 0:hadron , -1:Non-Tt event
    int type = -1;
-   std::vector<reco::Particle> tauColl = mcMatch->ttDecay(genParticles, 15);
-   std::vector<reco::Particle> muColl  = mcMatch->ttDecay(genParticles, 13);
-   std::vector<reco::Particle> eColl   = mcMatch->ttDecay(genParticles, 11);
+   std::vector<const reco::Candidate*> tauColl = mcMatch->ttDecay(genParticles, 15);
+   std::vector<const reco::Candidate*> muColl  = mcMatch->ttDecay(genParticles, 13);
+   std::vector<const reco::Candidate*> eColl   = mcMatch->ttDecay(genParticles, 11);
    
    int nTau = tauColl.size();
    int nMu  = muColl.size();

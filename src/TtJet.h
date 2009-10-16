@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtJet.h,v 1.13 2009/07/15 12:36:26 sckao Exp $
+// $Id: TtJet.h,v 1.14 2009/10/15 06:47:16 sckao Exp $
 //
 //
 
@@ -60,7 +60,7 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
-#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+//#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "FWCore/Framework/interface/TriggerNames.h"
 
@@ -145,7 +145,7 @@ class TtJet {
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
     void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, edm::Handle<std::vector<pat::Muon> > patMuon, HTOP7* histo7 );
-    void JetTrigger( edm::Handle<std::vector<pat::Jet> > jets, edm::Handle <edm::TriggerResults> triggers);
+    //void JetTrigger( edm::Handle<std::vector<pat::Jet> > jets, edm::Handle <edm::TriggerResults> triggers);
 
     template<typename jetT>
     std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<jetT> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL, string bTagAlgo = "", std::vector<double>* bDisList = NULL );

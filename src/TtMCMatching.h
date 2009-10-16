@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMCMatching.h,v 1.12 2009/07/15 12:36:26 sckao Exp $
+// $Id: TtMCMatching.h,v 1.13 2009/10/15 06:47:16 sckao Exp $
 //
 //
 
@@ -100,11 +100,11 @@ class TtMCMatching {
 
     bool matchingGeneral( LorentzVector aP4, LorentzVector bP4, double& dR0, double& ptRes0 );
 
-    std::vector<iTt> TtObjects( edm::Handle<std::vector<reco::GenParticle> > genParticles ); 
+    //std::vector<iTt> TtObjects( edm::Handle<std::vector<reco::GenParticle> > genParticles ); 
 
-    std::vector<reco::Particle> ttPartons( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
-    std::vector<reco::Particle> ttDecay( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
-    std::vector<reco::Particle> genMuonFromB( edm::Handle<std::vector<reco::GenParticle> > genParticles, reco::Particle genB ) ;
+    //std::vector<reco::Candidate> ttPartons( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
+    std::vector<const reco::Candidate*> ttDecay( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
+    std::vector<const reco::Candidate*> genMuonFromB( edm::Handle<std::vector<reco::GenParticle> > genParticles, const reco::Candidate* genB ) ;
 
     std::vector<const reco::Candidate*> matchMuonfromB( edm::Handle<std::vector<reco::GenParticle> > genParticles,
                 std::vector<const reco::Candidate*> jets, std::vector<const reco::Candidate*> isoMuons ,HTOP7* histo7, bool fillhisto ) ;
