@@ -1,0 +1,50 @@
+#
+# This is the data card for the input of TopMassFit 
+# Auther : SCKao - UCRiverside
+#
+
+# Folder to store results
+Path = M2M3Test/NoJESwB/
+
+# Luminostiy( pb^-1 ) before July
+Lumi = 50
+
+#  cross-sections for 7 TeV Collision
+#  MuEnriched QCD is x-section*FilterEfficiency
+#         ( tt_in, wj_lj, zj_mm, tq_in, tw_in, ww_in, wz_in, qcd_mux )
+channel= (    tt,    wj,    zj,    tq,    tw,    ww,    wz,     qcd )
+xsec   = (   165,  6925, 933.3,    63,  10.6,    43,    18,  109853 )
+#xsec10 = (   385, 14266,  1400,   130,    29,    74,    32,  109853 )
+EffHLT = ( 0.204, 0.642, 0.447, 0.247, 0.192,  0.13,   0.1,    0.38 )
+nEvents= (  1571, 483586, 273762, 126345, 89431, 14780, 10940, 1200000 )
+# FileName list for pseudo experiment
+FakeData =    ( tt171_336, wj_336, zj_336, tq_336, tw_336, ww_336, wz_336, qcd1_336 )
+# FileName list for parameterization, or ChainName+ ;  
+# '+' is the flag for TChain 
+Backgrounds = ( wj_336, zj_336, tq_336, tw_336, ww_336, wz_336, QCD+ )
+#  -1: disable, 0: group with tt-wrong,  >= 1: other groups
+BgGroups =    (      0,      0,      0,      0,      0,      0,        1 )
+QCDChain = ( qcd1_336, qcd2_336, qcd3_336, qcd4_336, qcd5_336, qcd7_336 )
+# top mass assumption 
+Signals = ( tt163_336, tt165_336, tt167_336, tt169_336, tt171_336, tt173_336, tt175_336, tt177_336 )
+TMassAssumption = ( 163.2, 165.2, 167.2, 169.2, 171.2, 173.2, 175.2, 177.2 )
+# color code
+ColorCode = (  2, 4, 3, 5, 7, 6, 9, 8 )
+
+# Number of b tagged
+# -1 : no btagged , 0: 1+2 btagged 
+# https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagOctober09ExerciseUsePayload
+n_btag = 0
+bThreshold = 3.9
+
+# Fitting parameters for AlgoKcon
+#
+# Lep: value for No BTagging
+#  0~2: gaus , 3~5: log-normal ,  6,7:landau ttwrong ,  8,9:landau Wjets , 10: tt-ttwrong ratio , 11: tt-Wjets ratio 
+#         p0    p1      p2      p3      p4      p5       p6      p7       p8       p9      p10      p11
+L0B0 = ( 41.246,  -1., -6.505,  2.336,   0.0,  31.796, 107.098, -0.886,  151.034,  38.422,  38.950,  13.727 )
+L0B1 = (  0.092,   1.,  0.196, -0.007,   1.0,  -0.012,   0.316,  0.204,    0.023,  -0.003,  -0.002,  -0.020 )
+#     10 GeV Bin - dM*hadW Constrain for Hadronic Top
+H0B0 = ( 62.167, 4.508, 2.097, -3.413, 161.463, 10.687, 183.757, 37.475,   0.,    0.,  0.919,  0. )
+H0B0 = ( -0.099, 0.969, 0.142,  0.038,   0.205,  0.134,   0.000,  0.000,   0.,    0.,  0.007,  0. )
+

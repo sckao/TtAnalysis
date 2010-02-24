@@ -25,6 +25,7 @@
 #include <TGraphErrors.h>
 
 #include "MassAna.h"
+//#include "WMassFitter.h"
 
 class AlgoKcon : public TObject {
 
@@ -55,20 +56,21 @@ private:
 
    MassAna*         fitTools;
    MassAnaInput*    fitInput;
-   //MassFitFunction* fitFunc;
+//   WMassFitter*     wmFitter;
 
    double mL;
    double mH;
-
+ 
 public:
 
-   AlgoKcon( TString channel, int NBTag, double massL = 0, double massH = 480 );     
+   AlgoKcon( TString channel, double massL = 0, double massH = 480 );     
    ~AlgoKcon();     
  
    void ConstrainFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag );
+   void Tester();
 
-   void getFakeData( TString mName,  TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, 
-                     TH1D* dth2 = NULL, TH1D* dth3 = NULL, TH1D* dth4 = NULL , TH1D* dth5 = NULL);
+   //void getFakeData( TString mName,  TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, 
+   //                  TH1D* dth2 = NULL, TH1D* dth3 = NULL, TH1D* dth4 = NULL , TH1D* dth5 = NULL);
 
    void SetFitParameters( double mass, Double_t* para, int nPara, int NBTag );
 

@@ -1,12 +1,12 @@
 #include "MassAnaOutput.h"
 
-MassAnaOutput::MassAnaOutput( TString channel, int NBTag, double massL, double massH ){
+MassAnaOutput::MassAnaOutput( TString channel, double massL, double massH ){
  
   //fitfunc  = new MassFitFunction();
-  fitter   = new MassAna( channel, NBTag, massL, massH ); 
-  algo0    = new AlgoZero( channel, NBTag, massL, massH );
-  algok    = new AlgoKcon( channel, NBTag, massL, massH );
-  fitInput = new MassAnaInput( channel, NBTag, massL, massH );
+  fitter   = new MassAna( channel, massL, massH ); 
+  algo0    = new AlgoZero( channel, massL, massH );
+  algok    = new AlgoKcon( channel, massL, massH );
+  fitInput = new MassAnaInput( channel, massL, massH );
   fitInput->Initialize( &hfolder ); 
   ptype = ".gif";
   ch_name = channel;
@@ -26,9 +26,11 @@ MassAnaOutput::~MassAnaOutput(){
 
 }
 
+void MassAnaOutput::test() {
+    algok->ConstrainFitting( 171, 10, 120, 250, -1 );
+}
 
 void MassAnaOutput::CoeffCalib( int rbin, int lowBound, int upBound, Bool_t* comp ) {
-
 
      fitter->GetAllCoeff("161", rbin, lowBound, upBound, comp) ;
      fitter->GetAllCoeff("163", rbin, lowBound, upBound, comp) ;
@@ -109,7 +111,7 @@ void MassAnaOutput::CoeffCalib( int rbin, int lowBound, int upBound, Bool_t* com
      delete func;
 }
 
-void MassAnaOutput::MassCalib( int rbin, int lowBound, int upBound, Bool_t *comp, int NBTag, int NPara, bool isWeight ) {
+void MassAnaOutput::MassCalib( int rbin, int lowBound, int upBound, int NBTag, int NPara, bool isWeight ) {
 
      TString hName = "MassReco_"+ch_name;
 
@@ -130,11 +132,11 @@ void MassAnaOutput::MassCalib( int rbin, int lowBound, int upBound, Bool_t *comp
      }
 
      if ( NPara == 12 && !isWeight ) {
-        algo0->MoreCombinedFitting( "161", rbin, lowBound, upBound, comp, NBTag ) ; 
-	algo0->MoreCombinedFitting( "166", rbin, lowBound, upBound, comp, NBTag ) ; 
-	algo0->MoreCombinedFitting( "171", rbin, lowBound, upBound, comp, NBTag ) ; 
-	algo0->MoreCombinedFitting( "176", rbin, lowBound, upBound, comp, NBTag ) ; 
-	algo0->MoreCombinedFitting( "181", rbin, lowBound, upBound, comp, NBTag ) ; 
+        algo0->MoreCombinedFitting( "161", rbin, lowBound, upBound, NBTag ) ; 
+	algo0->MoreCombinedFitting( "166", rbin, lowBound, upBound, NBTag ) ; 
+	algo0->MoreCombinedFitting( "171", rbin, lowBound, upBound, NBTag ) ; 
+	algo0->MoreCombinedFitting( "176", rbin, lowBound, upBound, NBTag ) ; 
+	algo0->MoreCombinedFitting( "181", rbin, lowBound, upBound, NBTag ) ; 
      }
 
      FILE* fitlog = fopen(hfolder+"Outputf.log","r");

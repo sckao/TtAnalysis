@@ -49,8 +49,8 @@ private:
    TString plot8;
    TString plot9;
 
-   TCanvas* c7;
    TCanvas* c3;
+   TCanvas* c7;
    TCanvas* c8;
    TCanvas* c9;
 
@@ -62,7 +62,7 @@ private:
 
 public:
 
-   MassAna( TString channel, int NBTag, double massL = 0, double massH = 480 );     
+   MassAna( TString channel, double massL = 0, double massH = 480 );     
    ~MassAna();     
    
    //void MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, Bool_t* comp, int NBTag );
@@ -72,10 +72,10 @@ public:
    double Chi2Test( TString mName, TH1D* theData, int lowBound, int upBound, int nPar, int NBTag = -1, Double_t* statErr=NULL, int rbin = 10, bool isWeight = false );
    double getChi2( TH1D* theData,  TF1* theFunc, TF1* fS, TF1* fB, TF1* fW, double lowBound , double upBound, int nPar );
 
+   void FitSignal1( TString mName, int rbin );
    void FitSignal( TString mName, int rbin, Double_t *para = NULL, Double_t *perr = NULL );
    void FitTtbar( TString mName, int rbin, Double_t *para = NULL, Double_t *perr = NULL );
-   void FitBackground( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp, 
-                       Double_t *para = NULL, Double_t *perr = NULL );
+   void FitTtbar2( TH1D* h1, TH1D* h2, TString mName );
    void FitBackground( TString mName, int rbin, int lowBound, int upBound, Double_t *para = NULL, Double_t *perr = NULL );
 
    void GetAllCoeff( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp = NULL );

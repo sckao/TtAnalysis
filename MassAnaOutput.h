@@ -46,11 +46,13 @@ private:
 public:
 
    MassAnaOutput() {}     
-   MassAnaOutput( TString channel, int NBTag, double massL, double massH );     
+   MassAnaOutput( TString channel, double massL, double massH );     
    ~MassAnaOutput();     
 
+   void test();
+
    void CoeffCalib( int rbin, int lowBound, int upBound, Bool_t* comp = NULL);
-   void MassCalib( int rbin, int lowBound, int upBound,  Bool_t* comp, int NBTag, int NPara, bool isWeight = false ); 
+   void MassCalib( int rbin, int lowBound, int upBound, int NBTag, int NPara, bool isWeight = false ); 
 
    TString GiveParTitle( int id );
 

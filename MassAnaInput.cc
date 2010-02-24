@@ -1,23 +1,21 @@
 #include "MassAnaInput.h"
 
-MassAnaInput::MassAnaInput( TString channel, int NBTag, double massL, double massH ) {
+MassAnaInput::MassAnaInput( TString channel, double massL, double massH ) {
 
   hname = channel+"TM";
-  probName = "probTt";
+  probName = "probM";
 
   mL = massL;
   mH = massH;
   ch_name = channel;
-  n_btag = NBTag;
   weighting = true;
  
-  bTh = 5;
-  luminosity = 100;    //  pb^-1
-  N_tt = 12000;
-  N_wj = 120000;
-  N_stt = 45018;
-  N_stw = 25935;
-  N_qcd = 2841112;
+  //n_btag = NBTag;
+  GetParameters( "bThreshold", &bTh);
+  GetParameters( "n_btag", &n_btag);
+  //N_tt = 8720;  // for OctX, MET_Workshop
+
+  neu_str = 0;
 
 }
 
@@ -28,47 +26,44 @@ MassAnaInput::~MassAnaInput(){
 
 void MassAnaInput::Initialize( TString* hfolder ) {
 
-   if ( n_btag == -1 ) *hfolder = "NoTag_"+ch_name+"/";
+   if ( n_btag == -1 ) *hfolder = "WFitter_"+ch_name+"/";
    if ( n_btag == 0 )  *hfolder = "AllTags0_"+ch_name+"/";
    if ( n_btag == 1 )  *hfolder = "AllTags1_"+ch_name+"/";
    if ( n_btag == 2 )  *hfolder = "AllTags2_"+ch_name+"_10/";
 
 }
 
-void MassAnaInput::GetFileName( TString mName, int type, TString* fNameList ) {
 
-  if ( n_btag == -1 ) subtag = "NB";
-  if ( n_btag ==  0 ) subtag = "B0";
-  if ( n_btag ==  1 ) subtag = "B1";
-  if ( n_btag ==  2 ) subtag = "B2";
-  TString algotag = "kcon"; 
-  // File names for fake data 
-  if ( type == 0 ) {
-     theSG  = "pseud"+mName +"_"+algotag+"_"+subtag+".root"  ;
-     theBG1 = "pseud_WJets_"+algotag+"_"+subtag+".root"  ;
-     theBG2 = "pseud_STT_"  +algotag+"_"+subtag+".root"  ;
-     theBG3 = "pseud_STTW_" +algotag+"_"+subtag+".root"  ;
-     theBG4 = "pseud_QCD_"  +algotag+"_"+subtag+".root"  ;
+TTree* MassAnaInput::GetTree( string chName, TString treeName, TFile* file  ) {
+  
+  TTree* tr = 0;
+
+  TString theFileName ;
+  TChain* theChain = new TChain( treeName ) ;
+
+  if ( chName[ chName.size()-1 ] == '+'  ) {
+     string ChainName = chName.substr( 0, chName.size()-1 ) + "Chain"  ;
+     vector<string> chainlist;
+     GetParameters( ChainName, &chainlist );
+     for ( size_t j=0; j< chainlist.size(); j++) {
+         theFileName = chainlist[j]+".root" ;
+         cout<<" ** fileName = "<< theFileName <<endl;
+         theChain->Add( theFileName );
+     }
+     tr = theChain ;
+  } else {
+    theFileName = chName+".root" ;
+    cout<<" * fileName = "<< theFileName <<endl;
+    if ( file == NULL ) file = TFile::Open( theFileName );
+    tr = (TTree*) file->Get( treeName );
   }
-  // File names for templates 
-  if ( type == 1 ) {
-     theSG  = algotag + mName+"_"+subtag+".root"  ;
-     theBG1 = algotag + "_WJets_" +subtag+".root"  ;
-     theBG2 = algotag + "_STT_"   +subtag+".root"  ;
-     theBG3 = algotag + "_STTW_"  +subtag+".root"  ;
-     theBG4 = algotag + "_QCD_"   +subtag+".root"  ;
-  }
-  if ( fNameList != NULL ) {
-     fNameList[0] = theSG ;
-     fNameList[1] = theBG1 ;
-     fNameList[2] = theBG2 ;
-     fNameList[3] = theBG3 ;
-     fNameList[4] = theBG4 ;
-  }
+
+  return tr ;
+
 }
 
 // general method
-void MassAnaInput::get_h1Obj(TString fname, TString TName, TString BName, TH1D* h1, double theScale ) {
+void MassAnaInput::get_h1Obj(TString fname, TString TName, TString BName, TH1D* h1, double theScale, bool weight) {
 
   TFile* file = TFile::Open( fname );
   TTree*  tr1 = (TTree*) file->Get( TName );
@@ -85,23 +80,61 @@ void MassAnaInput::get_h1Obj(TString fname, TString TName, TString BName, TH1D* 
 
   // get entries for branch
   Int_t tsz = tr1->GetEntries();
-  cout<<" size of tree = "<< tsz << endl;
+  //cout<<" size of tree = "<< tsz << endl;
 
   for (int k=0; k<tsz; k++) {
       tr1->GetEntry(k);
-      h1->Fill( brV, bProb[k] );
-      //h1->Fill( brV, prb );
+      if (  weight ) h1->Fill( brV, bProb[k] );
+      if ( !weight ) h1->Fill( brV );
   }
 
   h1->Scale( theScale ) ;
   file->Close();
- 
+}
+
+// method for TChain
+void MassAnaInput::get_h1Obj(TChain* tr1, TString BName, TH1D* h1, double theScale, bool weight) {
+
+  // retrieve the variables
+  double brV;
+  tr1->SetBranchAddress( BName ,&brV );
+  double prb;
+  tr1->SetBranchAddress( probName ,&prb );
+
+  //std::vector<bool> blist;
+  //std::vector<double> bProb;
+  //ListWithBTag( fname, n_btag, &blist, &bProb );
+
+  // get entries for branch
+  Int_t tsz = tr1->GetEntries();
+  //cout<<" size of tree = "<< tsz << endl;
+
+  for (int k=0; k<tsz; k++) {
+      tr1->GetEntry(k);
+      //if (  weight ) h1->Fill( brV, bProb[k] );
+      if ( !weight ) h1->Fill( brV );
+  }
+
+  h1->Scale( theScale ) ;
+
 }
 
 void MassAnaInput::getMcMatching( TString mName, TString brName, TH1D* h1, double theScale ) {
 
-  GetFileName( mName, 1 );
-  TFile* file = TFile::Open( theSG );
+  //GetFileName( mName, 1 );
+  vector<string> msets;
+  GetParameters( "TMassAssumption", &msets );
+  vector<string> sglist;
+  GetParameters( "Signals", &sglist );
+
+  TString theFileName ;
+  for (size_t i=0; i< msets.size(); i++) {
+      TString massump = msets[i].substr(0,3) ;
+      if ( massump == mName ) theFileName = sglist[i] + ".root" ;
+  }
+  
+  //TFile* file = TFile::Open( theSG );
+  TFile* file = TFile::Open( theFileName );
   TTree*  tr0 = (TTree*) file->Get( "mcmTt" );
   TTree*  tr1 = (TTree*) file->Get( "solTt" );
 
@@ -142,7 +175,8 @@ void MassAnaInput::getMcMatching( TString mName, TString brName, TH1D* h1, doubl
       }
   }
   h1->Scale( theScale ) ;
-  NormalizeComponents( luminosity, N_tt, 1., h1 );
+  //NormalizeComponents( luminosity, N_tt, 1., h1 );
+  NormalizeComponents( "tt", h1 );
   file->Close();
 
 }
@@ -202,7 +236,8 @@ void MassAnaInput::getHadPermutation( TString fName, TString brName, TH1D* h1, d
   }
 
   h1->Scale( theScale ) ;
-  NormalizeComponents( luminosity, N_tt, 1., h1 );
+  //NormalizeComponents( luminosity, N_tt, 1., h1 );
+  NormalizeComponents( "tt", h1 );
   file->Close();
 }
 
@@ -246,7 +281,8 @@ void MassAnaInput::ListWithBTag( TString fName, int nbtags, std::vector<bool>* b
           if ( jid1[3] == Bj[k] ) usedB++;
       }
       // record # of b jets used and calculate bjet used probability
-      if ( bProb != NULL && nbtags > 0 ) { 
+      //if ( bProb != NULL && nbtags > 0 ) { 
+      if ( bProb != NULL ) { 
          double totalPrb = usedB*prb ; 
          bProb->push_back( totalPrb );
          bNorm += totalPrb ;
@@ -321,7 +357,8 @@ void MassAnaInput::getLepPermutation( TString fName, TString brName, TH1D* h1, d
   }
 
   h1->Scale( theScale ) ;
-  NormalizeComponents( luminosity, N_tt, 1., h1 );
+  //NormalizeComponents( luminosity, N_tt, 1., h1 );
+  NormalizeComponents( "tt", h1 );
   file->Close();
 
 }
@@ -329,8 +366,19 @@ void MassAnaInput::getLepPermutation( TString fName, TString brName, TH1D* h1, d
 
 void MassAnaInput::getMostProb( TString mName, TString brName, TH1D* h1,  double theScale ) {
 
-  GetFileName( mName, 1 );
-  TFile* file = TFile::Open( theSG );
+  //GetFileName( mName, 1 );
+
+  vector<string> msets;
+  GetParameters( "TMassAssumption", &msets );
+  vector<string> sglist;
+  GetParameters( "Signals", &sglist );
+  TString theFileName ;
+  for (size_t i=0; i< msets.size(); i++) {
+      TString massump = msets[i].substr(0,3) ;
+      if ( massump == mName ) theFileName = sglist[i] + ".root" ;
+  }
+
+  TFile* file = TFile::Open( theFileName );
   TTree*  tr1 = (TTree*) file->Get( "solTt" );
 
   int evtId, entId, iniId, entSz, jid[5] ;
@@ -360,111 +408,248 @@ void MassAnaInput::getMostProb( TString mName, TString brName, TH1D* h1,  double
       }
   }
   h1->Scale( theScale ) ;
-  NormalizeComponents( luminosity, N_tt, 1., h1 );
+  NormalizeComponents( "tt", h1 );
   file->Close();
 
 }
 
+// get signal component for fitter parameterization
+void MassAnaInput::getTt( TH1D* hData, double tmass, bool matched ) {
 
-// combined the fake data
-/*
-void MassAnaInput::getFakeData( TString mName, int rbin, TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, TH1D* dth2, TH1D* dth3, TH1D* dth4, TH1D* dth5 ){
+  //int nbin = ( mH - mL )/ rbin ;
 
-  // get the file names of fake data
-  GetFileName( mName, 0 );
-  // get all fake data 
-  if ( dth0 != NULL && dth1 != NULL ) {
-     getFakeData(dth0, theSG,  true,  rbin,  1. );                  // tt-signal
-     getFakeData(dth1, theSG,  false, rbin,  1. );                  // tt-wrong combinatorics
-  }
-  if (dth1 != NULL && dth0 == NULL ) get_h1Obj( theSG, "solTt", hname, dth1 ); // for kinematic constrain  
-  if (dth2 != NULL ) get_h1Obj( theBG1, "solTt", hname, dth2 );            // w+jets
-  if (dth3 != NULL ) get_h1Obj( theBG2, "solTt", hname, dth3,  0.195 );    // single top t-channel
-  if (dth4 != NULL ) get_h1Obj( theBG3, "solTt", hname, dth4,  0.183 );    // single top tW-channel
-  if (dth5 != NULL ) get_h1Obj( theBG4, "solTt", hname, dth5,  2.01  );    // QCD
+  vector<double> mlist;
+  GetParameters( "TMassAssumption", &mlist );
+  vector<string> flist;
+  GetParameters( "Signals", &flist );
 
-  // mix all fake samples
-  if (dth0 != NULL ) ttadd->Add(dth0, 1);
-  if (dth1 != NULL ) ttadd->Add(dth1, 1);
-  if (dth2 != NULL ) ttadd->Add(dth2, 1);
-  if (dth3 != NULL ) ttadd->Add(dth3, 1);
-  if (dth4 != NULL ) ttadd->Add(dth4, 1);
-  if (dth5 != NULL ) ttadd->Add(dth5, 1);
-
-  // give different color for samples
-  if (dth5 != NULL ) dth5->SetFillColor(5);  // QCD
-  if (dth4 != NULL ) dth4->SetFillColor(6);  // single top tw channel
-  if (dth3 != NULL ) dth3->SetFillColor(4);  // single top t channel
-  if (dth2 != NULL ) dth2->SetFillColor(2);  // w+jets
-  if (dth1 != NULL ) dth1->SetFillColor(7);
-  if (dth0 != NULL ) dth0->SetFillColor(3);
-
-  // stack them
-  if (dth5 != NULL ) ttstk->Add( dth5 );
-  if (dth4 != NULL ) ttstk->Add( dth4 );
-  if (dth3 != NULL ) ttstk->Add( dth3 );
-  if (dth2 != NULL ) ttstk->Add( dth2 );
-  if (dth1 != NULL ) ttstk->Add( dth1 );
-  if (dth0 != NULL ) ttstk->Add( dth0 );
-
-}
-
-// for tt signal and backgrounds
-void MassAnaInput::getFakeData( TH1D* fkdat, TString thefileName, bool isSignal, int rbin, double theScale ){
-
-  // all combinations
-  int nbin = ( mH - mL ) / rbin ;
-  TH1D* bg1 = new TH1D("bg1","", nbin, mL, mH );
-  get_h1Obj( thefileName, "solTt", hname, bg1 );
-
-  // matched combinations
-  TH1D* sg1 = new TH1D("sg1","", nbin, mL, mH );
-  get_h1Obj( thefileName, "mcmTt", hname, sg1 );
-
-  if ( !isSignal ) fkdat->Add( bg1, sg1, theScale, -1.*theScale );
-  if (  isSignal ) fkdat->Add( sg1, theScale );
-
-  delete sg1;
-  delete bg1;
-}
-*/
-
-void MassAnaInput::getSignal(TH1D* h_Sg, int type, TString mName ) {
-
-  GetFileName( mName, 1 );
-  if ( type == 0 ) get_h1Obj(theSG, "solTt", hname, h_Sg );
-  if ( type == 1 ) get_h1Obj(theSG, "mcmTt", hname, h_Sg );
-  NormalizeComponents( luminosity, N_tt, 1., h_Sg );
-
-}
-
-void MassAnaInput::getBackground( TH1D* h_Bg, int type, int nbin, TString mName ){
-
-  GetFileName( mName, 1 );
-
-  TString thefileName ;
-  if (type == 1 ) thefileName = theSG;
-  if (type == 2 ) thefileName = theBG1 ;
-  if (type == 3 ) thefileName = theBG2 ;
-  if (type == 4 ) thefileName = theBG3 ;
-  if (type == 5 ) thefileName = theBG4 ;
-
-  get_h1Obj( thefileName, "solTt", hname, h_Bg );
-
-  if( type == 1 ) {
-    TH1D* sgl = new TH1D("sgl","", nbin, mL, mH );
-    get_h1Obj( theSG, "mcmTt", hname, sgl );
-    h_Bg->Add(sgl, -1 );
-    delete sgl;
+  TString fileName ;
+  for (size_t i=0; i < mlist.size(); i++) {
+      if ( mlist[i] == tmass ) {
+         fileName = flist[i]+".root" ;
+      }
   }
 
-  // scale to 100 /pb
-  if ( type == 1 ) NormalizeComponents( luminosity, N_tt,   1, h_Bg );  // ttbar wrong permutation
-  if ( type == 2 ) NormalizeComponents( luminosity, N_wj,   2, h_Bg );  // wjets
-  if ( type == 3 ) NormalizeComponents( luminosity, N_stt,  3, h_Bg );  // single top t
-  if ( type == 4 ) NormalizeComponents( luminosity, N_stw,  4, h_Bg );  // single top tW
-  if ( type == 5 ) NormalizeComponents( luminosity, N_qcd,  5, h_Bg );  // QCD
+  TH1D* h_sg = (TH1D*) hData->Clone("h_sg") ;
+  //TH1D* h_sg = new TH1D("h_sg","", nbin, mL, mH );
+  get_h1Obj( fileName, "mcmTt", hname, h_sg );
 
+  if ( !matched ) {
+     get_h1Obj( fileName, "solTt", hname, hData );
+     hData->Add(h_sg, -1 );
+     hData->SetFillColor(kPink-2);
+  }  
+  if ( matched ) { 
+     hData->Add( h_sg, 1 ) ;
+     hData->SetFillColor(2);
+  }
+
+  NormalizeComponents( "tt" , hData );
+
+  delete h_sg;
+}
+
+// No tt wrong permutation 
+void MassAnaInput::getBackground( TH1D* allbg, THStack* bgstk, vector<TH1D*>& hlist, int groupId ){
+
+     vector<string> channel;
+     GetParameters( "channel", &channel );
+     vector<int> colors;
+     GetParameters("ColorCode", &colors );
+     vector<string> bglist;
+     GetParameters( "Backgrounds", &bglist );
+     vector<int> bgGrp;
+     GetParameters( "BgGroups", &bgGrp ); 
+
+     TH1D* hini = (TH1D*) allbg->Clone("hini") ;
+     TString fileName ;
+     for (size_t i=0; i < bglist.size(); i++) {
+         // exclude un-wanted component 
+         if ( bgGrp[i] != groupId ) continue;
+
+         TH1D* htmp = (TH1D*) hini->Clone("htmp") ;
+         // chain the files if necessary
+         if ( bglist[i][ bglist[i].size() -1 ] == '+'  ) {
+            string ChainName = bglist[i].substr( 0, bglist[i].size()-1 ) + "Chain"  ;
+            vector<string> chainlist;
+            GetParameters( ChainName, &chainlist );
+            TChain* fchain = new TChain("solTt") ;
+            for ( size_t j=0; j< chainlist.size(); j++) {
+                fileName = chainlist[j]+".root" ;
+                fchain->Add( fileName );
+            }
+            get_h1Obj( fchain, hname, htmp );
+
+         } else {
+            fileName = bglist[i]+".root" ;
+            get_h1Obj( fileName, "solTt", hname, htmp );
+         }
+         NormalizeComponents(  channel[i+1], htmp );
+
+         allbg->Add( htmp, 1 );
+         htmp->SetFillColor( colors[i+1] );
+         hlist.push_back( htmp );
+         fileName.Clear() ;
+     }
+     for (size_t i = hlist.size(); i > 0; i--) {
+         size_t j = i-1;
+         bgstk->Add( hlist[j] );
+     }
+}
+
+// get the fake data 
+void MassAnaInput::getFakeData( int rbin, TH1D* ttadd, THStack* ttstk, vector<TH1D*>& hlist ){
+
+  vector<string> fNameList;
+  GetParameters("FakeData", &fNameList );
+  vector<string> channel;
+  GetParameters("channel", &channel );
+  vector<int> colors;
+  GetParameters("ColorCode", &colors );
+
+  int nbin = ( mH - mL )/ rbin ;
+  for (size_t i=0; i< fNameList.size(); i++) {
+      TH1D* htmp = new TH1D( channel[i].c_str() ,"", nbin, mL, mH );
+      hlist.push_back( htmp );
+      TString f_n( fNameList[i] );
+      f_n = f_n + ".root" ;
+      get_h1Obj( f_n, "solTt", hname, hlist[i], 1 );
+      NormalizeComponents(  channel[i], hlist[i] );
+      ttadd->Add( hlist[i], 1);
+      hlist[i]->SetFillColor( colors[i] );
+  }
+  for (size_t i = hlist.size(); i > 0; i--) {
+      size_t j = i-1;
+      ttstk->Add( hlist[j] );
+  }
+
+}
+
+vector<TLorentzVector> MassAnaInput::GetNeutrinos( TTree* tr, int evtIdx, int& synId, bool& nextEvt ){
+
+  double px,py,pz,E ;
+  int evtId,objId ;
+  tr->SetBranchAddress("px"    ,&px);
+  tr->SetBranchAddress("py"    ,&py);
+  tr->SetBranchAddress("pz"    ,&pz);
+  tr->SetBranchAddress("E"     ,&E);
+  tr->SetBranchAddress("evtId" ,&evtId);
+  tr->SetBranchAddress("objId" ,&objId);
+  vector<TLorentzVector> neuV;
+  // need to be fixed , solution Id = 1 or 2; objId = 0 or 1
+ 
+  if (synId ==0 ) neu_str = 0 ;
+  if ( nextEvt ) {
+     for (int i=neu_str; i<= tr->GetEntries() ; i++) {
+         tr->GetEntry(i);
+
+         //cout<<"  evtIdx = "<< evtIdx <<" evtId = "<< evtId <<" neu_str = "<< neu_str <<" objId = "<< objId ;
+         //cout<<" synId = "<< synId << endl;
+         if ( evtId < evtIdx ) continue;
+
+         if ( evtId == evtIdx )  {
+            //cout<<"  -> evtId = "<< evtId <<" objId ="<< objId <<" pz = "<< pz<<" px = "<< px << endl;
+            TLorentzVector neuP4( px, py, pz, E );
+            neuV.push_back( neuP4 );
+            if ( synId != evtIdx ) { 
+               synId = evtIdx ;
+               neu_str = i ;
+            }
+         }
+
+         if ( evtId > evtIdx ) break;
+      }
+      neu_str = neu_str + neuV.size()  ;
+      nextEvt = false ;
+  }
+  //cout<<"   final str = "<< neu_str <<endl;
+  return neuV;
+
+}
+
+vector<TLorentzVector> MassAnaInput::GetJets( TTree* tr, int evtIdx, vector<double>& bCut, int& synId, bool& nextEvt ){
+
+  double px,py,pz,E, bDis ;
+  int evtId,objId ;
+  tr->SetBranchAddress("px"    ,&px);
+  tr->SetBranchAddress("py"    ,&py);
+  tr->SetBranchAddress("pz"    ,&pz);
+  tr->SetBranchAddress("E"     ,&E);
+  tr->SetBranchAddress("evtId" ,&evtId);
+  tr->SetBranchAddress("objId" ,&objId);
+  tr->SetBranchAddress("qCut"  ,&bDis );
+
+  vector<TLorentzVector> jetV ;
+  bCut.clear(); 
+
+  if ( synId ==0 ) jet_str = 0 ;
+  if ( nextEvt ) { 
+     for (int i=jet_str; i<= tr->GetEntries() ; i++) {
+         tr->GetEntry(i);
+
+         //cout<<"  evtIdx = "<< evtIdx <<" evtId = "<< evtId <<" jet_str = "<< jet_str <<" objId = "<< objId ;
+         //cout<<" synId = "<< synId << endl;
+         if ( evtId < evtIdx ) continue;
+
+         if ( evtId == evtIdx )  {
+            //cout<<"  -> evtId = "<< evtId <<" objId ="<< objId <<" pz = "<< pz<<" px = "<< px <<endl;
+            TLorentzVector jetP4( px, py, pz, E );
+            jetV.push_back( jetP4 );
+            bCut.push_back( bDis );
+            if ( synId != evtIdx ) { 
+               synId = evtIdx ;
+               jet_str = i ;
+            }
+         }
+
+         if ( evtId > evtIdx ) break;
+     }
+     jet_str = jet_str + jetV.size()  ;
+     nextEvt = false ;
+  }
+  //cout<<"   final str = "<< jet_str <<endl;
+  return jetV;
+}
+
+vector<TLorentzVector> MassAnaInput::GetMuons( TTree* tr, int evtIdx, int& synId, bool& nextEvt ){
+
+  double px,py,pz,E ;
+  int evtId,objId ;
+  tr->SetBranchAddress("px"    ,&px);
+  tr->SetBranchAddress("py"    ,&py);
+  tr->SetBranchAddress("pz"    ,&pz);
+  tr->SetBranchAddress("E"     ,&E);
+  tr->SetBranchAddress("evtId" ,&evtId);
+  tr->SetBranchAddress("objId" ,&objId);
+
+  vector<TLorentzVector> muV ;
+ 
+  if ( synId ==0 ) mu_str = 0 ;
+  if ( nextEvt ) { 
+     for (int i=mu_str; i<= tr->GetEntries() ; i++) {
+         tr->GetEntry(i);
+
+         //cout<<"  evtIdx = "<< evtIdx <<" evtId = "<< evtId <<" mu_str = "<< mu_str <<" objId = "<< objId ;
+         //cout<<" synId = "<< synId << endl;
+         if ( evtId < evtIdx ) continue;
+
+         if ( evtId == evtIdx )  {
+            //cout<<"  -> evtId = "<< evtId <<" objId ="<< objId <<" pz = "<< pz<<" px = "<< px <<endl;
+            TLorentzVector muP4( px, py, pz, E );
+            muV.push_back( muP4 );
+            if ( synId != evtIdx ) { 
+               synId = evtIdx ;
+               mu_str = i ;
+            }
+         }
+
+         if ( evtId > evtIdx ) break;
+     }
+     mu_str = mu_str + muV.size()  ;
+     nextEvt = false ;
+  }
+  //cout<<"   final str = "<< mu_str <<endl;
+  return muV;
 }
 
 void MassAnaInput::NormalizeComponents( double lumi, double nEvents, int theChannel, TH1D* tmp ){
@@ -475,8 +660,13 @@ void MassAnaInput::NormalizeComponents( double lumi, double nEvents, int theChan
   // channel #   => ttbar signal =  1 ; wjets = 2 ; Signle Top t_ch = 3 ; Single Top tW_ch = 4 ; QCD = 5
 
   int idx = theChannel - 1;
+  // 10TeV cross-section
   double xsec[5] = {   414,  40000,   130,    29, 121675 };  // unit:pb, for MuEnrichedQCD already applied filter efficiency
   double Eff[5]  = { 0.219, 0.0085, 0.195, 0.183, 0.2335 };  // HLT and Data Skim efficiency
+  //
+  // 7 TeV cross-section !!! Eff needed to be fixed !!!
+  //double xsec[5] = {   187,  24000,    42,    11, 109853 };  // unit:pb, for MuEnrichedQCD already applied filter efficiency
+  //double Eff[5]  = { 0.207, 0.0085, 0.195, 0.183, 0.2335 };  // HLT and Data Skim efficiency
   double nBase = xsec[idx]*Eff[idx];
 
   double Scal = (nBase*lumi) / nEvents ;
@@ -484,4 +674,243 @@ void MassAnaInput::NormalizeComponents( double lumi, double nEvents, int theChan
 
 }
 
+void MassAnaInput::NormalizeComponents(  string theChannel, TH1D* tmp ){
+
+  double lumi ;
+  GetParameters("Lumi", &lumi );
+
+  vector<double> nEvents ;
+  GetParameters( "nEvents" , &nEvents );
+  vector<double> xsec;
+  GetParameters("xsec", &xsec);
+  vector<double> Eff;
+  GetParameters("EffHLT", &Eff)  ;
+  vector<string>  channel;
+  GetParameters( "channel" , &channel );
+
+  int idx = -1;
+  for (size_t i =0; i< channel.size(); i++) {
+      if ( channel[i] == theChannel )  idx = i ;
+  }
+
+  if ( idx >= 0 ) {
+     double nBase = xsec[idx]*Eff[idx];
+     double Scal = (nBase*lumi) / nEvents[idx] ;
+     cout<<" Scal of "<< channel[idx]<< " = " << Scal <<endl;
+     tmp->Scale(Scal);
+  
+  } else {
+     cout <<" No matched componenet !! " <<endl;
+  }
+
+}
+
+double MassAnaInput::NormalizeComponents(  string theChannel ){
+
+  double lumi ;
+  double Scal = 1 ;
+  GetParameters("Lumi", &lumi );
+
+  vector<double> nEvents ;
+  GetParameters( "nEvents" , &nEvents );
+  vector<double> xsec;
+  GetParameters("xsec", &xsec);
+  vector<double> Eff;
+  GetParameters("EffHLT", &Eff)  ;
+  vector<string>  channel;
+  GetParameters( "channel" , &channel );
+
+  int idx = -1;
+  for (size_t i =0; i< channel.size(); i++) {
+      if ( channel[i] == theChannel )  idx = i ;
+  }
+
+  if ( idx >= 0 ) {
+     double nBase = xsec[idx]*Eff[idx];
+     Scal = (nBase*lumi) / nEvents[idx] ;
+     cout<<" Scal of "<< channel[idx]<< " = " << Scal <<endl;
+  
+  } else {
+     cout <<" No matched componenet !! " <<endl;
+  }
+
+  return Scal;
+}
+
+
+// Methods to read DataCard.txt
+void MassAnaInput::GetParameters(string paraName, int* thePara ){
+
+     fstream paraFile("DataCard.txt");
+     string  line;
+     string  getName;
+     string  getValue;
+     size_t  pos ;
+     size_t  vpos ;
+
+     while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 2;
+           if ( pos < line.npos ) {
+              getName  = line.substr( pos, paraName.size() );
+              getValue = line.substr( vpos );
+              *thePara = atoi( getValue.c_str() );
+              //cout<< paraName <<" = "<< *thePara << endl;
+           }
+     }
+}
+
+void MassAnaInput::GetParameters(string paraName, double* thePara ){
+
+     fstream paraFile("DataCard.txt");
+     string  line;
+     string  getName;
+     string  getValue;
+     size_t  pos ;
+     size_t  vpos ;
+
+     while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 2;
+           if ( pos < line.npos ) {
+              getName  = line.substr( pos, paraName.size() );
+              getValue = line.substr( vpos );
+              *thePara = atof( getValue.c_str() );
+              //cout<< paraName <<" = "<< *thePara << endl;
+           }
+     }
+}
+
+void MassAnaInput::GetParameters(string paraName, string* thePara ){
+
+     fstream paraFile("DataCard.txt");
+     string  line;
+     string  getName;
+     size_t  pos ;
+     size_t  vpos ;
+
+     while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 2;
+           if ( pos < line.npos ) {
+              //cout<<" pos = "<< pos <<endl;
+              getName  = line.substr( pos, paraName.size() );
+              //*thePara = line.substr( vpos );
+              //cout<< paraName <<" = "<< *thePara << endl;
+              string strTmp = line.substr( vpos );
+              for (string::iterator it = strTmp.begin(); it< strTmp.end(); it++) {
+                  if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') thePara->push_back( *it );
+              }
+           }
+     }
+}
+
+void MassAnaInput::GetParameters(string paraName, vector<double>* thePara ){
+
+     fstream paraFile("DataCard.txt");
+     string  line;
+     string  getName;
+     string  getValue;
+     size_t  pos ;
+     size_t  vpos ;
+     vector<double>  vvec;
+
+     while ( getline(paraFile, line) ) {
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 1;
+           if ( pos < line.npos ) {
+              getName  = line.substr( pos, paraName.size() );
+              string arrVal = line.substr( vpos );
+	      int vidx = 0;
+	      string vtemp ;
+	      //cout<< paraName <<" = ( " ;
+              for (string::iterator it = arrVal.begin(); it< arrVal.end(); it++) {
+                  if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') vtemp.push_back( *it );
+                  if ( (*it) == ',' || (*it) == ')' ) { 
+                     vvec.push_back( atof( vtemp.c_str() ) ) ;
+		     //cout<< vtemp << *it;
+		     vidx++ ;
+		     vtemp.clear() ;
+                  }
+              }
+              *thePara = vvec ;
+           }
+     }
+
+} 
+
+void MassAnaInput::GetParameters(string paraName, vector<string>* thePara ){
+
+     fstream paraFile("DataCard.txt");
+     string  line;
+     string  getName;
+     string  getValue;
+     size_t  pos ;
+     size_t  vpos ;
+     vector<string>  vvec;
+
+     while ( getline(paraFile, line) ) {
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 1;
+           if ( pos < line.npos ) {
+              getName  = line.substr( pos, paraName.size() );
+              string arrVal = line.substr( vpos );
+	      int vidx = 0;
+	      string vtemp ;
+	      //cout<< paraName <<" = ( " ;
+              for (string::iterator it = arrVal.begin(); it< arrVal.end(); it++) {
+                  if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') vtemp.push_back( *it );
+                  if ( (*it) == ',' || (*it) == ')' ) { 
+                     vvec.push_back( vtemp ) ;
+		     //cout<< vtemp << *it;
+		     vidx++ ;
+		     vtemp.clear() ;
+                  }
+              }
+              *thePara = vvec ;
+           }
+     }
+
+}
+ 
+void MassAnaInput::GetParameters(string paraName, vector<int>* thePara ){
+
+     fstream paraFile("DataCard.txt");
+     string  line;
+     string  getName;
+     string  getValue;
+     size_t  pos ;
+     size_t  vpos ;
+     vector<int>  vvec;
+
+     while ( getline(paraFile, line) ) {
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 1;
+           if ( pos < line.npos ) {
+              getName  = line.substr( pos, paraName.size() );
+              string arrVal = line.substr( vpos );
+	      int vidx = 0;
+	      string vtemp ;
+	      //cout<< paraName <<" = ( " ;
+              for (string::iterator it = arrVal.begin(); it< arrVal.end(); it++) {
+                  if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') vtemp.push_back( *it );
+                  if ( (*it) == ',' || (*it) == ')' ) { 
+                     vvec.push_back( atoi( vtemp.c_str() ) ) ;
+		     //cout<< vtemp << *it;
+		     vidx++ ;
+		     vtemp.clear() ;
+                  }
+              }
+              *thePara = vvec ;
+           }
+     }
+
+}
+ 
 

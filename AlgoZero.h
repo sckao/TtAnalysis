@@ -61,15 +61,15 @@ private:
 
 public:
 
-   AlgoZero( TString channel, int NBTag, double massL = 0, double massH = 480 );     
+   AlgoZero( TString channel, double massL = 0, double massH = 480 );     
    ~AlgoZero();     
  
-   void MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, Bool_t* comp, int NBTag );
+   void MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag );
 
    void CombinedFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag );
  
-   void getFakeData( TString mName,  TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, 
-                     TH1D* dth2 = NULL, TH1D* dth3 = NULL, TH1D* dth4 = NULL, TH1D* dth5 = NULL );
+   //void getFakeData( TString mName,  TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, 
+   //                  TH1D* dth2 = NULL, TH1D* dth3 = NULL, TH1D* dth4 = NULL, TH1D* dth5 = NULL );
 
    void SetFitParameters( double mass, Double_t* para, int nPara, int NBTag, int nbin );
 

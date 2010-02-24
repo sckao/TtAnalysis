@@ -1,6 +1,6 @@
 #include "MassAna.h"
 
-MassAna::MassAna( TString channel, int NBTag, double massL, double massH  ){
+MassAna::MassAna( TString channel, double massL, double massH  ){
 
   ptype  = ".gif";
 
@@ -10,7 +10,7 @@ MassAna::MassAna( TString channel, int NBTag, double massL, double massH  ){
   mH = massH ;
 
   fitFunc  = new MassFitFunction();
-  fitInput = new MassAnaInput( channel, NBTag, massL, massH );
+  fitInput = new MassAnaInput( channel, massL, massH );
   fitInput->Initialize( &hfolder  );
 
   gSystem->mkdir(hfolder);
@@ -195,7 +195,7 @@ void MassAna::GetAllCoeff( TString mName, int rbin, int lowBound, int upBound, B
        FitBackground( mName, rbin, lowBound, upBound, bPar, bErr );
      } else {
        FitSignal( mName, rbin, sPar, sErr );
-       FitBackground( mName, rbin, lowBound, upBound, comp, bPar, bErr );
+       FitBackground( mName, rbin, lowBound, upBound, bPar, bErr );
      }
      parfile = fopen(hfolder+"/paraf.log","a");
      errfile = fopen(hfolder+"/perrf.log","a");
@@ -223,9 +223,7 @@ void MassAna::GetAllCoeff( TString mName, int rbin, int lowBound, int upBound, B
      fclose(errfile);
 }
 
-void MassAna::FitSignal(TString mName, int rbin, Double_t* para, Double_t* perr) {
-
-  FILE* testfile = fopen(hfolder+"/Sgpara.log","a");
+void MassAna::FitSignal1( TString mName, int rbin ) {
 
   gStyle->SetOptFit(111);
   gStyle->SetOptStat("nirm");
@@ -234,6 +232,7 @@ void MassAna::FitSignal(TString mName, int rbin, Double_t* para, Double_t* perr)
   gStyle->SetStatTextColor(1);
 
   TString plot7 = hfolder+"FitTest_"+mName+".gif";
+  TString plot6 = hfolder+"FitMC_"+mName+".gif";
 
   c7 = new TCanvas("c7","", 1000, 800);
   c7->SetFillColor(10);
@@ -247,18 +246,18 @@ void MassAna::FitSignal(TString mName, int rbin, Double_t* para, Double_t* perr)
   c7->cd(1);
 
   // tmp0: get template signal distribution
-  int nbin = ( mH - mL ) / rbin ;
+  int nbin = (mH - mL ) / rbin ;
   TH1D* sg = new TH1D("sg","", nbin, mL, mH );
-  fitInput->getSignal( sg, 1, mName );
+  fitInput->getTt( sg, m1 );
+  //fitInput->getSignal( sg, 1, mName );
 
   sg->SetFillColor(7);
-  //sg->SetMaximum( yMax );
   sg->Draw();
 
   TF1* func0 = new TF1("func0", MassFitFunction::fitLG , 80, 450, 3);
   TF1* func7 = new TF1("func7", MassFitFunction::fitGS , lowBound, upBound, 3);
   TF1* func2 = new TF1("func2", MassFitFunction::fitSG , lowBound-20, upBound, 6);
-  if ( cname == "Lep" ) {
+  if ( cname == "lep" ) {
      func0 = new TF1("func0", MassFitFunction::fitLD , 80, 450, 3);
      func2 = new TF1("func2", MassFitFunction::fitSG1 , lowBound-20, upBound, 6);
   }
@@ -273,7 +272,7 @@ void MassAna::FitSignal(TString mName, int rbin, Double_t* para, Double_t* perr)
   double p3 = 33. ;
   double p4 = log(m1) + sqrt(1./20.) ;
   double p5 =  5. ;
-  if ( cname == "Lep" ) {
+  if ( cname == "lep" ) {
      p3 = 1.8;
      p4 = m1 ;
      p5 = 30 ;
@@ -282,8 +281,223 @@ void MassAna::FitSignal(TString mName, int rbin, Double_t* para, Double_t* perr)
   func2->SetParLimits( 0, 10., p0+1.0*p0);
   func2->FixParameter( 1, p1 );
   func2->SetParLimits( 2, p2-0.3*p2, p2+1.0*p2);
-  if ( cname == "Had" )  func2->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
-  if ( cname == "Lep" )  func2->SetParLimits(3, p3-0.3*p3, p3+0.3*p3);
+  if ( cname == "had" )  func2->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
+  if ( cname == "lep" )  func2->SetParLimits(3, p3-0.3*p3, p3+0.3*p3);
+
+  func2->FixParameter(4, p4 );
+  func2->FixParameter(5, p5 );
+
+  sg->Fit( func2, "RQ0","", lowBound, upBound );
+
+  p0 = func2->GetParameter(0);
+  p1 = func2->GetParameter(1);
+  p2 = func2->GetParameter(2);
+  p3 = func2->GetParameter(3);
+  p5 = func2->GetParameter(5);
+
+  // Draw the gaussian
+  func7->FixParameter(0, p0 );
+  func7->FixParameter(1, p1 );
+  func7->FixParameter(2, p2 );
+  func7->SetLineColor(4);
+  func7->Draw("sames");
+
+  c7->Update();
+
+  c7->cd(2);
+
+  sg->SetFillColor(7);
+  sg->Draw();
+
+  // 2nd Fit , Allow gaussian change
+  func2->SetParLimits(0, p0-0.1*p0, p0+0.1*p0);
+  func2->SetParLimits(1, m1-0.1*m1, m1+0.1*m1 );
+  func2->SetParLimits(2, p2-0.1*p2, p2+0.1*p2 );
+  func2->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
+  func2->FixParameter(4, p4 );
+  func2->FixParameter(5, p5 );
+  cout<<" Orignal  P4 = "<<p4<<endl;
+  sg->Fit( func2, "R","sames", lowBound, upBound);
+
+  p0 = func2->GetParameter(0);
+  p1 = func2->GetParameter(1);
+  p2 = func2->GetParameter(2);
+  p3 = func2->GetParameter(3);
+  p4 = func2->GetParameter(4);
+  p5 = func2->GetParameter(5);
+
+  func0->FixParameter(0, p0*p3);
+  func0->FixParameter(1, p4   );
+  func0->FixParameter(2, p5   );
+
+  func0->SetLineColor(2);
+  func0->SetLineWidth(3);
+  func0->SetLineStyle(2);
+  func0->Draw("sames");
+
+  c7->Update();
+
+  c7->cd(3);
+  // 3rd Fit , tunning tail distribution
+  double p4Max = p4;
+  double p4Min = p4;
+  if ( cname == "had" ) {
+     p4Min = ( m1 < p1 ) ?  log(m1) + sqrt(1./20.) :  log(p1) + sqrt(1./20.) ;
+     p4Max = ( m1 > p1 ) ?  log(m1) + sqrt(1./20.) :  log(p1) + sqrt(1./20.) ;
+  }
+  if ( cname == "lep" ) {
+     p4Min = ( m1 < p1) ? m1 : p1 ;
+     p4Max = ( m1 > p1) ? m1 : p1 ;
+  }
+  func2->SetParameter(0, p0 );
+  func2->SetParameter(1, p1 );
+  func2->SetParameter(2, p2 );
+  func2->FixParameter(3, p3 );
+  func2->SetParLimits(4, p4Min, p4Max );
+  func2->FixParameter(5, p5 );
+  sg->SetFillColor(7);
+  sg->Fit( func2, "R","", lowBound, upBound);
+  //func2->Draw("sames");
+  p0 = func2->GetParameter(0);
+  p1 = func2->GetParameter(1);
+  p1 = func2->GetParameter(2);
+  p3 = func2->GetParameter(3);
+  p4 = func2->GetParameter(4);
+  p5 = func2->GetParameter(5);
+
+  func0->FixParameter(0, p0*p3);
+  func0->FixParameter(1, p4   );
+  func0->FixParameter(2, p5   );
+
+  func0->SetLineColor(2);
+  func0->SetLineWidth(3);
+  func0->SetLineStyle(2);
+  func0->Draw("sames");
+
+  c7->Update();
+
+  // 4th Fit , Final tunning
+  c7->cd(4);
+  func2->SetParameter(0, p0 );
+  func2->SetParameter(1, p1 );
+  func2->SetParameter(2, p2 );
+  func2->FixParameter(3, p3 );
+  func2->FixParameter(4, p4 );
+  func2->FixParameter(5, p5 );
+  sg->SetFillColor(7);
+  sg->Draw();
+  sg->Fit( func2, "R","sames", lowBound, upBound);
+  func2->Draw("sames");
+
+  p0 = func2->GetParameter(0);
+  p1 = func2->GetParameter(1);
+  p2 = func2->GetParameter(2);
+  p3 = func2->GetParameter(3);
+  p4 = func2->GetParameter(4);
+  p5 = func2->GetParameter(5);
+
+  func0->FixParameter(0, p0*p3);
+  func0->FixParameter(1, p4   );
+  func0->FixParameter(2, p5   );
+
+  func0->SetLineColor(2);
+  func0->SetLineWidth(3);
+  func0->SetLineStyle(2);
+  func0->Draw("sames");
+
+  c7->Update();
+  c7->Print(plot7);
+
+  TCanvas* c6 = new TCanvas("c6","", 1000, 800);
+  c6->SetFillColor(10);
+  sg->Draw();
+  func2->Draw("sames");
+  func0->Draw("sames");
+  c6->Update();
+  c6->Print(plot6);
+
+  sg->Draw();
+
+  delete c7;
+  delete c6;
+  delete func3;
+  delete func2;
+  delete func7;
+  delete func0;
+  delete sg;
+
+}
+
+void MassAna::FitSignal(TString mName, int rbin, Double_t* para, Double_t* perr) {
+
+  FILE* testfile = fopen(hfolder+"/Sgpara.log","a");
+
+  gStyle->SetOptFit(111);
+  gStyle->SetOptStat("nirm");
+  gStyle->SetStatY(0.95);
+  gStyle->SetStatX(0.95);
+  gStyle->SetStatTextColor(1);
+
+  TString plot7 = hfolder+"FitTest_"+mName+".gif";
+  TString plot6 = hfolder+"FitMC_"+mName+".gif";
+
+  c7 = new TCanvas("c7","", 1000, 800);
+  c7->SetFillColor(10);
+  c7->SetFillColor(10);
+  c7->Divide(2,2);
+
+  double m1 = MassDigi(mName);
+  double lowBound = m1 - 50 ;
+  double upBound  = m1 + 170 ;
+  
+  vector<string> msets;
+  fitInput->GetParameters( "TMassAssumption", &msets );
+  for (size_t i=0; i< msets.size(); i++) {
+      cout << " m assumption = "<<msets[i].substr(0,3) <<endl;
+  }
+
+
+  c7->cd(1);
+
+  // tmp0: get template signal distribution
+  int nbin = ( mH - mL ) / rbin ;
+  TH1D* sg = new TH1D("sg","", nbin, mL, mH );
+  fitInput->getTt( sg, m1 );
+  //fitInput->getSignal( sg, 1, mName );
+
+  sg->SetFillColor(7);
+  //sg->SetMaximum( yMax );
+  sg->Draw();
+
+  TF1* func0 = new TF1("func0", MassFitFunction::fitLG , 80, 450, 3);
+  TF1* func7 = new TF1("func7", MassFitFunction::fitGS , lowBound, upBound, 3);
+  TF1* func2 = new TF1("func2", MassFitFunction::fitSG , lowBound-20, upBound, 6);
+  if ( cname == "lep" ) {
+     func0 = new TF1("func0", MassFitFunction::fitLD , 80, 450, 3);
+     func2 = new TF1("func2", MassFitFunction::fitSG1 , lowBound-20, upBound, 6);
+  }
+  TF1* func3 = new TF1("func3", MassFitFunction::fitLD , 0, 480, 3);
+
+  // pre-set the value
+  // Hadronic top : gaus + log-normal
+  // Leptonic top : gaus + landau
+  double p0 = 50. ;
+  double p1 = m1  ;
+  double p2 = 20. ;
+  double p3 = 33. ;
+  double p4 = log(m1) + sqrt(1./20.) ;
+  double p5 =  5. ;
+  if ( cname == "lep" ) {
+     p3 = 1.8;
+     p4 = m1 ;
+     p5 = 30 ;
+  }
+  // 1st Fit, Fix "mean" value for gaussisan & log-normal and allow normalization and width vary
+  func2->SetParLimits( 0, 10., p0+1.0*p0);
+  func2->FixParameter( 1, p1 );
+  func2->SetParLimits( 2, p2-0.3*p2, p2+1.0*p2);
+  if ( cname == "had" )  func2->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
+  if ( cname == "lep" )  func2->SetParLimits(3, p3-0.3*p3, p3+0.3*p3);
 
   func2->FixParameter(4, p4 );
   func2->FixParameter(5, p5 );
@@ -388,7 +602,18 @@ void MassAna::FitSignal(TString mName, int rbin, Double_t* para, Double_t* perr)
   c7->Update();
   c7->Print(plot7);
 
+  TCanvas* c6 = new TCanvas("c6","", 1000, 800);
+  c6->SetFillColor(10);
+  sg->Draw();
+  func2->Draw("sames");
+  func0->Draw("sames");
+  c6->Update();
+  c6->Print(plot6);
+
+  sg->Draw();
+
   delete c7;
+  delete c6;
   delete func3;
   delete func2;
   delete func7;
@@ -422,9 +647,9 @@ void MassAna::FitTtbar(TString mName, int rbin, Double_t* para, Double_t* perr) 
   double upBound  = m1 + 170 ;
   int nbin = ( mH - mL ) / rbin ;
   
-  TF1* func7 = new TF1("func7", MassFitFunction::fitGS , lowBound, upBound, 3);
-  TF1* func0 = new TF1("func0", MassFitFunction::fitLD , 80, 450, 3);
-  TF1* func2 = new TF1("func2", MassFitFunction::fitSG1 , lowBound, upBound, 6);
+  TF1* fnG = new TF1("fnG", MassFitFunction::fitGS , lowBound, upBound, 3);
+  TF1* fnL = new TF1("fnL", MassFitFunction::fitLD , 80, 450, 3);
+  TF1* fnSG = new TF1("fnSG", MassFitFunction::fitSG1 , lowBound, upBound, 6);
 
   // A testing platform
   c7->cd(4);
@@ -443,11 +668,11 @@ void MassAna::FitTtbar(TString mName, int rbin, Double_t* para, Double_t* perr) 
   TH1D* mch  = new TH1D("mch","", nbin, mL, mH );
   fitInput->getMcMatching( mName, theBrName, mch );
   mch->SetLineColor(4);
-  func7->SetParLimits( 0, 1, 20 );
-  func7->SetParameter( 1, m1 );
-  func7->SetParLimits( 2, 10, 30 );
-  func7->SetLineColor(4);
-  mch->Fit( func7, "R","sames", lowBound-20, upBound );
+  fnG->SetParLimits( 0, 1, 20 );
+  fnG->SetParameter( 1, m1 );
+  fnG->SetParLimits( 2, 10, 30 );
+  fnG->SetLineColor(4);
+  mch->Fit( fnG, "R","sames", lowBound-20, upBound );
   c7->Update();
 
   gStyle->SetStatY(0.55);
@@ -456,54 +681,55 @@ void MassAna::FitTtbar(TString mName, int rbin, Double_t* para, Double_t* perr) 
   tbg->Add( mph );
   tbg->Add( mch, -1. );
   tbg->SetLineColor(2);
-  func0->SetParLimits( 0, 1, 100 );
-  func0->SetParLimits( 1, m1+10, m1+200 );
-  func0->SetParLimits( 2, 5, 55 );
-  func0->SetLineColor(2);
-  tbg->Fit( func0, "R","sames", lowBound-20, upBound );
+  fnL->SetParLimits( 0, 1, 100 );
+  fnL->SetParLimits( 1, m1+10, m1+200 );
+  fnL->SetParLimits( 2, 5, 55 );
+  fnL->SetLineColor(2);
+  tbg->Fit( fnL, "R","sames", lowBound-20, upBound );
   c7->Update();
-
+  
   c7->cd(1);
 
   gStyle->SetStatTextColor(1);
   gStyle->SetStatY(0.95);
   // tmp0: get template signal distribution
   TH1D* sg = new TH1D("sg","", nbin, mL, mH );
-  fitInput->getSignal( sg, 0, mName );
+  fitInput->getTt( sg, m1 );
+  //fitInput->getSignal( sg, 0, mName );
 
   sg->SetFillColor(7);
   //sg->SetMaximum( yMax );
   sg->Draw();
 
   // pre-set the value
-  double p0 = 50. ;
+  double p0 = 40. ;
   double p1 = m1  ;
-  double p2 = func7->GetParameter(2);
-  double p3 = func0->GetParameter(0);
-  double p4 = func0->GetParameter(1);
-  double p5 = func0->GetParameter(2);
-
+  double p2 = fnG->GetParameter(2);
+  double p3 = fnL->GetParameter(0);
+  double p4 = fnL->GetParameter(1);
+  double p5 = fnL->GetParameter(2);
+  
   // 1st Fit, Fix "mean" value for gaussisan & landau and allow normalization and width vary
-  func2->SetParLimits( 0, p0-0.1*p0, p0+1.0*p0);
-  func2->FixParameter( 1, p1 );
-  func2->SetParLimits( 2, p2-0.2*p2, p2+0.2*p2);
-  func2->SetParLimits( 3, 0.1, 8 );
-  func2->SetParameter( 4, p4 );
-  func2->SetParLimits( 5, p5-0.1*p5, p5+0.1*p5);
+  fnSG->SetParLimits( 0, p0-0.1*p0, p0+1.0*p0);
+  fnSG->FixParameter( 1, p1 );
+  fnSG->SetParLimits( 2, p2-0.2*p2, p2+0.2*p2);
+  fnSG->SetParLimits( 3, 0.1, 8 );
+  fnSG->SetParameter( 4, p4 );
+  fnSG->SetParLimits( 5, p5-0.1*p5, p5+0.1*p5);
 
-  sg->Fit( func2, "RQ0","", lowBound, upBound );
-  p0 = func2->GetParameter(0);
-  p1 = func2->GetParameter(1);
-  p2 = func2->GetParameter(2);
-  p3 = func2->GetParameter(3);
-  p5 = func2->GetParameter(5);
+  sg->Fit( fnSG, "RQ0","", lowBound, upBound );
+  p0 = fnSG->GetParameter(0);
+  p1 = fnSG->GetParameter(1);
+  p2 = fnSG->GetParameter(2);
+  p3 = fnSG->GetParameter(3);
+  p5 = fnSG->GetParameter(5);
 
   // Draw the gaussian
-  func7->FixParameter(0, p0 );
-  func7->FixParameter(1, p1 );
-  func7->FixParameter(2, p2 );
-  func7->SetLineColor(4);
-  func7->Draw("sames");
+  fnG->FixParameter(0, p0 );
+  fnG->FixParameter(1, p1 );
+  fnG->FixParameter(2, p2 );
+  fnG->SetLineColor(4);
+  fnG->Draw("sames");
   c7->Update();
 
 
@@ -515,205 +741,166 @@ void MassAna::FitTtbar(TString mName, int rbin, Double_t* para, Double_t* perr) 
   sg->Draw();
 
   // 2nd Fit , Allow gaussian change
-  func2->SetParLimits(0, p0-0.1*p0, p0+0.1*p0);
-  func2->SetParLimits(1, m1 - 5.  , m1 + 5. );
-  func2->SetParLimits(2, p2-0.1*p2, p2+0.1*p2 );
-  func2->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
-  func2->FixParameter(4, p4 );
-  func2->FixParameter(5, p5 );
-  sg->Fit( func2, "R","sames", lowBound, upBound);
+  fnSG->SetParLimits(0, p0-0.1*p0, p0+0.1*p0);
+  fnSG->SetParLimits(1, m1 - 5.  , m1 + 5. );
+  fnSG->SetParLimits(2, p2-0.1*p2, p2+0.1*p2 );
+  fnSG->SetParLimits(3, p3-0.1*p3, p3+0.1*p3);
+  fnSG->FixParameter(4, p4 );
+  fnSG->FixParameter(5, p5 );
+  sg->Fit( fnSG, "R","sames", lowBound, upBound);
 
-  p0 = func2->GetParameter(0);
-  p1 = func2->GetParameter(1);
-  p2 = func2->GetParameter(2);
-  p3 = func2->GetParameter(3);
-  p4 = func2->GetParameter(4);
-  p5 = func2->GetParameter(5);
+  p0 = fnSG->GetParameter(0);
+  p1 = fnSG->GetParameter(1);
+  p2 = fnSG->GetParameter(2);
+  p3 = fnSG->GetParameter(3);
+  p4 = fnSG->GetParameter(4);
+  p5 = fnSG->GetParameter(5);
 
-  func0->FixParameter(0, p0*p3);
-  func0->FixParameter(1, p4   );
-  func0->FixParameter(2, p5   );
+  fnL->FixParameter(0, p0*p3);
+  fnL->FixParameter(1, p4   );
+  fnL->FixParameter(2, p5   );
 
-  func0->SetLineColor(2);
-  func0->SetLineWidth(3);
-  func0->SetLineStyle(2);
-  func0->Draw("sames");
+  fnL->SetLineColor(2);
+  fnL->SetLineWidth(3);
+  fnL->SetLineStyle(2);
+  fnL->Draw("sames");
 
   c7->Update();
 
   c7->cd(3);
   // 3rd Fit , Final tunning
-  func2->SetParLimits(0, p0- 0.1*p0 , p0+0.1*p0);
-  func2->SetParLimits(1, m1 - 1.   , m1 + 1. );
-  func2->SetParLimits(2, p2- 0.1*p2, p2+ 0.1*p2);
-  func2->SetParLimits(3, p3-0.01*p3, p3+0.01*p3);
-  func2->SetParLimits(4, p4-0.01*p4, p4+0.01*p4);
-  func2->SetParLimits(5, p5-0.01*p5, p5+0.01*p5 );
+  fnSG->SetParLimits(0, p0- 0.1*p0 , p0+0.1*p0);
+  fnSG->SetParLimits(1, m1 - 1.   , m1 + 1. );
+  fnSG->SetParLimits(2, p2- 0.1*p2, p2+ 0.1*p2);
+  fnSG->SetParLimits(3, p3-0.01*p3, p3+0.01*p3);
+  fnSG->SetParLimits(4, p4-0.01*p4, p4+0.01*p4);
+  fnSG->SetParLimits(5, p5-0.01*p5, p5+0.01*p5 );
   sg->SetFillColor(7);
   //sg->SetMaximum( yMax );
   sg->Draw();
-  sg->Fit( func2, "R","sames", lowBound, upBound);
-  func2->Draw("sames");
+  sg->Fit( fnSG, "R","sames", lowBound, upBound);
+  fnSG->Draw("sames");
 
-  p0 = func2->GetParameter(0);
-  p1 = func2->GetParameter(1);
-  p2 = func2->GetParameter(2);
-  p3 = func2->GetParameter(3);
-  p4 = func2->GetParameter(4);
-  p5 = func2->GetParameter(5);
+  p0 = fnSG->GetParameter(0);
+  p1 = fnSG->GetParameter(1);
+  p2 = fnSG->GetParameter(2);
+  p3 = fnSG->GetParameter(3);
+  p4 = fnSG->GetParameter(4);
+  p5 = fnSG->GetParameter(5);
 
   fprintf(testfile," %.1f", m1 );
   for (int i=0; i<6; i++) {
-      fprintf(testfile,"  %.3f  %.3f",  func2->GetParameter(i), func2->GetParError(i) );
-      if ( para != NULL ) para[i] = func2->GetParameter(i);
-      if ( perr != NULL ) perr[i] = func2->GetParError(i) ;
+      fprintf(testfile,"  %.3f  %.3f",  fnSG->GetParameter(i), fnSG->GetParError(i) );
+      if ( para != NULL ) para[i] = fnSG->GetParameter(i);
+      if ( perr != NULL ) perr[i] = fnSG->GetParError(i) ;
   }
   fprintf(testfile," \n" );
 
-  func0->FixParameter(0, p0*p3);
-  func0->FixParameter(1, p4   );
-  func0->FixParameter(2, p5   );
+  fnL->FixParameter(0, p0*p3);
+  fnL->FixParameter(1, p4   );
+  fnL->FixParameter(2, p5   );
 
-  func0->SetLineColor(2);
-  func0->SetLineWidth(3);
-  func0->SetLineStyle(2);
-  func0->Draw("sames");
+  fnL->SetLineColor(2);
+  fnL->SetLineWidth(3);
+  fnL->SetLineStyle(2);
+  fnL->Draw("sames");
 
   c7->Update();
   c7->Print(plot7);
 
   delete c7;
-  delete func0;
-  delete func2;
-  delete func7;
+  delete fnG;
+  delete fnL;
+  delete fnSG;
   delete sg;
   delete tbg;
   delete mch;
   delete mph;
 
   fclose(testfile);
-
 }
 
+// background 1 : tt-wrong combinatorics and all other backgrounds seperated
+// background 2 : tt-wrong + all other background channels
+void MassAna::FitBackground( TString mName, int rbin, int lowBound, int upBound, Double_t *para, Double_t *perr ){
 
-void MassAna::FitBackground( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp, Double_t *para, Double_t *perr ){
+  FILE* bgpara = fopen(hfolder+"bgpara_AlgoZero.log","a"); 
 
-  FILE* bgpara = fopen(hfolder+"Bgpara.log","a"); 
+  double m1 = MassDigi(mName);
+  plot8 = hfolder+cname+"_BG_"+mName+".gif";
+  
+  // get the tt wrong combinatorics
+  int nbin = ( mH - mL ) / rbin ;
+  TH1D* tt = new TH1D("tt","tt wrong combinatorics", nbin, mL, mH ); 
+  fitInput->getTt( tt, m1, false );
 
+  // background group 1, qcd
+  THStack* bg1stk = new THStack("bg1stk", "Sum of backgrounds w/o tt");
+  TH1D* bg1 = new TH1D("bg1","Background group 1", nbin, mL, mH );
+  vector<TH1D*> bglist1;
+  fitInput->getBackground( bg1, bg1stk, bglist1, 1 );
+  
+  // background group 2, all other background channels
+  THStack* bg2stk = new THStack("bg2stk", "Sum of backgrounds w/ tt");
+  TH1D* bg2 = new TH1D("bg2","Background group 2", nbin, mL, mH );
+  vector<TH1D*> bglist2;
+  fitInput->getBackground( bg2, bg2stk, bglist2 );
+  /// add ttbar wrong combinatorics
+  
+  TH1D* tt1 =  (TH1D*) tt->Clone("tt1") ;
+  /*
+  bg2->Add(tt1, 1);
+  bg2stk->Add( tt1 ) ; 
+  */
+  // Fitting and Plotting
   gStyle->SetOptFit(111);
   gStyle->SetOptStat("nirm");
   gStyle->SetStatY(0.95);
   gStyle->SetStatX(0.95);
   gStyle->SetStatTextColor(1);
 
-  double m1 = MassDigi(mName);
-  plot8 = hfolder+cname+"_BG_"+mName+".gif";
-
-  int nbin = ( mH - mL ) / rbin ;
-  TH1D* tt  = new TH1D("tt",  "", nbin, mL, mH );   // tmp1: tt wrong combinatorics
-  TH1D* wj  = new TH1D("wj",  "", nbin, mL, mH );   // tmp2: wjets, single Top t, single Top tW, QCD
-  TH1D* stt = new TH1D("stt", "", nbin, mL, mH );
-  TH1D* stw = new TH1D("stw", "", nbin, mL, mH );
-  fitInput->getBackground( tt,  1, nbin, mName );
-  fitInput->getBackground( wj,  2, nbin, mName );
-  fitInput->getBackground( stt, 3, nbin, mName );
-  fitInput->getBackground( stw, 4, nbin, mName );
-  // mix the background
-  TH1D* bg1  = new TH1D("bg1","Background group 1", nbin, mL, mH );
-  if ( comp[1] ) bg1->Add(tt, 1.);
-  if ( comp[2] ) bg1->Add(wj, 1.);
-  if ( comp[3] ) bg1->Add(stt,1.);
-  if ( comp[4] ) bg1->Add(stw,1.);
-
-  TH1D* bg2 = new TH1D("bg2","Background group 2", nbin, mL, mH );
-  if ( !comp[1] ) bg2->Add(tt, 1.);
-  if ( !comp[2] ) bg2->Add(wj, 1.);
-  if ( !comp[3] ) bg2->Add(stt,1.);
-  if ( !comp[4] ) bg2->Add(stw,1.);
-
   c8 = new TCanvas("c8","", 800, 600);
   c8->SetFillColor(10);
   c8->SetFillColor(10);
   c8->Divide(2,2);
 
-  // show all background compositions
+  // tt-wrong combinatorics
   c8->cd(1);
-  gStyle->SetOptStat("ni");
-  THStack* allbgstk = new THStack("allbgstk", "Sum of backgrounds");
-
-  stt->SetFillColor(4);
-  allbgstk->Add(stt);
-  stw->SetFillColor(6);
-  allbgstk->Add(stw);
-  wj->SetFillColor(2);
-  allbgstk->Add(wj);
-  tt->SetFillColor(7);
-  allbgstk->Add(tt);
-  allbgstk->Draw();
-
-  gStyle->SetStatY(0.30);
-  gStyle->SetStatTextColor(2);
-  wj->SetName(" W + Jets ");
-  wj->DrawCopy("sames");
-  c8->Update();
-  gStyle->SetStatY(0.50);
-  gStyle->SetStatTextColor(4);
-  stt->SetName("SingleTop_t");
-  stt->DrawCopy("sames");
-  c8->Update();
-  gStyle->SetStatY(0.70);
-  gStyle->SetStatTextColor(6);
-  stw->SetName("SingleTop_tW");
-  stw->DrawCopy("sames");
-  c8->Update();
-  gStyle->SetStatY(0.90);
-  gStyle->SetStatTextColor(7);
-  tt->SetName("Tt-Wrong");
-  tt->DrawCopy("sames");
-  c8->Update();
-
-  allbgstk->Draw("same");
-  c8->Update();
-  gStyle->SetStatTextColor(1);
+  tt->Draw();
  
-  // sum of backgrounds
-  c8->cd(3);
-  THStack* bg1stk = new THStack("bg1stk", "background group1 ");
-  if ( comp[3] ) bg1stk->Add(stt);
-  if ( comp[4] ) bg1stk->Add(stw);
-  if ( comp[2] ) bg1stk->Add(wj);
-  if ( comp[1] ) bg1stk->Add(tt);
-  bg1stk->Draw();
-
-  // Fit the combined backgrounds
-  gStyle->SetStatTextColor(1);
-  TF1* func7 = new TF1("func7", MassFitFunction::fitLD , 90, 380, 3);
-  func7->SetParLimits(0, 100., bg1->Integral() );
-  if (cname == "Had" ) func7->SetParLimits(1, m1-10, m1+20.);
-  if (cname == "Lep" ) func7->SetParLimits(1, m1-20, m1+15.);
-  func7->SetParLimits(2,  1., 100.);
-  func7->SetLineColor(1);
-  bg1->Fit( func7, "R","sames", lowBound, upBound );
+  TF1* func0 = new TF1("func0", MassFitFunction::fitLD , 90, 380, 3);
+  func0->SetParLimits(0, 5., tt->Integral() );
+  if (cname == "Had" ) func0->SetParLimits(1, m1-10, m1+20.);
+  if (cname == "Lep" ) func0->SetParLimits(1, m1-20, m1+15.);
+  func0->SetParLimits(2,  1., 200.);
+  func0->SetLineStyle(2);
+  tt->Fit( func0, "R","sames", lowBound, upBound );
 
   c8->Update();
 
-  // sum of top related backgrounds
-  c8->cd(4);
-  gStyle->SetOptStat("ni");
-  THStack* bg2stk = new THStack("bg2stk", "background group 2");
-  if ( !comp[3] ) bg2stk->Add(stt);
-  if ( !comp[4] ) bg2stk->Add(stw);
-  if ( !comp[2] ) bg2stk->Add(wj);
-  if ( !comp[1] ) bg2stk->Add(tt);
+  // backgrounds 1, qcd
+  c8->cd(2); 
+  bg1stk->Draw();
+ 
+  TF1* func1 = new TF1("func1", MassFitFunction::fitLD , 90, 380, 3);
+  func1->SetParLimits(0, 1., bg1->Integral() );
+  //if (cname == "Had" ) func1->SetParLimits(1, 90, m1+20.);
+  //if (cname == "Lep" ) func1->SetParLimits(1, m1-20, m1+15.);
+  //func1->SetParLimits(1,  90., 200.);
+  //func1->SetParLimits(2,  1., 200.);
+  func1->SetLineColor(1);
+  bg1->Fit( func1, "R","sames", lowBound, 450 );
 
+  c8->Update();
+
+  // background 2, all other channels
+  c8->cd(3);
   bg2stk->Draw();
 
-  gStyle->SetStatTextColor(1);
-  // Fit the combined backgrounds
   TF1* func2 = new TF1("func2", MassFitFunction::fitLD , 90, 380, 3);
-  func2->SetParLimits(0, 10., bg2->Integral() );
+  func2->SetParLimits(0, 1., bg2->Integral() );
   func2->SetParLimits(1, m1-10, m1+20.);
-  func2->SetParLimits(2,  1., 100.);
+  func2->SetParLimits(2,  1., 200.);
   bg2->Fit( func2, "N0R","", lowBound, upBound );
   double p0 = func2->GetParameter(0);
   double p1 = func2->GetParameter(1);
@@ -723,42 +910,28 @@ void MassAna::FitBackground( TString mName, int rbin, int lowBound, int upBound,
   func2->SetParLimits(2, p2-0.1*p2, p2+0.1*p2 );
   bg2->Fit( func2, "R","sames", lowBound, upBound );
 
-  if ( comp[1] && comp[2] && comp[3] && comp[4] ) {
-     bg2stk->Add(stt);
-     bg2stk->Add(stw);
-     bg2stk->Add(wj);
-     bg2stk->Draw();
-  }
-
   c8->Update();
 
-  // Draw the tt-wrong combination background
-  c8->cd(2);
-  tt->SetLineWidth(2);
-  tt->SetTitle("tt-wrong combinations");
-  tt->Draw();
+  c8->cd(4);
 
-  // Fit tt-wrong permutation
-  TF1* func0 = new TF1("func0", MassFitFunction::fitLD , 90, 380, 3);
-  func0->SetParLimits(0, 100., tt->Integral() );
-  if (cname == "Had" ) func7->SetParLimits(1, m1-10, m1+20.);
-  if (cname == "Lep" ) func7->SetParLimits(1, m1-20, m1+15.);
-  func0->SetParLimits(2,  1., 100.);
-  func0->SetLineStyle(2);
-  tt->Fit( func0, "R","sames", lowBound, upBound );
+  //bg2->Add(bg1, 1);
+  //bg2->Add(tt1, 1);
+  bg2stk->Add( bglist1[0] ) ; 
+  bg2stk->Add( tt1 ) ; 
+  bg2stk->Draw();
+
   c8->Update();
 
   c8->Print(plot8);
-
 
   // para[0~2] : background group 1 / tt wrong permutation 
   // para[3~5] : background group 2 / combined backgrounds 
   fprintf(bgpara," %.1f", m1 );
   for (int i=0; i<6; i++) {  
       if ( i < 3 ) {
-         fprintf(bgpara,"  %.3f  %.3f",  func7->GetParameter(i), func7->GetParError(i) );
-         if ( para != NULL ) para[i] = func7->GetParameter(i);
-         if ( perr != NULL ) perr[i] = func7->GetParError(i) ;
+         fprintf(bgpara,"  %.3f  %.3f",  func0->GetParameter(i), func0->GetParError(i) );
+         if ( para != NULL ) para[i] = func0->GetParameter(i);
+         if ( perr != NULL ) perr[i] = func0->GetParError(i) ;
       } else {
          fprintf(bgpara,"  %.3f  %.3f",  func2->GetParameter(i-3), func2->GetParError(i-3) );
          if ( para != NULL ) para[i] = func2->GetParameter(i-3);
@@ -771,20 +944,18 @@ void MassAna::FitBackground( TString mName, int rbin, int lowBound, int upBound,
   delete bg1;
   delete bg2;
   delete tt;
-  delete wj;
-  delete stt;
-  delete stw;
+  delete tt1;
   delete func0;
-  delete func7;
+  delete func1;
   delete func2;
   delete bg1stk;
   delete bg2stk;
-  delete allbgstk;
 
   fclose(bgpara);
 }
 
 // another method for kinematic constrain case
+/*
 void MassAna::FitBackground( TString mName, int rbin, int lowBound, int upBound, Double_t *para, Double_t *perr ){
 
   FILE* bgpara = fopen(hfolder+"/Bgpara.log","a"); 
@@ -873,15 +1044,153 @@ void MassAna::FitBackground( TString mName, int rbin, int lowBound, int upBound,
 
   fclose(bgpara);
 }
+*/
+
+// for W Mass Fitter
+void MassAna::FitTtbar2( TH1D* h1, TH1D* h2, TString mName ) {
+
+  //FILE* testfile = fopen(hfolder+"Sgpara.log","a");
+
+  gStyle->SetOptFit(111);
+  gStyle->SetOptStat("nirm");
+  gStyle->SetStatY(0.95);
+  gStyle->SetStatX(0.95);
+  gStyle->SetStatTextColor(1);
+
+  TString plot5 = hfolder+"WMFitTest_"+mName+".gif";
+  TCanvas* c5 = new TCanvas("c5","", 900, 400);
+  c5->SetFillColor(10);
+  c5->SetFillColor(10);
+  c5->Divide(2,1);
+
+  double m1 = MassDigi(mName);
+  double lowBound = m1 - 50 ;
+  double upBound  = m1 + 150 ;
+  
+  TF1* fnG  = new TF1("fnG", MassFitFunction::fitGS , lowBound, upBound, 3);
+  TF1* fnL  = new TF1("fnL", MassFitFunction::fitLD , 100, 430, 3);
+  TF1* fnSG = new TF1("fnSG", MassFitFunction::fitSG1 , lowBound, upBound, 6);
+
+  // A testing platform
+  c5->cd(1);
+  gStyle->SetStatTextColor(1);
+  gStyle->SetStatY(0.95);
+  h1->SetFillColor(7);
+  //sg->SetMaximum( yMax );
+  h1->Draw();
+
+  // pre-set the value
+  Double_t pa[6] ;
+  pa[0] = 40. ;
+  pa[1] = m1  ;
+  pa[2] = 25  ;
+  pa[3] =  1  ;
+  pa[4] = m1  ;
+  pa[5] = 300  ;
+  
+  // 1st Fit, Fix "mean" value for gaussisan & landau and allow normalization and width vary
+  for (int i = 0; i< 6; i++ ) {
+      fnSG->SetParameter( i, pa[i] );
+  }
+  fnSG->SetParLimits(1, m1-10, m1+10 );
+  fnSG->SetParLimits(2, 5, 50 );
+  fnSG->SetParLimits(3, 0, 2  );
+  fnSG->SetParLimits(4, m1-11, m1+12 );
+  fnSG->SetParLimits(5, 35, 500 );
+
+  h1->Fit( fnSG, "RQ0","", lowBound, upBound );
+  for (int i = 0; i< 6; i++ ) {
+      pa[i] = fnSG->GetParameter(i);
+      fnSG->SetParameter( i, pa[i] );
+  }
+  h1->Fit( fnSG, "RQ0","", lowBound, upBound);
+  fnSG->Draw("sames");
+
+  fnL->FixParameter(0, pa[0]*pa[3]);
+  fnL->FixParameter(1, pa[4]   );
+  fnL->FixParameter(2, pa[5]   );
+  fnL->SetLineColor(2);
+  fnL->SetLineWidth(3);
+  fnL->SetLineStyle(2);
+  fnL->Draw("sames");
+  c5->Update();
+
+  /*
+  fprintf(testfile," %.1f", m1 );
+  for (int i=0; i<6; i++) {
+      fprintf(testfile,"  %.3f  %.3f",  fnSG->GetParameter(i), fnSG->GetParError(i) );
+      if ( para != NULL ) para[i] = fnSG->GetParameter(i);
+      if ( perr != NULL ) perr[i] = fnSG->GetParError(i) ;
+  }
+  fprintf(testfile," \n" );
+  */
+
+  // A testing platform
+  c5->cd(2);
+  gStyle->SetStatTextColor(1);
+  gStyle->SetStatY(0.95);
+  h2->SetFillColor(7);
+  //sg->SetMaximum( yMax );
+  h2->Draw();
+
+  // pre-set the value
+  pa[0] = 40. ;
+  pa[1] = m1  ;
+  pa[2] = 25  ;
+  pa[3] =  1  ;
+  pa[4] = m1  ;
+  pa[5] = 300 ;
+  
+  // 1st Fit, Fix "mean" value for gaussisan & landau and allow normalization and width vary
+  for (int i = 0; i< 6; i++ ) {
+      fnSG->SetParameter( i, pa[i] );
+  }
+  fnSG->SetParLimits(1, m1-10, m1+10 );
+  fnSG->SetParLimits(2, 5, 50 );
+  fnSG->SetParLimits(3, 0, 2  );
+  fnSG->SetParLimits(4, m1-15, m1+50 );
+  fnSG->SetParLimits(5, 20, 500 );
+
+  h2->Fit( fnSG, "RQ0","", lowBound, upBound );
+
+  for (int i = 0; i< 6; i++ ) {
+      pa[i] = fnSG->GetParameter(i);
+      fnSG->SetParameter( i, pa[i] );
+  }
+  h2->Fit( fnSG, "RQ0","", lowBound, upBound);
+  fnSG->Draw("sames");
+
+  fnL->FixParameter(0, pa[0]*pa[3]);
+  fnL->FixParameter(1, pa[4]   );
+  fnL->FixParameter(2, pa[5]   );
+  fnL->SetLineColor(2);
+  fnL->SetLineWidth(3);
+  fnL->SetLineStyle(2);
+  fnL->Draw("sames");
+  c5->Update();
+
+  c5->Print(plot5);
+
+  delete c5;
+  delete fnG;
+  delete fnL;
+  delete fnSG;
+
+  //fclose(testfile);
+}
 
 double MassAna::MassDigi( TString mString ) {
 
-  double mDigi = 171.2;
-  TString marr10[] = { "161", "163", "166", "168", "171", "173", "176", "178", "181", "183" };
-  for (int k=0; k<10; k++) {
-      if ( marr10[k] == mString ) mDigi = 161.2 + (2.5*k) ;
+  vector<string> mlist;
+  fitInput->GetParameters("TMassAssumption", &mlist );
+
+  double mDigi = 999.;
+  for (size_t i=0; i< mlist.size(); i++) {
+      TString massump = mlist[i].substr(0,3) ;
+      if ( massump == mString ) mDigi = atof( mlist[i].c_str() );
   }
   return mDigi ;
+
 }
 
 void MassAna::SetFitParameters( double mass, Double_t* para, int nPara, int NBTag, int rbin ) {

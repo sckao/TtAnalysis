@@ -1,6 +1,6 @@
 #include "AlgoZero.h"
 
-AlgoZero::AlgoZero( TString channel, int NBTag, double massL, double massH  ){
+AlgoZero::AlgoZero( TString channel, double massL, double massH  ){
 
   ptype  = ".gif";
 
@@ -9,8 +9,8 @@ AlgoZero::AlgoZero( TString channel, int NBTag, double massL, double massH  ){
   mL = massL ;
   mH = massH ;
 
-  fitInput = new MassAnaInput( channel, NBTag, massL, massH );
-  fitTools = new MassAna( channel, NBTag, massL, massH );
+  fitInput = new MassAnaInput( channel, massL, massH );
+  fitTools = new MassAna( channel, massL, massH );
   fitInput->Initialize( &hfolder );
 
 }
@@ -23,7 +23,7 @@ AlgoZero::~AlgoZero(){
 }
 
 // separate background : tt-wrong permutation,  wjets + qcd
-void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, Bool_t *comp, int NBTag ){
+void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag ){
 
   FILE* logfile = fopen(hfolder+"/Outputf.log","a"); 
 
@@ -42,17 +42,21 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   // Get fake data information
   THStack* ttstk = new THStack("ttstk", "Combined Fitting"); 
   TH1D* fakedata = new TH1D("fakedata","", nbin, mL, mH );
+  /*
   TH1D* dth0 = new TH1D("dth0","", nbin, mL, mH );      // tt-signal
   TH1D* dth1 = new TH1D("dth1","", nbin, mL, mH );      // tt-wrong combination
   TH1D* dth2 = new TH1D("dth2","", nbin, mL, mH );      // w+jets
   TH1D* dth3 = new TH1D("dth3","", nbin, mL, mH );      // single top t-channel
   TH1D* dth4 = new TH1D("dth4","", nbin, mL, mH );      // single top tW-channel
+  */
   THStack* dthb1 = new THStack("dthb1", "background group1 ");
   THStack* dthb2 = new THStack("dthb2", "background group2 ");
-  TH1D* dtadd1 = new TH1D("dtadd1","", nbin, mL, mH );      // single top tW-channel
-  TH1D* dtadd2 = new TH1D("dtadd2","", nbin, mL, mH );      // single top tW-channel
+  TH1D* dtadd1 = new TH1D("dtadd1","", nbin, mL, mH );      
+  TH1D* dtadd2 = new TH1D("dtadd2","", nbin, mL, mH );     
 
-  getFakeData( mName, fakedata, ttstk, dth0, dth1, dth2, dth3, dth4 );
+  //getFakeData( mName, fakedata, ttstk, dth0, dth1, dth2, dth3, dth4 );
+  vector<TH1D*> hlist;
+  fitInput->getFakeData( rbin, fakedata, ttstk, hlist );
 
   // pre-fit background
   double statErr = 0;
@@ -85,11 +89,20 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   fakedata->Fit( func1, "R","sames",110,330);
 
   TLegend *leg = new TLegend(.65, .4, .95, .75);
+  vector<string> channelNames ;
+  fitInput->GetParameters("channel", &channelNames);
+  leg->AddEntry(hlist[0], "tt-correct", "f");
+  for (size_t i=1; i< hlist.size(); i++) {
+      TString legName = channelNames[i] ;
+      leg->AddEntry( hlist[i], legName , "f");
+  }
+  /*
   leg->AddEntry(dth0, "tt-correct", "f");
   leg->AddEntry(dth1, "tt-wrong", "f");
   leg->AddEntry(dth2, "wjets", "f");
   leg->AddEntry(dth3, "SingleTop_t", "f");
   leg->AddEntry(dth4, "SingleTop_tW", "f");
+  */
   leg->Draw("same");
 
   c7->Update();
@@ -110,7 +123,8 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   }
   func2->SetLineColor(1);
   func2->SetLineWidth(3);
-  dth0->Draw();
+  //dth0->Draw();
+  hlist[0]->Draw();
   func2->Draw("sames");
   c7->Update();
 
@@ -123,6 +137,10 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   func3->SetLineColor(1);
   func3->SetLineWidth(3);
 
+  dthb1->Add( hlist[0] );
+  dtadd1->Add( hlist[0]);
+  
+  /*
   if ( comp[4] ) dthb1->Add( dth4 );
   if ( comp[3] ) dthb1->Add( dth3 );
   if ( comp[2] ) dthb1->Add( dth2 );
@@ -131,6 +149,7 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   if ( comp[3] ) dtadd1->Add( dth3 );
   if ( comp[2] ) dtadd1->Add( dth2 );
   if ( comp[1] ) dtadd1->Add( dth1 );
+  */
   dthb1->Draw();
   dtadd1->Draw("sames");
 
@@ -147,6 +166,11 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   func4->SetLineColor(1);
   func4->SetLineWidth(3);
   
+  for (size_t i= hlist.size(); i>1; i--) {
+      dthb2->Add( hlist[i-1] );
+      dtadd2->Add( hlist[i-1]);
+  }
+  /*
   if ( !comp[4] ) dthb2->Add( dth4 );
   if ( !comp[3] ) dthb2->Add( dth3 );
   if ( !comp[2] ) dthb2->Add( dth2 );
@@ -155,6 +179,7 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   if ( !comp[3] ) dtadd2->Add( dth3 );
   if ( !comp[2] ) dtadd2->Add( dth2 );
   if ( !comp[1] ) dtadd2->Add( dth1 );
+  */
   dthb2->Draw();
   dtadd2->Draw("sames");
   func4->Draw("sames");
@@ -170,11 +195,13 @@ void AlgoZero::MoreCombinedFitting( TString mName, int rbin, int lowBound, int u
   delete func4;
   delete leg;
   delete ttstk;
+  /*
   delete dth0;
   delete dth1;
   delete dth2;
   delete dth3;
   delete dth4;
+  */
   delete dthb1;
   delete dthb2;
   delete dtadd1;
@@ -202,14 +229,17 @@ void AlgoZero::CombinedFitting( TString mName, int rbin, int lowBound, int upBou
   int nbin = ( mH - mL )/ rbin ;
   THStack* ttstk = new THStack("ttstk", "Combined Fitting"); 
   TH1D* fakedata = new TH1D("fakedata","", nbin, mL, mH );
+  /*
   TH1D* dth0 = new TH1D("dth0","", nbin, mL, mH );
   TH1D* dth1 = new TH1D("dth1","", nbin, mL, mH );
   TH1D* dth2 = new TH1D("dth2","", nbin, mL, mH );
   TH1D* dth3 = new TH1D("dth3","", nbin, mL, mH );
   TH1D* dth4 = new TH1D("dth4","", nbin, mL, mH );
-  TH1D* dth123 = new TH1D("dt123","", nbin, mL, mH );
-
   getFakeData( mName, fakedata, ttstk, dth0, dth1, dth2, dth3, dth4 );
+  */
+  TH1D* dth123 = new TH1D("dt123","", nbin, mL, mH );
+  vector<TH1D*> hlist;
+  fitInput->getFakeData( rbin, fakedata, ttstk, hlist );
 
   double statErr = 0;
   double bestMass = fitTools->Chi2Test(mName, fakedata, lowBound, upBound ,9 , NBTag, &statErr, rbin );
@@ -243,11 +273,20 @@ void AlgoZero::CombinedFitting( TString mName, int rbin, int lowBound, int upBou
   func7->Draw("same");
 
   TLegend *leg = new TLegend(.65, .4, .95, .75);
+  vector<string> channelNames ;
+  fitInput->GetParameters("channel", &channelNames);
+  leg->AddEntry(hlist[0], "tt-correct", "f");
+  for (size_t i=1; i< hlist.size(); i++) {
+      TString legName = channelNames[i] ;
+      leg->AddEntry( hlist[i], legName , "f");
+  }
+  /*
   leg->AddEntry(dth0, "tt-correct", "f");
   leg->AddEntry(dth1, "tt-wrong", "f");
   leg->AddEntry(dth2, "wjets", "f");
   leg->AddEntry(dth3, "SingleTop_t", "f");
   leg->AddEntry(dth4, "SingleTop_tW", "f");
+  */
   leg->Draw("same");
 
   c3->Update();
@@ -269,7 +308,8 @@ void AlgoZero::CombinedFitting( TString mName, int rbin, int lowBound, int upBou
   func2->SetLineWidth(3);
 
   c3->cd(2);
-  dth0->Draw();
+  //dth0->Draw();
+  hlist[0]->Draw();
   func2->Draw("sames");
   c3->Update();
 
@@ -283,10 +323,15 @@ void AlgoZero::CombinedFitting( TString mName, int rbin, int lowBound, int upBou
   func3->SetLineWidth(3);
 
   c3->cd(3);
+  for (size_t i= hlist.size(); i>1; i--) {
+      dth123->Add( hlist[i-1] );
+  }
+  /*
   dth123->Add(dth1, 1);
   dth123->Add(dth2, 1);
   dth123->Add(dth3, 1);
   dth123->Add(dth4, 1);
+  */
   dth123->SetFillColor(kOrange+7);
   dth123->Draw();
   func3->Draw("sames");
@@ -299,11 +344,13 @@ void AlgoZero::CombinedFitting( TString mName, int rbin, int lowBound, int upBou
   delete func3;
   delete leg;
   delete ttstk;
+  /*
   delete dth0;
   delete dth1;
   delete dth2;
   delete dth3;
   delete dth4;
+  */
   delete dth123;
   delete fakedata;
  
@@ -311,6 +358,7 @@ void AlgoZero::CombinedFitting( TString mName, int rbin, int lowBound, int upBou
 }
 
 // combined the fake data
+/*
 void AlgoZero::getFakeData( TString mName,  TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, TH1D* dth2, TH1D* dth3, TH1D* dth4, TH1D* dth5 ){
 
   // get the file names of fake data
@@ -365,7 +413,7 @@ void AlgoZero::getFakeData( TString mName,  TH1D* ttadd, THStack* ttstk, TH1D* d
   if (dth0 != NULL ) ttstk->Add( dth0 );
 
 }
-
+*/
 
 void AlgoZero::SetFitParameters( double mass, Double_t* para, int nPara, int NBTag, int rbin ) {
 

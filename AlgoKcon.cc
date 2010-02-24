@@ -1,6 +1,6 @@
 #include "AlgoKcon.h"
 
-AlgoKcon::AlgoKcon( TString channel, int NBTag, double massL, double massH  ){
+AlgoKcon::AlgoKcon( TString channel, double massL, double massH  ){
 
   ptype  = ".gif";
 
@@ -10,15 +10,17 @@ AlgoKcon::AlgoKcon( TString channel, int NBTag, double massL, double massH  ){
   mL = massL ;
   mH = massH ;
 
+  
   //fitFunc  = new MassFitFunction();
-  fitInput = new MassAnaInput( channel, NBTag, massL, massH );
-  fitTools = new MassAna( channel, NBTag, massL, massH );
+  fitInput = new MassAnaInput( channel, massL, massH );
   fitInput->Initialize( &hfolder );
+  fitTools = new MassAna( channel, massL, massH );
+  //wmFitter = new WMassFitter();
 }
 
 AlgoKcon::~AlgoKcon(){
 
- //delete fitFunc;
+ //delete wmFitter;
  delete fitInput;
  delete fitTools;
 
@@ -26,6 +28,7 @@ AlgoKcon::~AlgoKcon(){
 
 
 // Fit the data with kinematic constrain
+/*
 void AlgoKcon::ConstrainFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag ){
 
   FILE* logfile = fopen(hfolder+"/Outputf.log","a"); 
@@ -127,8 +130,6 @@ void AlgoKcon::ConstrainFitting( TString mName, int rbin, int lowBound, int upBo
   dth123->Draw();
   func3->Draw("sames");
   c3->Update();
-
-  //plot2 = "BTag_";
   c3->Print(hfolder+plot2+mName+ptype);
 
   delete func7;
@@ -145,8 +146,122 @@ void AlgoKcon::ConstrainFitting( TString mName, int rbin, int lowBound, int upBo
  
   fclose(logfile);
 }
+*/
+
+void AlgoKcon::ConstrainFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag ){
+
+  FILE* logfile = fopen(hfolder+"/Outputf.log","a"); 
+
+  gStyle->SetOptStat("i");
+  gStyle->SetOptFit(111);
+  gStyle->SetStatY(0.99);
+  gStyle->SetStatX(0.99);
+  gStyle->SetStatTextColor(1);
+  c3 = new TCanvas("c3","", 900, 800);
+  c3->SetFillColor(10);
+  c3->SetFillColor(10);
+  c3->Divide(2,2);
+
+  int nbin = ( mH - mL )/ rbin ;
+
+  THStack* ttstk = new THStack("ttstk", "Combined Fitting"); 
+  TH1D* fakedata = new TH1D("fakedata","", nbin, mL, mH );
+  vector<TH1D*> hlist;
+  fitInput->getFakeData( rbin, fakedata, ttstk, hlist );
+
+  double statErr = 0;
+  double bestMass = fitTools->Chi2Test(mName, fakedata, lowBound, upBound ,9 , NBTag, &statErr, rbin, true );
+  // Fit the data
+  TF1 *func7 = new TF1("func7",MassFitFunction::fitData2, lowBound, upBound,12);
+
+  Double_t fpar[12];
+  SetFitParameters( bestMass, fpar, 9, NBTag );
+
+  func7->SetParLimits(0,  5., 200.);
+  func7->FixParameter(1, fpar[1] );
+  func7->FixParameter(2, fpar[2] );
+  func7->SetParLimits(3, fpar[3]- 0.1*fpar[3], fpar[3]+0.1*fpar[3] );
+  func7->FixParameter(4, fpar[4] );
+  func7->FixParameter(5, fpar[5] );
+  func7->FixParameter(6, fpar[6] );
+  func7->FixParameter(7, fpar[7] );
+  func7->FixParameter(8, fpar[8] );
+  func7->FixParameter(9, fpar[9] );
+  func7->SetParLimits(10, fpar[10]- 0.1*fpar[10], fpar[10]+0.1*fpar[10] );
+  func7->FixParameter(11, fpar[11] );
+
+  // 1. Draw the Stack histogram
+  c3->cd(1);
+  ttstk->Draw();
+
+  func7->SetLineColor(kBlue+2);
+  func7->SetLineStyle(1);
+  func7->SetLineWidth(2);
+  fakedata->Fit( func7, "R","sames",lowBound,upBound);
+  func7->Draw("same");
+
+  TLegend *leg = new TLegend(.65, .4, .95, .75);
+  leg->AddEntry(hlist[1], "ttbar-all", "f");
+  leg->AddEntry(hlist[2], "wjets", "f");
+  leg->AddEntry(hlist[3], "singleTop_t", "f");
+  leg->AddEntry(hlist[4], "singleTop_tW", "f");
+  leg->Draw("same");
+
+  c3->Update();
+ 
+  // 2. Draw the expected signal
+  Double_t apars[12];
+  double m1 = fitTools->MassDigi(mName);
+  for (int i=0; i< 12; i++) { 
+      apars[i]   = func7->GetParameter(i);
+  }
+  fprintf(logfile," %.2f %.2f %.2f \n", m1, apars[1], statErr );
+
+  TF1 *func2 = new TF1("func2",MassFitFunction::fitSG1, 100, 360, 6 );
+  for (int j=0; j<6; j++ )  func2->FixParameter( j, apars[j] );
+  
+  func2->SetLineColor(1);
+  func2->SetLineWidth(3);
+
+  c3->cd(2);
+  hlist[1]->Draw();
+  func2->Draw("sames");
+  c3->Update();
+
+  // 3. Draw the expected background
+  TF1 *func3 = new TF1("func3",MassFitFunction::fitLD, 100, 360, 3);
+  func3->FixParameter(0, apars[10]*apars[0] );
+  func3->FixParameter(1, apars[6] );
+  func3->FixParameter(2, apars[7] );
+  func3->SetLineColor(1);
+  //func3->SetLineStyle(2);
+  func3->SetLineWidth(3);
+
+  c3->cd(3);
+  TH1D* hbg   = new TH1D("hbg","", nbin, mL, mH );
+  for (size_t i = 1; i< hlist.size(); i++ ){
+      hbg->Add( hlist[i], 1 );
+  }
+  hbg->SetFillColor(kOrange+7);
+  hbg->Draw();
+  func3->Draw("sames");
+  c3->Update();
+
+  //plot2 = "BTag_";
+  c3->Print(hfolder+plot2+mName+ptype);
+
+  delete func7;
+  delete func2;
+  delete func3;
+  delete leg;
+  delete ttstk;
+  delete hbg;
+  delete fakedata;
+ 
+}
 
 // combined the fake data
+/*
 void AlgoKcon::getFakeData( TString mName, TH1D* ttadd, THStack* ttstk, TH1D* dth0, TH1D* dth1, TH1D* dth2, TH1D* dth3, TH1D* dth4, TH1D* dth5 ){
 
   // get the file names of fake data
@@ -185,14 +300,15 @@ void AlgoKcon::getFakeData( TString mName, TH1D* ttadd, THStack* ttstk, TH1D* dt
   if (dth0 != NULL ) ttstk->Add( dth0 );
 
 }
+*/
 
 void AlgoKcon::SetFitParameters( double mass, Double_t* para, int nPara, int NBTag ) {
 
      // Lep: value for No BTagging
      //  0~2: gaus , 3~5: log-normal ,  6,7:landau ttwrong ,  8,9:landau Wjets , 10: tt-ttwrong ratio , 11: tt-Wjets ratio 
-     //                      p0      p1      p2     p3      p4     p5       p6      p7       p8     p9      p10      p11
-     Double_t f0[12] = {  41.246,  -1., -6.505,  2.336,   0.0,  31.796, 107.098, -0.886,  151.034,  38.422,  38.950,  13.727 };
-     Double_t f1[12] = {   0.092,   1.,  0.196, -0.007,   1.0,  -0.012,   0.316,  0.204,    0.023,  -0.003,  -0.002,  -0.020 };
+     //                      p0     p1      p2     p3     p4     p5       p6      p7       p8     p9      p10      p11
+     //Double_t f0[12] = { 41.246, -1., -6.505,  2.336,  0.0,  31.796, 107.098, -0.886, 151.034, 38.422, 38.950, 13.727 };
+     //Double_t f1[12] = {  0.092,  1.,  0.196, -0.007,  1.0,  -0.012,   0.316,  0.204,   0.023, -0.003, -0.002, -0.020 };
 
      // *** for kinematic had: 
      // 10 GeV Bin - hadW Constrain
@@ -202,16 +318,58 @@ void AlgoKcon::SetFitParameters( double mass, Double_t* para, int nPara, int NBT
      //Double_t kk0[12] = {  1.904, 12.051, 5.438,  4.202, 117.285, 21.724, 195.073, 39.88,   0.,    0.,  3.820,  0. };
      //Double_t kk1[12] = {  0.258,  0.933, 0.139, -0.010,   0.653,  0.115,   0.000,  0.00,   0.,    0., -0.011,  0. };
      // 10 GeV Bin - dM*hadW Constrain
-     Double_t kk0[12] = {  62.167, 4.508, 2.097, -3.413, 161.463, 10.687, 183.757, 37.475,   0.,    0.,  0.919,  0. };
-     Double_t kk1[12] = {  -0.099, 0.969, 0.142,  0.038,   0.205,  0.134,   0.000,  0.000,   0.,    0.,  0.007,  0. };
-     for ( int i =0; i < 12; i++ ) {
+     //Double_t kk0[12] = {  62.167, 4.508, 2.097, -3.413, 161.463, 10.687, 183.757, 37.475,   0.,    0.,  0.919,  0. };
+     //Double_t kk1[12] = {  -0.099, 0.969, 0.142,  0.038,   0.205,  0.134,   0.000,  0.000,   0.,    0.,  0.007,  0. };
+
+     vector<double> l0;
+     vector<double> l1;
+     fitInput->GetParameters("L0B0", &l0 );
+     fitInput->GetParameters("L0B1", &l1 );
+     vector<double> h0;
+     vector<double> h1;
+     fitInput->GetParameters("H0B0", &h0 );
+     fitInput->GetParameters("H0B1", &h1 );
+
+
+     for ( size_t i=0; i< h0.size(); i++ ) {
          if ( cname == "had" ) {
-            if ( nPara == 9 && NBTag == -1 ) para[i] = kk0[i] + kk1[i]*mass ;
+            if ( nPara == 9 && NBTag == -1 ) para[i] = h0[i] + h1[i]*mass ;
          }
          if ( cname == "lep" ) {
-            if ( nPara == 9 && NBTag == -1 ) para[i] = f0[i] + f1[i]*mass ;
+            if ( nPara == 9 && NBTag == -1 ) para[i] = l0[i] + l1[i]*mass ;
          }
      }
 
 }
 
+void AlgoKcon::Tester(){
+
+  int nbin = ( mH - mL )/ 10 ;
+
+  THStack* ttstk = new THStack("ttstk", "Combined Fitting"); 
+  TH1D* fakedata = new TH1D("fakedata","", nbin, mL, mH );
+  vector<TH1D*> hlist;
+  fitInput->getFakeData( 10, fakedata, ttstk, hlist );
+
+  c3 = new TCanvas("c3","", 900, 800);
+  c3->SetFillColor(10);
+  c3->SetFillColor(10);
+  c3->Divide(2,2);
+
+  c3->cd(1);
+  fakedata->Draw();
+  c3->Update();
+  c3->cd(2);
+  ttstk->Draw();
+  c3->Update();
+  c3->cd(3);
+  hlist[6]->Draw();
+  c3->Update();
+  c3->cd(4);
+  hlist[7]->Draw();
+  c3->Update();
+  c3->Print(hfolder+"tester.gif");
+
+  delete ttstk;
+  delete fakedata;
+}

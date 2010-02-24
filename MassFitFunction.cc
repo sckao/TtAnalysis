@@ -91,6 +91,13 @@ Double_t MassFitFunction::fitSG1(Double_t *x, Double_t *par) {
      return cb_Val = par[0] * cb_Val ;
 }
 
+Double_t MassFitFunction::fitSG2(Double_t *x, Double_t *par) {
+
+     Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
+     Double_t cb_Val = gs + fitPoly( x, &par[3] ) ;
+     return cb_Val = par[0] * cb_Val ;
+}
+
 Double_t MassFitFunction::fitData(Double_t *x, Double_t *par) {
 
      Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
