@@ -42,13 +42,11 @@ TtSemiEventSolution::TtSemiEventSolution(const edm::ParameterSet& iConfig ): evt
   debug             = iConfig.getUntrackedParameter<bool> ("debug");
   btag              = iConfig.getUntrackedParameter<bool> ("btag");
   nbtagged          = iConfig.getUntrackedParameter<int> ("nbtagged");
-  JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
+  jetSetup          = iConfig.getParameter<std::vector<double> >("jetSetup");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
-  tcmetSrc          = iConfig.getParameter<edm::InputTag> ("tcMetSource");
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
-  jptSrc            = iConfig.getParameter<edm::InputTag> ("jptSource");
   genJetSrc         = iConfig.getParameter<edm::InputTag> ("genJetSource");
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
   recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
@@ -56,8 +54,7 @@ TtSemiEventSolution::TtSemiEventSolution(const edm::ParameterSet& iConfig ): evt
   
   evtSelected = new TtEvtSelector( iConfig );
   MCMatching  = new TtMCMatching();
-  ttMuon      = new TtMuon();
-  ttEle       = new TtElectron();
+  ttMuon      = new TtMuon( iConfig );
   ttMET       = new TtMET( iConfig );
   ttJet       = new TtJet( iConfig );
   ttEff       = new TtEfficiency();
@@ -72,7 +69,6 @@ TtSemiEventSolution::~TtSemiEventSolution()
    delete evtSelected;
    delete MCMatching;
    delete ttMuon;
-   delete ttEle;
    delete ttMET;
    delete ttJet;
    delete ttEff; 
@@ -84,14 +80,12 @@ TtSemiEventSolution::~TtSemiEventSolution()
 //
 
 // ------------ method called to for each event  ------------
+// histogram version
 void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, int topo, int evtId, tHisto* histos ) {
 
    // ********************************************
    // *     Build the tt events from DATA!!!     *
    // ********************************************
-
-   // 0. Event Selection Setup
-   double JetEtCut = 30. ;
 
    // 1. Reset object containers
    evt_Id = evtId ;
@@ -106,15 +100,13 @@ void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, int topo, int e
    // 2. Event Selection
    std::vector<double> bDisList;
    std::vector<bool> bTags;
-   pass = evtSelected->eventSelection( topo, JetEtCut, isoLep, selectedJets, solvedMetP4, iEvent, "patMet", "patJet", &bTags, &bDisList );
-   cout<<" event selected w/ jet "<<selectedJets.size() <<endl;
+   pass = evtSelected->eventSelection( topo, jetSetup[0], isoLep, selectedJets, solvedMetP4, iEvent, "patMet", &bTags, &bDisList );
    // 3. Reconstruct event
    if ( btag ) {
       int Nbtags = 0 ;
       for (size_t b=0; b< bTags.size(); b++) {
           if ( bTags[b] ) Nbtags ++ ;
       }
-      cout <<"  bTager Sizer = "<< bTags.size() <<" w/ "<< Nbtags  <<endl;
 
       if ( pass > 3 && Nbtags >= 2 && nbtagged == 2 ) semiTt = recoSemiLeptonicTtEvent( selectedJets, isoLep, solvedMetP4, &bTags, &KProbability, histos );
       if ( pass > 3 && Nbtags == 1 && nbtagged == 1 ) semiTt = recoSemiLeptonicTtEvent( selectedJets, isoLep, solvedMetP4, &bTags, &KProbability, histos );
@@ -126,8 +118,6 @@ void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, int topo, int e
 
    if ( semiTt.size() >= 2 )     KeepBuildInfo( true );
 
-   cout<<" ------ reco finished --------------"<<endl;
-
 }
 
 // ntuple version
@@ -137,14 +127,9 @@ void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, int topo, int e
    // *     Build the tt events from DATA!!!     *
    // ********************************************
 
-   // 0. Event Selection Setup
-   double JetEtCut = 30. ;
-
    // 1. Reset object containers
    evt_Id = evtId ;
    isoLep.clear();
-   selectedWJets.clear();
-   selectedbJets.clear();
    selectedJets.clear();
    solvedMetP4.clear();
    semiTt.clear();
@@ -153,15 +138,15 @@ void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, int topo, int e
    // 2. Event Selection
    std::vector<double> bDisList;
    std::vector<bool> bTags;
-   pass = evtSelected->eventSelection( topo, JetEtCut, isoLep, selectedJets, solvedMetP4, iEvent, "patMet", "patJet", &bTags, &bDisList );
-   cout<<" event selected w/ jet "<<selectedJets.size() <<endl;
+   pass = evtSelected->eventSelection( topo, jetSetup[0], isoLep, selectedJets, solvedMetP4, iEvent, "patMet", &bTags, &bDisList );
+   //cout<<" event selected w/ jet "<<selectedJets.size()<<"  w/ lepton "<< isoLep.size() <<endl;
    // 3. Reconstruct event
    if ( btag ) {
       int Nbtags = 0 ;
       for (size_t b=0; b< bTags.size(); b++) {
           if ( bTags[b] ) Nbtags ++ ;
       }
-      cout <<"  bTager Sizer = "<< bTags.size() <<" w/ "<< Nbtags  <<endl;
+      //cout <<"  bTager Sizer = "<< bTags.size() <<" w/ "<< Nbtags  <<endl;
 
       if ( pass > 3 && Nbtags >= 2 && nbtagged == 2 ) semiTt = recoSemiLeptonicTtEvent( selectedJets, isoLep, solvedMetP4, &bTags, &KProbability, ntuples );
       if ( pass > 3 && Nbtags == 1 && nbtagged == 1 ) semiTt = recoSemiLeptonicTtEvent( selectedJets, isoLep, solvedMetP4, &bTags, &KProbability, ntuples );
@@ -188,7 +173,7 @@ void TtSemiEventSolution::BuildSemiTt( const edm::Event& iEvent, int topo, int e
                                                    solvedMetP4[i].energy(), solvedMetP4[i].pt() );
       }
    }
-   cout<<" ------ reco finished --------------"<<endl;
+   //cout<<" ------ reco finished --------------"<<endl;
 
 }
 
@@ -211,9 +196,9 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, 
 
    if ( pass < 4 ) return;
 
-   if ( topoIdx == 1 )  mcLep = MCMatching->matchMuon(genParticles, isoLep, (*histos).hMuon );  
-   if ( topoIdx == 3 )  mcLep = MCMatching->matchElectron(genParticles, isoLep, (*histos).hEle );  
-   std::vector<jmatch> mc_jets = MCMatching->matchJets(genParticles, selectedJets, (*histos).hBJet, (*histos).hWJet );  
+   if ( topoIdx == 1 )   mcLep = MCMatching->matchMuon(    genParticles, isoLep, (*histos).hMuon );  
+   if ( topoIdx == 3 )   mcLep = MCMatching->matchElectron(genParticles, isoLep, (*histos).hEle );  
+   std::vector<jmatch> mc_jets = MCMatching->matchJets(    genParticles, selectedJets, (*histos).hBJet, (*histos).hWJet );  
 
    // 2. classify wjets and bjets ..... parton Btagging
    int wQ = 0 ;
@@ -242,8 +227,8 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, 
        if ( mcLep[0]->charge() ==  1 && mc_jets[i].MomIdx ==  5 ) bjl = mc_jets[i].Idx ; 
        if ( mcLep[0]->charge() ==  1 && mc_jets[i].MomIdx == -5 ) bjh = mc_jets[i].Idx ; 
    }
-   // 3. reco leptonic W
 
+   // 3. reco leptonic W
    std::vector<iReco> wSols;
    std::vector<iReco> lepWs;
    bool findlepW = recoW( mcLep, solvedMetP4[0], wSols, (*histos).hWs[0] );
@@ -256,7 +241,6 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, 
    if ( wSols.size() == 1 )  lepWs.push_back( wSols[0] );
 
    // 4. reco leptonic Top
-
    std::vector<iReco> lepTs;
    bool findlepT = false;
    if ( findlepW ) {
@@ -267,8 +251,8 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, 
       if ( b_temp.size() > 0 ) mcbJets.push_back( b_temp[0] );
       if ( findlepT )   semiMCTt.push_back( lepTs[0] ) ;
    }
-   // 5. reco hadronic Top
 
+   // 5. reco hadronic Top
    std::vector<iReco> hadTs;
    bool findhadT = false ; 
    if ( findhadW ) {
@@ -282,22 +266,21 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, 
 
    // 6. look at top mass distribution and results
    if ( semiMCTt.size() == 2 ) {
-
       Idx tws(4,0);
       std::vector<Idx> twIdx( 1 , tws ) ;
       std::vector<bool> usedHadT( hadTs.size() ,false);
       std::vector<bool> usedLepT( lepTs.size() ,false); 
       ResultRecord( 0, 0, twIdx, lepTs, usedLepT, hadTs, usedHadT, lepWs, hadWs, NULL, histos ) ;
-
       KeepBuildInfo( false );
    }
 
    bool matchedpass =  ( pass >= 4  ) ? true : false ;
    McRecoCompare( 1, 0, matchedpass , histos );
-   cout<<" ====  MCMatching : size of lepT:"<< lepTs.size() <<" , hadT:"<<hadTs.size()  <<endl;
+   //cout<<" ====  MCMatching : size of lepT:"<< lepTs.size() <<" , hadT:"<<hadTs.size()  <<endl;
 
 }
 
+// ntuple version
 void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, int evtId, tNtuple* ntuples ) {
 
    Handle<std::vector<reco::GenParticle> > genParticles;
@@ -397,7 +380,7 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, 
                                  hadTs[0].p4.M(), lepTs[0].p4.M(),  hadWs[0].p4.M(), lepW_mt  );
 
    }
-   cout<<" ====  MCMatching : size of lepT:"<< lepTs.size() <<" , hadT:"<<hadTs.size()  <<endl;
+   //cout<<" ====  MCMatching : size of lepT:"<< lepTs.size() <<" , hadT:"<<hadTs.size()  <<endl;
 
 }
 
@@ -878,7 +861,7 @@ std::vector<iReco> TtSemiEventSolution::recoSemiLeptonicTtEvent( std::vector<con
       if (algo == "zero"  )      Algo_Zero( lepTs, hadTs, hadWs, twIdx, btags );
       if (algo == "kConstrain" ) Algo_KConstrain( lepTs, hadTs, hadWs, twIdx, kProb, btags );
 
-      if ( theJets.size() >= 4 ) cout<<" lepT:"<< lepTs.size() <<" hadT:"<< hadTs.size() <<endl;
+      //if ( theJets.size() >= 4 ) cout<<" lepT:"<< lepTs.size() <<" hadT:"<< hadTs.size() <<endl;
 
       for ( size_t i=0; i< twIdx.size(); i++ ) {
           TtCollection.push_back( lepTs[ twIdx[i][0] ] );

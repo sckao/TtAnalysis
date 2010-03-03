@@ -46,10 +46,10 @@ TtJet::TtJet(const edm::ParameterSet& iConfig)
   recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
   */
 
+  jetSetup        = iConfig.getParameter<std::vector<double> >("jetSetup");
   muonSrc         = iConfig.getParameter<edm::InputTag> ("muonSource");
   caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
   genSrc          = iConfig.getParameter<edm::InputTag> ("genParticles"); 
-  jptSrc          = iConfig.getParameter<edm::InputTag> ("jptSource");
 
   bCut            = iConfig.getUntrackedParameter<double> ("bTagCut");
   bTagAlgo        = iConfig.getUntrackedParameter<string> ("bTagAlgo");
@@ -59,7 +59,7 @@ TtJet::TtJet(const edm::ParameterSet& iConfig)
   //theParameters.loadParameters( tkParas );
 
   tools        = new TtTools();
-  ttMuon       = new TtMuon();
+  ttMuon       = new TtMuon( iConfig );
   JetMatching  = new TtMCMatching();
 
 }
@@ -106,8 +106,8 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1){
        // Uncorrect Information
        // uncorrected pt from reco jet 
        // raw energy deposite in ECal and HCal
-       float  emE0 = (*j1).emEnergyInEB() + (*j1).emEnergyInEE() + (*j1).emEnergyInHF() ;
-       float  hdE0 = (*j1).hadEnergyInHB()+(*j1).hadEnergyInHE() + (*j1).hadEnergyInHF() + (*j1).hadEnergyInHO();
+       float  emE0 = (*j1).emEnergyInEB()  + (*j1).emEnergyInEE()  + (*j1).emEnergyInHF() ;
+       float  hdE0 = (*j1).hadEnergyInHB() + (*j1).hadEnergyInHE() + (*j1).hadEnergyInHF() + (*j1).hadEnergyInHO();
        double totalE  = emE0 +hdE0 ;
        double totalEt = totalE*sin(j1->theta() ) ;
        float  emF0 = emE0 / totalE ;
@@ -305,41 +305,86 @@ void TtJet::matchedbJetsAnalysis( std::vector<jmatch> mcjets, std::vector<const 
 
 }
 
-void TtJet::bTagAnalysis(Handle<std::vector<pat::Jet> > Jets, Handle<std::vector<pat::Muon> > patMu, HTOP7* histo7  ) {
+void TtJet::bTagAnalysis(const Event& iEvent, Handle<std::vector<pat::Jet> > Jets, HBJet* histo  ) {
 
+   // get the beam spot information 
+   //edm::Handle<reco::BeamSpot> theBeamSpot;
+   //iEvent.getByLabel("offlineBeamSpot", theBeamSpot );
+
+   //math::XYZPoint pos_beamspot( 0, 0, 0 );
+   //if ( theBeamSpot->isValid() )  pos_beamspot = pos_beamspot( beamSpot.x0(), beamSpot.y0(), beamSpot.z0() );
+   //math::XYZPoint pos_beamspot( theBeamSpot->x0(), theBeamSpot->y0(), theBeamSpot->z0() );
+  
+  int N_bjet = 0; 
+  int N_bjet2 = 0;
+  int N_jets = 0 ;
   for (std::vector<pat::Jet>::const_iterator j1 = Jets->begin(); j1 != Jets->end(); j1++) {
 
+      if ( j1->et()  < 10 ) continue; 
+      N_jets++ ;
+      // set up the b discriminator
       double bDis = j1->bDiscriminator( bTagAlgo ) ;
-      if ( bDis == -1000. ) bDis = -10.5  ;
-      if ( bDis > -1000. && bDis < -9.5) bDis = -9.5  ;
-      if ( bDis >=   9.5  ) bDis =  9.5 ;
-
-      if ( fabs(j1->eta()) > 2.7 ) continue; 
-      if ( j1->et() < 20. ) continue; 
-
-      histo7->Fill7g( bDis );
-
-      if ( bDis < bCut ) continue;
-
-      double maxd0 = 0.;
+      // check the weight average of d0
+      double d0A[2] = { 0. };
+      bool fakeJet = false ;
       for (size_t t = 0; t < (j1->associatedTracks()).size() ;  t++ ) {
           
           reco::TrackRef jetTrack = (j1->associatedTracks())[t] ;
-          if ( j1->phi() >= 0. ) maxd0 = (jetTrack->d0() > maxd0 ) ? jetTrack->d0() : maxd0  ;
-          if ( j1->phi() <  0. ) maxd0 = (jetTrack->d0() < maxd0 ) ? jetTrack->d0() : maxd0  ;
-          
+          // beam spot study , according to https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideFindingBeamSpot
+          /*
+          double d0    = -1.* jetTrack->dxy( pos_beamspot );
+          double beamWdthX = theBeamSpot->BeamWidthX() ;
+          double beamWdthY = theBeamSpot->BeamWidthY() ;
+          double d0Err = sqrt( inTrack->d0Error()*inTrack->d0Error() + 0.5*beamWdthX*beamWdthX + 0.5* beamWdthY*beamWdthY );
+          */
+
+          double d0    = jetTrack->d0() ;
+          double d0Err = jetTrack->d0Error()  ;
+          d0A[0] += d0 / (d0Err*d0Err) ;
+          d0A[1] += 1. / (d0Err*d0Err) ;
           // check the track is muon or not 
+          /*
+          double dRmin[2] = { 0 };
+          double theRelPt[2] = { 0 };
+          double relIso = 0 ;
           for (std::vector<pat::Muon>::const_iterator m1 = patMu->begin(); m1!= patMu->end(); m1++) {
               if ( !(m1->isTrackerMuon()) ) continue;
               reco::TrackRef muTrack = m1->innerTrack() ;
-              if ( muTrack != jetTrack ) continue;
-              double dR = tools->getdR( j1->p4() , m1->p4() ) ;
-              double RelPt_bMu = tools->getRelPt( j1->p4(), m1->p4() );
-              histo7->Fill7i( dR, RelPt_bMu );
+	      double dR = tools->getdR( j1->p4() , m1->p4() ) ;
+	      double RelPt_bMu = tools->getRelPt( j1->p4(), m1->p4() );
+              if ( muTrack == jetTrack )  {
+                 double subd[3] = { 0. };
+                 if ( dR < dRmin[0] ) {
+                    dRmin[0]    = dR ;
+                    theRelPt[0] = RelPt_bMu ;
+                    relIso = ttMuon->PatMuonRelIso( *m1, 0.3, subd[0], subd[1], subd[2] );
+                 }
+                 if ( relIso < 0.1 && dR < 0.1 && m1->pt() > 15 ) fakeJet = true ;
+              }
+              if ( muTrack != jetTrack ) {
+                 if ( dR < dRmin[1] ) {
+                    dRmin[1]    = dR ;
+                    theRelPt[1] = RelPt_bMu ;
+                 }
+              }
           }
-
+          histo->Fill_b1( dRmin[0], theRelPt[1], relIso );
+	  histo->Fill_b2( dRmin[1], theRelPt[1] );
+          */
       }
-      histo7->Fill7d( j1->phi(), maxd0 );
+
+      double d0Ave = ( d0A[1] != 0 ) ? d0A[0] / d0A[1]  : 0 ;
+      histo->Fill_b3( bDis, d0Ave, j1->pt() );
+
+      // after selection
+      if ( fabs(j1->eta()) > jetSetup[1] ) continue; 
+      if ( j1->et()        < jetSetup[0] ) continue; 
+      if ( bDis < bCut ) continue;
+      N_bjet++;
+      if ( !fakeJet ) N_bjet2++ ;     
+
+      histo->Fill_b4( bDis, d0Ave, j1->pt() );
+
       /*
       cout<<" bDis(softMu)   "<< j1->bDiscriminator("softMuonBJetTags")<<endl;
       cout<<" bDis(jetProb)  "<< j1->bDiscriminator("jetProbabilityBJetTags")       <<endl;
@@ -350,6 +395,8 @@ void TtJet::bTagAnalysis(Handle<std::vector<pat::Jet> > Jets, Handle<std::vector
       cout<<" bDis(cmbVtx)   "<< j1->bDiscriminator("combinedSVBJetTags")           <<endl;
       */
   }
+  //int nJets = static_cast<int>( Jets->size() ) ;
+  histo->Fill_b5( N_bjet, N_jets, N_bjet2 ) ;
 
 }
 
@@ -571,6 +618,7 @@ void TtJet::JetMatchedMuon( Handle<std::vector<pat::Jet> > patJet , Handle<std::
    }
    Done = true ;
 }
+
 /*
 void TtJet::JetTrigger( Handle<std::vector<pat::Jet> > jets, Handle <edm::TriggerResults> triggers ) {
 
@@ -587,6 +635,61 @@ void TtJet::JetTrigger( Handle<std::vector<pat::Jet> > jets, Handle <edm::Trigge
 }
 */
 
+std::vector<const reco::Candidate* > TtJet::JetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, double fScale, HOBJ1* histo, std::vector<bool>* bTags, string bTagAlgo1, std::vector<double>* bDisList ) {
+
+   int nBJets = 0;
+   std::vector<const reco::Candidate* > jet_temp ;
+   for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++) {
+
+       if ( ( fScale * j1->et() ) < EtThreshold ) continue;
+       if ( fabs(j1->eta()) > jetSetup[1] ) continue;
+
+
+       if ( j1->isCaloJet() ) {
+          double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
+                        j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+
+                        j1->hadEnergyInHO();
+          double calEt = calE * sin( j1->theta() );
+          if ( calEt < 4. ) continue;
+
+          double EovH = EoverH(*j1);
+          if ( EovH == -1. || j1->emEnergyFraction() < 0.01 ) continue;
+       }
+
+       bool fakeJet = false;
+       for ( size_t i =0; i < IsoMuons.size(); i++ ) {
+           LorentzVector muP4 = IsoMuons[i]->p4() ;
+           double dR_mu = tools->getdR( muP4, j1->p4() );
+           if ( dR_mu < 0.1 ) fakeJet = true ;
+       }
+       if ( fakeJet ) continue;
+
+       double bDis = j1->bDiscriminator( bTagAlgo1 ) ;
+       if ( bDis >= bCut ) nBJets++ ;
+       if ( bTags != NULL ) {
+          if ( bDis >= bCut ) (*bTags).push_back( true );
+          if ( bDis <  bCut ) (*bTags).push_back( false );
+          if ( bDisList != NULL ) (*bDisList).push_back( bDis );
+       }
+       reco::Candidate* scaleJ = j1->clone() ;
+       LorentzVector jP4 = scaleJ->p4() ;
+       scaleJ->setP4( jP4*fScale ) ;
+       jet_temp.push_back( scaleJ );
+
+   }
+
+   if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtSorting<const reco::Candidate*>() );
+
+   if ( histo != NULL ) {
+      int jetSize    = static_cast<int>( jets->size() );
+      if (jetSize > 20) jetSize = 20 ;
+      if ( IsoMuons.size() == 1 ) histo->Fill_1g( jetSize, jet_temp.size(), nBJets );
+   }
+   return jet_temp;
+
+}
+
+
 // reco jet Correction, no btagging information
 std::vector<const reco::Candidate*> TtJet::JetSelection( Handle<std::vector<reco::CaloJet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, double fScale, HOBJ1* histo, std::vector<bool>* bTags ) {
 
@@ -595,7 +698,7 @@ std::vector<const reco::Candidate*> TtJet::JetSelection( Handle<std::vector<reco
    for (std::vector<reco::CaloJet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
    {
 
-       if ( fabs(j1->eta()) > 2.7 ) continue; 
+       if ( fabs(j1->eta()) > jetSetup[1] ) continue; 
        if ( j1->et() < EtThreshold ) continue; 
 
        double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
@@ -605,7 +708,7 @@ std::vector<const reco::Candidate*> TtJet::JetSelection( Handle<std::vector<reco
        if ( calEt < 4. ) continue;
 
        double EovH = EoverH(*j1);
-       if ( EovH == -1. ) continue;
+       if ( EovH == -1. || j1->emEnergyFraction() > 0.01 ) continue;
 
        bool fakeJet = false;
        for ( size_t i =0; i < IsoMuons.size(); i++ ) {
@@ -732,76 +835,39 @@ std::vector<const reco::Candidate* > TtJet::JetSelection( Handle<std::vector<pat
 }
 */
 
-/*
-std::vector<const reco::Candidate* > TtJet::SoftJetSelection( Handle<std::vector<reco::CaloJet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold,  HOBJ1* histo ) {
+std::vector<const reco::Candidate* > TtJet::SoftJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, double fScale, std::vector<bool>* bTags, string bTagAlgo, HOBJ1* histo, std::vector<double>* bDisList) {
 
    std::vector<const reco::Candidate* > jet_temp ;
-   for (std::vector<reco::CaloJet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
-   {
+   for ( std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++) {
 
-       if ( j1->et() >= EtThreshold ) continue; 
-       if ( fabs(j1->eta()) > 2.7 ) continue; 
+       if ( ( fScale * j1->et() ) >= EtThreshold ) continue;
+       if ( fabs(j1->eta()) > jetSetup[1] ) continue;
 
-       double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
-                     j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
-                     j1->hadEnergyInHO();
-       double calEt = calE * sin( j1->theta() );
-       if ( calEt < 4. ) continue;
+       if ( j1->isCaloJet() ) {
+          double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
+                        j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+
+                        j1->hadEnergyInHO();
+          double calEt = calE * sin( j1->theta() );
+          if ( calEt < 4. ) continue;
 
-       double EovH = EoverH(*j1);
-       if ( EovH == -1. ) continue;
+          double EovH = EoverH(*j1);
+          if ( EovH == -1. || j1->emEnergyFraction() < 0.01 ) continue;
+       }
 
        bool fakeJet = false;
        for ( size_t i =0; i < IsoMuons.size(); i++ ) {
            LorentzVector muP4 = IsoMuons[i]->p4() ;
-           double dR_mu = tools->getdR( muP4, j1->p4() );  
+           double dR_mu = tools->getdR( muP4, j1->p4() );
            if ( dR_mu < 0.1 ) fakeJet = true ;
        }
+
        if ( fakeJet ) continue;
-
-       jet_temp.push_back( &*j1 );
-   }
-
-   if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtDecreasing2 );
-   
-   double leadingJetEt = ( jet_temp.size() > 0 ) ? jet_temp[0]->et() : 0.  ;
-
-   histo->Fill_1i( jet_temp.size(), leadingJetEt );
-   return jet_temp;
-
-}
-
-std::vector<const reco::Candidate* > TtJet::SoftJetSelection( Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, std::vector<bool>* bTags, string bTagAlgo, double fScale, HOBJ1* histo) {
-
-   std::vector<const reco::Candidate* > jet_temp ;
-   for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
-   {
-
-       if ( ( fScale * j1->et() ) >= EtThreshold ) continue; 
-       if ( fabs(j1->eta()) > 2.7 ) continue; 
-
-       double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
-                     j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
-                     j1->hadEnergyInHO();
-       double calEt = calE * sin( j1->theta() );
-       if ( calEt < 4. ) continue;
-
-       double EovH = EoverH(*j1);
-       if ( EovH == -1. ) continue;
-
-       bool fakeJet = false;
-       for ( size_t i =0; i < IsoMuons.size(); i++ ) {
-           LorentzVector muP4 = IsoMuons[i]->p4() ;
-           double dR_mu = tools->getdR( muP4, j1->p4() );  
-           if ( dR_mu < 0.1 ) fakeJet = true ;
-       }
-       if ( fakeJet ) continue;
-
        // bTags has to be "NULL" if use non-PAT Jets
        if ( bTags != NULL ) {
           double bDis = j1->bDiscriminator( bTagAlgo ) ;
           if ( bDis >= bCut ) (*bTags).push_back( true );
           if ( bDis <  bCut ) (*bTags).push_back( false );
+          if ( bDisList != NULL ) (*bDisList).push_back( bDis );
        }
 
        reco::Candidate* scaleJ = j1->clone() ;
@@ -809,17 +875,16 @@ std::vector<const reco::Candidate* > TtJet::SoftJetSelection( Handle<std::vector
        scaleJ->setP4( jP4*fScale ) ;
 
        jet_temp.push_back( scaleJ );
-       //jet_temp.push_back( &*j1 );
    }
 
-   if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtDecreasing2 );
+   //if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtDecreasing2 );
+   if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtSorting<const reco::Candidate*>() );
    if ( histo != NULL ) {
       double leadingJetEt = ( jet_temp.size() > 0 ) ? jet_temp[0]->et() : 0.  ;
       histo->Fill_1i( jet_temp.size(), leadingJetEt );
    }
    return jet_temp;
 }
-*/
 
 std::vector<const reco::Candidate*> TtJet::WJetSelection( Handle<std::vector<pat::Jet> >  jets, std::vector<const reco::Candidate*> IsoMuons, double JetEtCut ) {
 
@@ -827,7 +892,7 @@ std::vector<const reco::Candidate*> TtJet::WJetSelection( Handle<std::vector<pat
    jCollection.clear();
    for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
    {
-       if ( fabs(j1->eta()) > 2.7 || j1->et() < JetEtCut ) continue; 
+       if ( fabs(j1->eta()) > 2.6 || j1->et() < JetEtCut ) continue; 
 
        double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
                      j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ j1->hadEnergyInHO();
@@ -856,13 +921,13 @@ std::vector<const reco::Candidate*> TtJet::WJetSelection( Handle<std::vector<pat
 
 }
 
-std::vector<const reco::Candidate*> TtJet::bJetSelection( Handle<std::vector<pat::Jet> >  jets, std::vector<const reco::Candidate*> IsoMuons, double JetEtCut, string bTagAlgo ) {
+std::vector<const reco::Candidate*> TtJet::bJetSelection( Handle<std::vector<pat::Jet> >  jets, std::vector<const reco::Candidate*> IsoMuons, string bTagAlgo ) {
 
    std::vector<const reco::Candidate* > jCollection;
    jCollection.clear();
    for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
    {
-       if ( fabs(j1->eta()) > 2.7 || j1->et() < JetEtCut ) continue; 
+       if ( fabs(j1->eta()) > jetSetup[1] || j1->et() < jetSetup[0] ) continue; 
 
        double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
                      j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ j1->hadEnergyInHO();
@@ -894,19 +959,15 @@ std::vector<const reco::Candidate*> TtJet::bJetSelection( Handle<std::vector<pat
 }
 
 // isolated muon and jets
-//void TtJet::MuonAndJet( std::vector<reco::Candidate> jet_temp,  LorentzVector p1, HTOP1* histo1){
-void TtJet::MuonAndJet( std::vector<const reco::Candidate*> jet_temp,  const reco::Candidate* isoMu, HOBJ1* histo1){
+void TtJet::MuonAndJet( std::vector<const reco::Candidate*> jet_temp,  const reco::Candidate* isoMu, HOBJ1* histo1 ){
 
    int njet = static_cast<int>( jet_temp.size() );
-   //double muEta    = tools->getEta( p1.Px(), p1.Py(), p1.Pz() );
-   double muEta     = isoMu->eta() ;
    LorentzVector p1 = isoMu->p4() ;
 
-   // njets vs eta of muon 
-   histo1->Fill_1d( njet, muEta );
-
-   double dR = 9. ;
+   double dR = 99. ;
    double relPt = -1;
+   double muE = isoMu->energy();
+   double jetE = -1;
    for (int i= 0; i < njet ; i++) {
        LorentzVector p2 = jet_temp[i]->p4() ;
 
@@ -915,69 +976,37 @@ void TtJet::MuonAndJet( std::vector<const reco::Candidate*> jet_temp,  const rec
        if ( dR1 < dR ) {
           dR = dR1; 
           relPt = relPt1 ;
-       }
-
-       double dPhi[3] = { -1. };
-       if ( jet_temp.size() > 2 ) {
-          dPhi[i] = tools->getdPhi(p1, p2);
-          histo1->Fill_1e(njet, dPhi[0], dPhi[1], dPhi[2]);
+          jetE = p2.E() ; 
        }
    }
-   // min dR(muon, jet)
-   histo1->Fill_1b( njet, dR, relPt );
+
+   if ( jet_temp.size() > 0 ) histo1->Fill_1b( dR, relPt, muE, jetE );
 
 }
-/*
-void TtJet::JetEtSpectrum( std::vector<const reco::Candidate*> jet_temp, HOBJ1* histo1){
 
-   histo1->Fill_1f( jet_temp.size() );
-   if ( jet_temp.size() > 3) {
-      // get m3
-      std::vector<LorentzVector> vlist;
-      vlist.push_back( jet_temp[0]->p4() );
-      vlist.push_back( jet_temp[1]->p4() );
-      vlist.push_back( jet_temp[2]->p4() );
-      double m3 = tools->getInvMass( vlist );
+// isolated electron and jets
+void TtJet::ElectronAndJet( std::vector<const reco::Candidate*> jet_temp,  const reco::Candidate* isoEle, HOBJ1* histo1){
 
-      histo1->Fill_1c(jet_temp[0]->et(), jet_temp[1]->et(), jet_temp[2]->et(), jet_temp[3]->et(), m3 ) ;
-   }
-}
+   int njet = static_cast<int>( jet_temp.size() );
+   LorentzVector p1 = isoEle->p4() ;
 
-void TtJet::JetEtSpectrum(Handle<std::vector<reco::GenJet> > genJet, HOBJ1* histo1){
+   double dR = 99. ;
+   double relPt = -1;
+   double eleE = isoEle->energy();
+   double jetE = -1;
+   for (int i= 0; i < njet ; i++) {
+       LorentzVector p2 = jet_temp[i]->p4() ;
 
-   std::vector<reco::GenJet> jet_temp ;
-   for (std::vector<reco::GenJet>::const_iterator j1 = genJet->begin(); j1 != genJet->end(); j1++)
-   {
-       jet_temp.push_back( *j1 );
-   }
-
-   histo1->Fill_1f( jet_temp.size() );
-   if ( jet_temp.size() > 3) {
-      sort(jet_temp.begin(), jet_temp.end(), EtDecreasing );
-      std::vector<LorentzVector> vlist;
-      vlist.push_back( jet_temp[0].p4() );
-      vlist.push_back( jet_temp[1].p4() );
-      vlist.push_back( jet_temp[2].p4() );
-      double m3 = tools->getInvMass( vlist );
-
-      histo1->Fill_1c(jet_temp[0].et(), jet_temp[1].et(), jet_temp[2].et(), jet_temp[3].et(), m3 ) ;
-   }
-
-}
-*/
-
-void TtJet::JetdRAnalysis( std::vector<const reco::Candidate*>  patJet, HOBJ1* histo1 ){
-
-    int jetSize = static_cast<int>( patJet.size() ) ;
-    for(int i=0; i< jetSize; i++) {
-
-       if ( i+1 >= jetSize  ) continue;
-       for (int j=i+1; j< jetSize; j++) {
-
-           double dR = tools->getdR( patJet[i]->p4(), patJet[j]->p4() );
-           histo1->Fill_1a( dR );
+       double dR1    = tools->getdR( p1, p2 );
+       double relPt1 = tools->getRelPt(p1, p2);
+       if ( dR1 < dR ) {
+          dR = dR1; 
+          relPt = relPt1 ;
+          jetE = p2.E() ; 
        }
-    }
+
+   }
+   if ( jet_temp.size() > 0 ) histo1->Fill_1h( dR, relPt, eleE, jetE );
 
 }
 

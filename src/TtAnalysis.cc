@@ -36,9 +36,7 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
-  needTree          = iConfig.getUntrackedParameter<bool>   ("needTree");
   trigOn            = iConfig.getUntrackedParameter<bool>   ("trigOn");
-  JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
@@ -58,8 +56,8 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
 
   MCMatching  = new TtMCMatching();
   evtSelected = new TtEvtSelector( iConfig );
-  ttMuon      = new TtMuon();
-  ttEle       = new TtElectron();
+  ttMuon      = new TtMuon( iConfig );
+  ttEle       = new TtElectron( iConfig );
   ttGam       = new TtPhoton();
   ttMET       = new TtMET( iConfig );
   ttJet       = new TtJet( iConfig );
@@ -176,14 +174,6 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    Handle<std::vector<reco::Muon> > recomuons;
    iEvent.getByLabel(recoMuon, recomuons);
-   /*
-   Handle<std::vector<reco::Muon> > recomuons;
-   if ( recoMuon == "paramMuons" ) {
-      iEvent.getByLabel(recoMuon,"ParamGlobalMuons",recomuons);
-   }
-   if ( recoMuon == "muons" ) {
-      iEvent.getByLabel(recoMuon,"",recomuons);
-   }*/
 
    Handle<std::vector<pat::Electron> > electrons;
    iEvent.getByLabel(electronSrc, electrons);
@@ -217,10 +207,9 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    // The Feed the gen Tree 
 
    // 0. select the semi-lep events and objects
-   int jpass = evtSelected->eventSelection( 1, 30., iEvent, "patMET", "patJet" );
+   int jpass = evtSelected->eventSelection( 1, 30., iEvent, "patMET");
    int topo  = evtSelected->MCEvtSelection(genParticles);
 
-   //if ( needTree && jpass == 4)  MCMatching->MCTreeFeeder( genParticles, histos.genTree, evtIt );
    cout<<" jpass : "<<jpass<<" topo :"<<topo <<endl;
    //  And calculate the selection efficiency
    bool passSelect = ( jpass > 3 ) ? true : false ;
@@ -229,7 +218,7 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //MCMatching->CheckGenParticle( genParticles );
 
    // 1. Build semi-mu tt events and compare the result
-   semiSol->BuildSemiTt(iEvent,   1,  evtIt,  &histos );
+   semiSol->BuildSemiTt(  iEvent, 1,  evtIt,  &histos );
    semiSol->MCBuildSemiTt(iEvent, 1,  evtIt,  &histos );
    //semiSol->McRecoCompare( 1, 0, passSelect, histos );
 
@@ -264,9 +253,6 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    if ( topo == 1) {
       ttJet->matchedWJetsAnalysis( mcjets, isoMu, jets, histos.hWJet );
    } 
-   if ( jpass > 3 && topo == 1 ) {
-      ttJet->bTagAnalysis( jets, muons, histos.hBJet );
-   }
    // looking for the leptonic b jet effect 
    if ( jpass > 3 ) {
       ttJet->matchedbJetsAnalysis( mcjets, isoMu, jets, histos.hBJet );

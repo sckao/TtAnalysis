@@ -46,24 +46,17 @@ TtEvtSelector::TtEvtSelector(const edm::ParameterSet& iConfig)
 {
 //TtEvtSelector::TtEvtSelector()
    //now do what ever initialization is needed
-  /*
-  rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
-  recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
-  leptonFlavour     = iConfig.getParameter<std::string>   ("leptonFlavour");
-  genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
-  //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
-   */
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
-  tcmetSrc          = iConfig.getParameter<edm::InputTag> ("tcMetSource");
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
-  jptSrc            = iConfig.getParameter<edm::InputTag> ("jptSource");
+  recoMetSrc        = iConfig.getParameter<edm::InputTag> ("recoMetSource");
   bTagAlgo          = iConfig.getUntrackedParameter<string> ("bTagAlgo");
-  JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
+  jetSetup          = iConfig.getParameter<std::vector<double> >("jetSetup");
+  //JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
 
-  ttMuon    = new TtMuon();
-  ttEle     = new TtElectron();
+  ttEle     = new TtElectron( iConfig );
+  ttMuon    = new TtMuon( iConfig );
   ttJet     = new TtJet( iConfig );
   ttMET     = new TtMET( iConfig );
   mcMatch   = new TtMCMatching();
@@ -90,7 +83,7 @@ TtEvtSelector::~TtEvtSelector()
 
 
 // Event selection plus object selection , new general method
-int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, string JetType, std::vector<bool>* bTags, std::vector<double>* bDisList ){
+int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, std::vector<bool>* bTags, std::vector<double>* bDisList ){
 
    // retrieve the reco-objects
    Handle<std::vector<pat::Muon> > muons;
@@ -102,19 +95,15 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const 
    Handle<std::vector<pat::MET> > mets;
    iEvent.getByLabel(metSrc, mets);
 
-   Handle<std::vector<reco::MET> > tcmet;
-   iEvent.getByLabel(tcmetSrc, tcmet);
-
    Handle<std::vector<pat::Jet> > jets;
    iEvent.getByLabel(jetSrc, jets);
 
-   Handle<std::vector<reco::CaloJet> > jpts;
-   iEvent.getByLabel(jptSrc, jpts);
-
+   Handle<std::vector<reco::MET> > recomet;
+   iEvent.getByLabel(recoMetSrc, recomet);
+   
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
    std::vector<const reco::Candidate*> isoEl = ttEle->IsoEleSelection( electrons );
-   if ( JetType == "patJet" ) selectedJets = ttJet->JetSelection( jets, isoMu, JetEtCut, JEScale, NULL ,bTags, bTagAlgo, bDisList );
-   if ( JetType == "jptJet" ) selectedJets = ttJet->JetSelection( jpts, isoMu, JetEtCut, JEScale );
+   selectedJets = ttJet->JetSelection( jets, isoMu, jetSetup[0], jetSetup[2], NULL ,bTags, bTagAlgo, bDisList );
    
    int pass = -1;
 
@@ -123,7 +112,7 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const 
    int nJet = selectedJets.size();
    int nLep = nEle + nMu ;
    std::vector<bool> softJbTags;
-   std::vector<const reco::Candidate*> additionalJets = ttJet->SoftJetSelection( jets, isoMu, JetEtCut, JEScale, &softJbTags, bTagAlgo, NULL, bDisList );
+   std::vector<const reco::Candidate*> additionalJets = ttJet->SoftJetSelection( jets, isoMu, jetSetup[0], jetSetup[2], &softJbTags, bTagAlgo, NULL, bDisList );
    if ( additionalJets.size() > 0  && additionalJets[0]->et() > 20. ) {
       selectedJets.push_back( additionalJets[0] );
       if ( bTags != NULL ) bTags->push_back( softJbTags[0] );
@@ -158,8 +147,8 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const 
 
    double metCut = 0. ;
    LorentzVector theMetP4 ;
-   if ( MetType == "patMet" && mets->size()  > 0 ) theMetP4 = JEScale * (*mets)[0].p4() ;
-   if ( MetType == "tcMet"  && tcmet->size() > 0 ) theMetP4 = JEScale * (*tcmet)[0].p4() ;
+   if ( MetType == "patMet" && mets->size()  > 0 ) theMetP4 = jetSetup[2] * (*mets)[0].p4() ;
+   if ( MetType == "recoMet" && recomet->size() > 0 ) theMetP4 = jetSetup[2] * (*recomet)[0].p4() ;
    if ( MetType == "evtMet" ) theMetP4 = ttMET->METfromObjects( isoLep, selectedJets );
    if ( MetType == "neuMet" ) theMetP4 = ttMET->METfromNeutrino( iEvent );
    if ( theMetP4.Et() < metCut ) pass = -1 ;
@@ -169,8 +158,8 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const 
 
 }
 
-// Event selection only , new general method
-int TtEvtSelector::eventSelection( int topo, double JetEtCut, const edm::Event& iEvent, string MetType, string JetType ){
+// Event selection only , not keeping objects
+int TtEvtSelector::eventSelection( int topo, double JetEtCut, const edm::Event& iEvent, string MetType ){
 
    // retrieve the reco-objects
    Handle<std::vector<pat::Muon> > muons;
@@ -182,14 +171,11 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, const edm::Event& 
    Handle<std::vector<pat::MET> > mets;
    iEvent.getByLabel(metSrc, mets);
 
-   Handle<std::vector<reco::MET> > tcmet;
-   iEvent.getByLabel(tcmetSrc, tcmet);
+   Handle<std::vector<reco::MET> > recomet;
+   iEvent.getByLabel(recoMetSrc, recomet);
 
    Handle<std::vector<pat::Jet> > jets;
    iEvent.getByLabel(jetSrc, jets);
-
-   Handle<std::vector<reco::CaloJet> > jpts;
-   iEvent.getByLabel(jptSrc, jpts);
 
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
    std::vector<const reco::Candidate*> isoEl = ttEle->IsoEleSelection( electrons );
@@ -197,8 +183,7 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, const edm::Event& 
    for (size_t i=0; i< isoEl.size(); i++ ) isoLep.push_back( isoEl[i] ) ;
 
    std::vector<const reco::Candidate*> theJets;
-   if ( JetType == "patJet" ) theJets = ttJet->JetSelection( jets, isoMu, JetEtCut, JEScale, NULL , NULL, bTagAlgo );
-   if ( JetType == "jptJet" ) theJets = ttJet->JetSelection( jpts, isoMu, JetEtCut, JEScale );
+   theJets = ttJet->JetSelection( jets, isoMu, jetSetup[0], jetSetup[2], NULL , NULL, bTagAlgo );
    
    int pass = -1;
    int nEle = isoEl.size();
@@ -219,8 +204,8 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, const edm::Event& 
 
    double metCut = 0. ;
    LorentzVector metp4;
-   if ( MetType == "patMet" && mets->size()  > 0 ) metp4 = JEScale * (*mets)[0].p4() ;
-   if ( MetType == "tcMet"  && tcmet->size() > 0 ) metp4 = JEScale * (*tcmet)[0].p4() ;
+   if ( MetType == "patMet" && mets->size()  > 0 ) metp4 = jetSetup[2] * (*mets)[0].p4() ;
+   if ( MetType == "recoMet"  && recomet->size() > 0 ) metp4 = jetSetup[2] * (*recomet)[0].p4() ;
    if ( MetType == "evtMet" ) metp4 = ttMET->METfromObjects( isoLep, theJets );
    if ( MetType == "neuMet" ) metp4 = ttMET->METfromNeutrino( iEvent );
    if ( metp4.Et() < metCut ) pass = -1 ;

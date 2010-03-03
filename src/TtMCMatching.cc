@@ -55,7 +55,6 @@ TtMCMatching::TtMCMatching()
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
 
-  recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
   //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
 
@@ -213,10 +212,10 @@ std::vector<jmatch> TtMCMatching::matchJets( Handle<std::vector<reco::GenParticl
        std::vector<const reco::Candidate*> tmpMom = ttDecay(genParticles, i) ;
        for (size_t j=0; j< tmpMom.size(); j++ ){
            jetMom.push_back( tmpMom[j] );
-           //if (fillhisto) cout<<"tmpMom sz"<<tmpMom.size() << " jmom:"<< it->pdgId() <<endl;
+           //cout<<"tmpMom sz"<<tmpMom.size()  <<endl;
        }
    }
-   //if (fillhisto) cout<<"  === jetMom size == "<<jetMom.size() <<endl;
+   if ( fillhisto ) cout<<"  === jetMom size == "<<jetMom.size() <<endl;
 
    int qSize = static_cast<int>( jetMom.size() );
    int jSize = static_cast<int>( selectedJets.size() );
@@ -369,6 +368,7 @@ std::vector<jmatch> TtMCMatching::matchbJets( Handle<std::vector<reco::GenPartic
 
 }
 
+/*
 std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<reco::GenParticle> > genParticles,
                           std::vector<const reco::Candidate*> isoMuons ,HTOP3* histo3 ){
 
@@ -389,9 +389,10 @@ std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<
       }
       if (usedMuon != -1) {
          matchList.push_back( usedMuon ); 
-         double ptRes2 = (isoMuons[usedMuon]->pt()/mcMuon[i]->pt()) - 1. ;
-         if ( histo3 != NULL ) histo3->Fill3b( mcMuon[i]->eta(),  mcMuon[i]->phi(), isoMuons[usedMuon]->eta(), isoMuons[usedMuon]->phi()
-                                       ,mcMuon[i]->pt(), ptRes2 );
+         double ptRes2 = (isoMuons[usedMuon]->pt() /mcMuon[i]->pt() ) - 1. ;
+         if ( histo3 != NULL ) histo3->Fill3b(          mcMuon[i]->eta(),          mcMuon[i]->phi(), 
+                                               isoMuons[usedMuon]->eta(), isoMuons[usedMuon]->phi(),
+                                                mcMuon[i]->pt(), ptRes2 );
       }
 
    }
@@ -408,7 +409,7 @@ std::vector<const reco::Candidate*> TtMCMatching::matchMuon( Handle<std::vector<
 
    return matchedMuon ;
 }
-
+*/
 
 std::vector<const reco::Candidate*> TtMCMatching::matchElectron(Handle<std::vector<reco::GenParticle> > genParticles,
                                            std::vector<const reco::Candidate*> isoEle, HTOP4* histo4 ){

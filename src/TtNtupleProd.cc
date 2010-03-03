@@ -31,14 +31,14 @@
 using namespace edm;
 using namespace std;
 TtNtupleProd::TtNtupleProd(const edm::ParameterSet& iConfig)
-: evtIt(0)
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
   trigOn            = iConfig.getUntrackedParameter<bool>   ("trigOn");
-  JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
+  isData            = iConfig.getUntrackedParameter<bool>   ("isData");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
-  genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
+  genSrc            = iConfig.getParameter<edm::InputTag>   ("genParticles"); 
+  evtIt             = iConfig.getUntrackedParameter<int> ("eventId");
   //triggerSrc        = iConfig.getParameter<edm::InputTag> ("triggerSource");
   
 
@@ -51,9 +51,9 @@ TtNtupleProd::TtNtupleProd(const edm::ParameterSet& iConfig)
   ntuples.muTree  = new ObjNtp("selMu");
   ntuples.jetTree = new ObjNtp("selJet");
   ntuples.neuTree = new ObjNtp("solNeu");
-  ntuples.genTree = new ObjNtp("gen");
   ntuples.solTree = new SolNtp("solTt");
-  ntuples.mcmTree = new SolNtp("mcmTt");
+  if ( !isData ) ntuples.mcmTree = new SolNtp("mcmTt");
+  if ( !isData ) ntuples.genTree = new ObjNtp("gen");
 
 }
 
@@ -68,12 +68,12 @@ TtNtupleProd::~TtNtupleProd()
    delete semiSol;
    
    theFile->cd();
-   ntuples.genTree->Write();
    ntuples.muTree->Write();
    ntuples.jetTree->Write();
    ntuples.neuTree->Write();
    ntuples.solTree->Write();
-   ntuples.mcmTree->Write();
+   if ( !isData ) ntuples.mcmTree->Write();
+   if ( !isData ) ntuples.genTree->Write();
 
    if (debug) cout << "[Wrote the ntuples]" << endl;
 
@@ -96,11 +96,8 @@ void TtNtupleProd::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 {
 
    // retrieve the reco-objects
-   cout<<"*** New Event Start **** "<<endl;
+   //cout<<"*** New Event Start **** "<<endl;
    
-   Handle<std::vector<reco::GenParticle> > genParticles;
-   iEvent.getByLabel(genSrc, genParticles);
-
    // Handle<std::vector<pat::TriggerPrimitive> >  triggers;
    // Handle<edm::TriggerResults>  triggers;
    // iEvent.getByLabel(triggerSrc, triggers);
@@ -108,19 +105,20 @@ void TtNtupleProd::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    //cout<<" ***** new Event start ***** "<<endl;
    evtIt++;
 
-   // The Feed the gen Tree 
-
-   // 0. select the semi-lep events and objects
-   cout<<" 1. GEN "<<endl;
-   MCMatching->MCTreeFeeder( genParticles, ntuples.genTree, evtIt );
-
-   cout<<" 2. building "<<endl;
-   // 1. Build semi-mu tt events and compare the result
+   //cout<<" 1. building "<<endl;
    semiSol->BuildSemiTt(iEvent, 1, evtIt, &ntuples );
 
-   cout<<" 3. MC Matching "<<endl;
-   semiSol->MCBuildSemiTt(iEvent, 1, evtIt, &ntuples );
-   cout<<" Done !!! "<<endl;
+   // The Feed the gen Tree 
+   if ( !isData ) {
+      Handle<std::vector<reco::GenParticle> > genParticles;
+      iEvent.getByLabel(genSrc, genParticles);
+      //cout<<" 2. GEN "<<endl;
+      MCMatching->MCTreeFeeder( genParticles, ntuples.genTree, evtIt );
+      //cout<<" 3. MC Matching "<<endl;
+      semiSol->MCBuildSemiTt(iEvent, 1, evtIt, &ntuples );
+   }
+
+   //cout<<" Done !!! "<<endl;
 
 }
 
