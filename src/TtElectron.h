@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtElectron.h,v 1.8 2009/03/07 14:22:25 sckao Exp $
+// $Id: TtElectron.h,v 1.9 2009/10/15 06:47:16 sckao Exp $
 //
 //
 
@@ -71,7 +71,7 @@ typedef math::XYZTLorentzVector LorentzVector;
 class TtElectron {
    public:
     /// Constructor
-    explicit TtElectron();
+    explicit TtElectron(const edm::ParameterSet&);
     /// Destructor
     ~TtElectron();
 
@@ -89,6 +89,7 @@ class TtElectron {
     
 
    private:
+   std::vector<double> eleSetup ;
 
 };
 

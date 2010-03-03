@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtSemiEventSolution.h,v 1.14 2009/07/15 12:36:26 sckao Exp $
+// $Id: TtSemiEventSolution.h,v 1.15 2009/10/15 06:47:17 sckao Exp $
 //
 //
 
@@ -85,7 +85,6 @@
 class TtEvtSelector;
 class TtMCMatching;
 class TtMuon;
-class TtElectron;
 class TtMET;
 class TtJet;
 class TtEfficiency;
@@ -160,7 +159,6 @@ class TtSemiEventSolution {
     TtEvtSelector* evtSelected;
     TtMCMatching*  MCMatching;
     TtMuon*        ttMuon;
-    TtElectron*    ttEle;
     TtMET*         ttMET;
     TtJet*         ttJet;
     TtEfficiency*  ttEff;
@@ -195,16 +193,14 @@ class TtSemiEventSolution {
     bool debug;
     bool btag;
     int  nbtagged;
-    double JEScale;
+    std::vector<double> jetSetup;
 
     std::string recoMuon;
     std::string algo;
     edm::InputTag muonSrc;
     edm::InputTag electronSrc;
     edm::InputTag metSrc;
-    edm::InputTag tcmetSrc;
     edm::InputTag jetSrc;
-    edm::InputTag jptSrc;
     edm::InputTag genJetSrc;
     edm::InputTag genSrc;
 

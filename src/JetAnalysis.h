@@ -116,6 +116,7 @@ class JetAnalysis : public edm::EDAnalyzer {
     HOBJ1 *hJ_Et20;
     HOBJ1 *hJ_Et25;
     HOBJ1 *hJ_Et30;
+    HBJet *hb_Et30;
     HOBJ2 *hMET_J20;
     HOBJ2 *hMET_J25;
     HOBJ2 *hMET_J30;
@@ -126,20 +127,17 @@ class JetAnalysis : public edm::EDAnalyzer {
 
     // Switch for debug output
     bool debug;
+    bool isData;
     int evtIt;
-    double JEScale;
+    std::vector<double> jetSetup;
 
     std::string rootFileName;
     edm::InputTag muonSrc;
     std::string recoMuon;
     edm::InputTag electronSrc;
     edm::InputTag jetSrc;
-    edm::InputTag jptSrc;
     edm::InputTag metSrc;
-    edm::InputTag tcmetSrc;
-    edm::InputTag genmetSrc;
     edm::InputTag genJetSrc;
-    edm::InputTag jetObj;
     edm::InputTag genSrc;
     edm::InputTag caloSrc;
     string bTagAlgo;

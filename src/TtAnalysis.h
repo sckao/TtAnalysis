@@ -137,7 +137,6 @@ class TtAnalysis : public edm::EDAnalyzer {
 
     // Switch for debug output
     bool debug;
-    bool needTree; 
     bool trigOn;
     int evtIt;
     double JEScale;

@@ -100,7 +100,6 @@ class TtEvtSelector;
 
 template<typename T> 
 struct EtSorting{
-
        bool operator()( const T & t1, const T & t2 ) const {
 		return t1->et() > t2->et();
 	}
@@ -118,9 +117,9 @@ class TtJet {
     //void JetTreeFeeder(edm::Handle<std::vector<pat::Jet> > patJet, TtNtp* jtree, int eventId );
 
     void jetAnalysis(edm::Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1);
-    void JetdRAnalysis(std::vector<const reco::Candidate*>  patJet, HOBJ1* histo1);
 
     void MuonAndJet( std::vector<const reco::Candidate*> patJet, const reco::Candidate* isoMu, HOBJ1* histo1 );
+    void ElectronAndJet( std::vector<const reco::Candidate*> patJet, const reco::Candidate* isoEl, HOBJ1* histo1 );
 
     void JetAndLepW( std::vector<const reco::Candidate*> patJet,  LorentzVector p1, HTOP1* histo1 );
 
@@ -131,7 +130,7 @@ class TtJet {
                               edm::Handle<std::vector<pat::Jet> > patJets, HTOP7* histo7);
 
     std::vector< const reco::Candidate* > WJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons, double JetEtCut );
-    std::vector< const reco::Candidate* > bJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons, double JetEtCut, string bTagAlgo );    
+    std::vector< const reco::Candidate* > bJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons, string bTagAlgo );    
 
     double NofJetConstituents( pat::Jet theJet );
     double EoverH( pat::Jet theJet );
@@ -144,18 +143,19 @@ class TtJet {
     FreeTrajectoryState getFTS(GlobalPoint GP, GlobalVector GV, int charge,
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
-    void bTagAnalysis( edm::Handle<std::vector<pat::Jet> > patJet, edm::Handle<std::vector<pat::Muon> > patMuon, HTOP7* histo7 );
+    void bTagAnalysis( const edm::Event& iEvent, edm::Handle<std::vector<pat::Jet> > patJet, HBJet* histo );
+
     //void JetTrigger( edm::Handle<std::vector<pat::Jet> > jets, edm::Handle <edm::TriggerResults> triggers);
 
-    template<typename jetT>
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<jetT> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL, string bTagAlgo = "", std::vector<double>* bDisList = NULL );
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::CaloJet> > Jpts, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL );
+    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL, string bTagAlgo = "", std::vector<double>* bDisList = NULL );
+    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::CaloJet> > caloJets, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL );
+
+    std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<pat::Jet> > recoJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., std::vector<bool>* bTags = NULL, string bTagAlgo="", HOBJ1* histo1 = NULL, std::vector<double>* bDisList = NULL );
 
     template<typename jetT>
-    std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<jetT> > recoJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., std::vector<bool>* bTags = NULL, string bTagAlgo="", HOBJ1* histo1 = NULL, std::vector<double>* bDisList = NULL );
-
+    void JetEtSpectrum( std::vector<jetT> theJet, HOBJ1* histo1);
     template<typename jetT>
-    void JetEtSpectrum( std::vector<jetT> patJet, HOBJ1* histo1);
+    void JetdRAnalysis( std::vector<jetT> theJet, HOBJ1* histo1);
 
    private:
 
@@ -166,124 +166,20 @@ class TtJet {
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;
     edm::InputTag genSrc;
-    edm::InputTag jptSrc;
     double bCut;
     string bTagAlgo;
+    std::vector<double> jetSetup;
     //edm::ParameterSet tkParas; 
     //TrackAssociatorParameters theParameters; 
 
 };
 
-// Template Functions 
-template<typename jetT>
-std::vector<const reco::Candidate* > TtJet::JetSelection( edm::Handle<std::vector<jetT> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, double fScale, HOBJ1* histo, std::vector<bool>* bTags, string bTagAlgo1, std::vector<double>* bDisList ) {
-
-   int nBJets = 0;
-   std::vector<const reco::Candidate* > jet_temp ;
-   for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
-   {
-
-       if ( fabs(j1->eta()) > 2.7 ) continue;  
-       if ( ( fScale * j1->et() ) < EtThreshold ) continue;
-
-       double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
-                     j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+
-                     j1->hadEnergyInHO();
-       double calEt = calE * sin( j1->theta() );
-       if ( calEt < 4. ) continue;
-
-       double EovH = EoverH(*j1);
-       if ( EovH == -1. ) continue;
-
-       bool fakeJet = false;
-       for ( size_t i =0; i < IsoMuons.size(); i++ ) {
-           LorentzVector muP4 = IsoMuons[i]->p4() ;
-           double dR_mu = tools->getdR( muP4, j1->p4() );
-           if ( dR_mu < 0.1 ) fakeJet = true ;
-       }
-       if ( fakeJet ) continue;
-
-       double bDis = j1->bDiscriminator( bTagAlgo1 ) ;
-       if ( bDis >= bCut ) nBJets++ ;
-       if ( bTags != NULL ) {
-          if ( bDis >= bCut ) (*bTags).push_back( true );
-          if ( bDis <  bCut ) (*bTags).push_back( false );
-          if ( bDisList != NULL ) (*bDisList).push_back( bDis );
-       }
-
-       reco::Candidate* scaleJ = j1->clone() ;
-       LorentzVector jP4 = scaleJ->p4() ;
-       scaleJ->setP4( jP4*fScale ) ;
-       jet_temp.push_back( scaleJ );
-       //jet_temp.push_back( &*j1 );
-
-   }
-
-   if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtSorting<const reco::Candidate*>() );
-
-   if ( histo != NULL ) {
-      int jetSize = static_cast<int>( jets->size() );
-      if (jetSize > 20) jetSize = 20 ;
-      histo->Fill_1g( jetSize, jet_temp.size(), nBJets );
-   }
-   return jet_temp;
-
-}
-
-template<typename jetT>
-std::vector<const reco::Candidate* > TtJet::SoftJetSelection( edm::Handle<std::vector<jetT> > jets, std::vector<const reco::Candidate*> IsoMuons , double EtThreshold, double fScale, std::vector<bool>* bTags, string bTagAlgo, HOBJ1* histo, std::vector<double>* bDisList) {
-
-   std::vector<const reco::Candidate* > jet_temp ;
-   for (typename std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++)
-   {
-
-       if ( ( fScale * j1->et() ) >= EtThreshold ) continue; 
-       if ( fabs(j1->eta()) > 2.7 ) continue; 
-
-       double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
-                     j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+ 
-                     j1->hadEnergyInHO();
-       double calEt = calE * sin( j1->theta() );
-       if ( calEt < 4. ) continue;
-
-       double EovH = EoverH(*j1);
-       if ( EovH == -1. ) continue;
-
-       bool fakeJet = false;
-       for ( size_t i =0; i < IsoMuons.size(); i++ ) {
-           LorentzVector muP4 = IsoMuons[i]->p4() ;
-           double dR_mu = tools->getdR( muP4, j1->p4() );  
-           if ( dR_mu < 0.1 ) fakeJet = true ;
-       }
-       if ( fakeJet ) continue;
-       // bTags has to be "NULL" if use non-PAT Jets
-       if ( bTags != NULL ) {
-          double bDis = j1->bDiscriminator( bTagAlgo ) ;
-          if ( bDis >= bCut ) (*bTags).push_back( true );
-          if ( bDis <  bCut ) (*bTags).push_back( false );
-          if ( bDisList != NULL ) (*bDisList).push_back( bDis );
-       }
-
-       reco::Candidate* scaleJ = j1->clone() ;
-       LorentzVector jP4 = scaleJ->p4() ;
-       scaleJ->setP4( jP4*fScale ) ;
-
-       jet_temp.push_back( scaleJ );
-   }
-
-   //if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtDecreasing2 );
-   if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtSorting<const reco::Candidate*>() );
-   if ( histo != NULL ) {
-      double leadingJetEt = ( jet_temp.size() > 0 ) ? jet_temp[0]->et() : 0.  ;
-      histo->Fill_1i( jet_temp.size(), leadingJetEt );
-   }
-   return jet_temp;
-}
-
+// Template Functions
 template<typename jetT>
 void TtJet::JetEtSpectrum( std::vector<jetT> jet_temp, HOBJ1* histo1){
 
    histo1->Fill_1f( jet_temp.size() );
+   if ( jet_temp.size() > 0) histo1->Fill_1d(jet_temp[0]->et() ) ;
    if ( jet_temp.size() > 3) {
       // get m3
       std::vector<LorentzVector> vlist;
@@ -295,5 +191,24 @@ void TtJet::JetEtSpectrum( std::vector<jetT> jet_temp, HOBJ1* histo1){
       histo1->Fill_1c(jet_temp[0]->et(), jet_temp[1]->et(), jet_temp[2]->et(), jet_temp[3]->et(), m3 ) ;
    }
 }
+
+// dR(j,j)
+template<typename jetT>
+void TtJet::JetdRAnalysis( std::vector<jetT>  theJet, HOBJ1* histo1 ){
+
+    int jetSize = static_cast<int>( theJet.size() ) ;
+    double dR = 99. ;
+    for(int i=0; i< jetSize; i++) {
+
+       if ( i+1 >= jetSize  ) continue;
+       for (int j=i+1; j< jetSize; j++) {
+
+           double dR1 = tools->getdR( theJet[i]->p4(), theJet[j]->p4() );
+           if ( dR1 < dR ) dR = dR1;
+       }
+    }
+    if ( dR < 98 ) histo1->Fill_1a( dR );
+}
+
 
 #endif

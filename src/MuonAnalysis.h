@@ -84,10 +84,9 @@
 //
 // class decleration
 //
-class TtEvtSelector;
+//class TtEvtSelector;
 class TtElectron;
 class TtMuon;
-class TtJet;
 class TtMCMatching;
 
 class MuonAnalysis : public edm::EDAnalyzer {
@@ -126,19 +125,16 @@ class MuonAnalysis : public edm::EDAnalyzer {
 
     // Switch for debug output
     bool debug;
+    bool isData;
     int evtIt;
-    double JEScale;
+
+    std::vector<double> muSetup ;
 
     std::string rootFileName;
     std::string recoMuon;
     edm::InputTag muonSrc;
     edm::InputTag electronSrc;
-    edm::InputTag jetSrc;
-    edm::InputTag metSrc;
-    edm::InputTag genJetSrc;
-    edm::InputTag jetObj;
     edm::InputTag genSrc;
-    edm::InputTag caloSrc;
 
 
 };

@@ -83,7 +83,6 @@ struct jmatch {
        double res_P;                      // momentum resolution
        LorentzVector p4 ;
        const reco::Candidate* trueJet ;
-       //reco::Particle mom ;
        const reco::Candidate* mom ;
        bool hasMatched;
        double dR;

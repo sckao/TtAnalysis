@@ -107,10 +107,9 @@ class TtNtupleProd : public edm::EDAnalyzer {
 
     // Switch for debug output
     bool debug;
-    bool needTree; 
     bool trigOn;
+    bool isData;
     int  evtIt;
-    double JEScale;
 
     string rootFileName;
     edm::InputTag genSrc;

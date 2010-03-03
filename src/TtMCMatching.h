@@ -87,8 +87,8 @@ class TtMCMatching {
     std::vector<jmatch> matchbJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                    std::vector<const pat::Jet*> selectedbJets, HTOP7* histo7, bool fillhisto );
 
-    std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3 = NULL );
+    //std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
+    //                                    std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3 = NULL );
 
     std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                         std::vector<const reco::Candidate*> isoEle, HTOP4* histo4 = NULL );
@@ -111,11 +111,56 @@ class TtMCMatching {
 
     void CheckGenParticle(  edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
+    template<typename allT>
+    std::vector<const allT* > matchMuon( edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                                                   std::vector<const allT*> isoMuons ,HTOP3* histo3 =NULL) ;
    private:
 
     TtTools*       tools;
 
-
 };
+
+template<typename allT>
+std::vector<const allT*> TtMCMatching::matchMuon( edm::Handle<std::vector<reco::GenParticle> > genParticles,
+                          std::vector<const allT*> isoMuons ,HTOP3* histo3 ){
+
+   // Accumulate the leptonic dauaghters from W
+   std::vector<const reco::Candidate*> mcMuon = ttDecay(genParticles, 13) ;
+
+   // find the matched muon 
+   std::vector<int> matchList;
+   for (size_t i=0; i< mcMuon.size(); i++) {
+
+      // matching selected isoMuons with parton
+      double dR1    = 9.;
+      double ptRes1 = 9.;
+      int usedMuon = -1;
+      for (size_t j=0; j < isoMuons.size(); j++ ) {
+          bool matched = matchingGeneral( mcMuon[i]->p4(), isoMuons[j]->p4(), dR1, ptRes1 );
+          if ( matched && isoMuons[j]->charge() == mcMuon[i]->charge() ) usedMuon = static_cast<int>(j);
+      }
+      if (usedMuon != -1) {
+         matchList.push_back( usedMuon );
+         double ptRes2 = (isoMuons[usedMuon]->pt() /mcMuon[i]->pt() ) - 1. ;
+         if ( histo3 != NULL ) histo3->Fill3b(          mcMuon[i]->eta(),          mcMuon[i]->phi(),
+                                               isoMuons[usedMuon]->eta(), isoMuons[usedMuon]->phi(),
+                                                mcMuon[i]->pt(), ptRes2 );
+      }
+
+   }
+   // using one more loops to check whether double counting 
+   std::vector<const allT*> matchedMuon ;
+
+   std::vector<bool> used(isoMuons.size(), false  );
+
+   for (std::vector<int>::const_iterator it= matchList.begin(); it != matchList.end(); it++) {
+       if ( used[*it] ) continue;
+       matchedMuon.push_back( isoMuons[*it] );
+       used[*it] = true;
+   }
+
+   return matchedMuon ;
+}
+
 
 #endif

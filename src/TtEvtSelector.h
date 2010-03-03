@@ -90,9 +90,9 @@ class TtEvtSelector {
 
     /// Perform the real analysis
 
-    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, string JetType, std::vector<bool>* bTags = NULL , std::vector<double>* bDisList = NULL );
+    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, std::vector<bool>* bTags = NULL , std::vector<double>* bDisList = NULL );
 
-    int eventSelection( int topo, double JetEtCut, const edm::Event& iEvent, string MetType, string JetType );
+    int eventSelection( int topo, double JetEtCut, const edm::Event& iEvent, string MetType );
 
     int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
@@ -107,13 +107,12 @@ class TtEvtSelector {
    TtMET*        ttMET;
    TtMCMatching* mcMatch;
 
-   double JEScale;
+   std::vector<double> jetSetup;
    edm::InputTag muonSrc;
    edm::InputTag electronSrc;
    edm::InputTag metSrc;
-   edm::InputTag tcmetSrc;
    edm::InputTag jetSrc;
-   edm::InputTag jptSrc;
+   edm::InputTag recoMetSrc;
    string bTagAlgo;
 
 };

@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtMET.h,v 1.12 2009/07/15 12:36:26 sckao Exp $
+// $Id: TtMET.h,v 1.13 2009/10/15 06:47:16 sckao Exp $
 //
 //
 
@@ -95,9 +95,8 @@ class TtMET {
     void MetAndJets( edm::Handle<std::vector<pat::MET> > met, std::vector<const reco::Candidate*> theJets, HTOP2* histo2 );
 
     void METandNeutrino( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets,
-                         edm::Handle<std::vector<pat::MET> > met, edm::Handle<std::vector<reco::MET> > tcmet, 
-                         edm::Handle<std::vector<reco::GenMET> > genmet, edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                         HOBJ2* histo );
+                         edm::Handle<std::vector<pat::MET> > met,
+                         edm::Handle<std::vector<reco::GenParticle> > genParticles, HOBJ2* histo );
 
    private:
 
@@ -106,9 +105,8 @@ class TtMET {
 
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;
-    edm::InputTag tcmetSrc;
+    edm::InputTag recoMetSrc;
     edm::InputTag metSrc;
-    edm::InputTag genmetSrc;
     edm::InputTag genSrc;
 
 

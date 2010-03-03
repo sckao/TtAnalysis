@@ -689,7 +689,6 @@ public:
     dR_RelPt_bmu = new TH2F("dR_RelPt_bmu","dRmin vs RelPt for b and  iso muon ",200, 0.,5., 100, 0.,200. );  
     hdRbWj = new TH1F("hdRbWj","dR for b and  W matched jets ",300, 0.,15. );  
     bDis_bj = new TH1F("bDis_bj","b Discriminator for matched b jets ", 40,-10.25,9.75 );
-    bDis    = new TH1F("bDis","b Discriminator for  selected jets ", 40,-10.25,9.75 );
 
     bDis_phi_d0  = new TH2F("bDis_phi_d0" ," phi vs d0  ",63, -3.15,3.15, 200,-0.5,0.5);
     bDis_dR_RelPt = new TH2F("bDis_dR_RelPt"," dR vs RelPt ",100, 0.,1., 300, 0.,60.);
@@ -714,7 +713,6 @@ public:
     delete dR_RelPt_bmu;
     delete hdRbWj;
     delete bDis_bj;
-    delete bDis;
     delete bDis_dR_RelPt;
     delete bDis_phi_d0;
 
@@ -754,9 +752,6 @@ public:
     dR_RelPtg->Fill(gdR, gRelPt);
  }
 
- void Fill7g( double bDisValue ) {
-     bDis->Fill( bDisValue );
- }
  void Fill7h(double eta_mc, double phi_mc, double eta_rc, double phi_rc, double pt, double ptResol) {
     hEta->Fill(eta_mc, eta_rc);
     hPhi->Fill(phi_mc, phi_rc);
@@ -775,7 +770,6 @@ public:
     hdRbWj->Write();
 
     bDis_bj->Write();
-    bDis->Write();
     bDis_dR_RelPt->Write();
     bDis_phi_d0->Write();
 
@@ -796,7 +790,6 @@ public:
   TH1F *hdRbWj;
 
   TH1F *bDis_bj;
-  TH1F *bDis;
   TH2F *bDis_dR_RelPt;
   TH2F *bDis_phi_d0;
 
