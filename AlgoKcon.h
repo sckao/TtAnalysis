@@ -74,7 +74,7 @@ public:
 
    void SetFitParameters( double mass, Double_t* para, int nPara, int NBTag );
 
-   ClassDef(AlgoKcon, 1);
+   //ClassDef(AlgoKcon, 1);
 
 };
 

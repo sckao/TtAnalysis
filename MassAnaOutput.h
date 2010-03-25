@@ -56,7 +56,7 @@ public:
 
    TString GiveParTitle( int id );
 
-   ClassDef(MassAnaOutput, 1);
+   //ClassDef(MassAnaOutput, 1);
 
 };
 

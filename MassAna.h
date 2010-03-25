@@ -84,7 +84,7 @@ public:
 
    void SetFitParameters( double mass, Double_t* para, int nPara, int NBTag, int nbin );
 
-   ClassDef(MassAna, 1);
+   //ClassDef(MassAna, 1);
 
 };
 

@@ -2,7 +2,6 @@
 #define HadWMassFitter_H
 
 #include <TObject.h>
-#include <TMinuit.h>
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TString.h>
@@ -10,6 +9,7 @@
 #include <TLegend.h>
 #include <TCanvas.h>
 #include <TSystem.h>
+#include <TMinuit.h>
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +19,29 @@
 #include "MassAnaInput.h"
 #include "MassAna.h"
 #include "MassFitFunction.h"
+#include "WFormat.h"
+
+struct jlist {
+    int w1 ;
+    int w2 ;
+    int bh ;
+    int bl ;
+};
+
+
+class FitVectors : public TObject {
+
+public:
+
+   FitVectors(){}
+   ~FitVectors(){}
+
+   TLorentzVector jv1;
+   TLorentzVector jv2;
+
+   //ClassDef(FitVectors, 1);
+} ;
+
 
 class HadWMassFitter : public TObject {
 
@@ -37,16 +60,10 @@ private:
    double bTh;
    int    n_btag;
 
-   // for hadronic permutation
-   int eventId ;
-   std::vector<int> jd1;
-   std::vector<int> jd2;
-   std::vector<int> jd3;
-
    MassAnaInput*    fitInput;
    MassAna*         fitTools;
    MassFitFunction* fitFunc;
-
+ 
    TCanvas* c1;
    TCanvas* c2;
 
@@ -56,7 +73,7 @@ public:
 
    HadWMassFitter( double massL, double massH );     
    ~HadWMassFitter();     
- 
+
    void FitW( TLorentzVector jetv1, TLorentzVector jetv2, Double_t* pars, Double_t* errs, bool isJES );
 
    static void WMFCN(Int_t &npar, Double_t *, Double_t &wChi2, Double_t *par, Int_t iflag);
@@ -64,39 +81,41 @@ public:
    double ReFitWMass( TLorentzVector v1, TLorentzVector v2, Double_t *par, Double_t *ProbW );
 
    double ReFitHadTopMass( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3, Double_t *par );
+
    double ReFitLepTopMass( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3, Double_t *par );
 
-   Double_t jetAngle( TLorentzVector v1, TLorentzVector v2 );
+   double KinematicProb( int jid[] , vector<TLorentzVector> nvlist, TLorentzVector mV4, TLorentzVector nV4, Double_t *par, Double_t* wtX = NULL );
 
-   void ReFitSolution( string mName, TH2D* hM2M3, TH2D* hM3M3, int type, bool isMCMatched = false );
+   double Get2BodySigma( TLorentzVector v1, TLorentzVector v2 );
 
-   void FitMCSolution( string mName, TH2D* hM2M3, int type );
+   double Get3BodySigma( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3 );
 
-   bool HadPermutation( int i1, int i2, int i3, int evtId );
+   double BTagProbability( vector<double> bCut, int NofB, int jid[], bool isJES = false );
+
+   vector<TLorentzVector> newVector( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3, TLorentzVector v4, Double_t *par );
 
    bool JetPtFilter( vector<TLorentzVector> jpv );
 
-   void TWFitter( string mName, int type, TString DrawOpt = "COLZ", bool isMCMatched = false );
+   Double_t jetAngle( TLorentzVector v1, TLorentzVector v2 );
 
-   //TLorentzVector NeuLooper( TTree* tr, int evtIdx, int objIdx );
+   // methods for old soltree
+   void ReFitSolution( string mName, recoObj* wObj, int type, bool isMCMatched = false );
+   void ReFitSolution( string mName, recoObj* wObj, vector< pair<int,int> >& evtlist, int type );
 
-   ClassDef(HadWMassFitter, 1);
+   void ReFitSolution1( string mName, int njets, recoObj* wObj, vector<int>* evtlist = NULL );
+
+   void ReFitSolution1( string mName, int njets, recoObj* wObj, int type , vector<int>* evtlist = NULL );
+
+   void MCSolution( string fileName, recoObj* wObj, int type );
+
+   void GetPermutes( int njets, vector<jlist>& jlistV );
+
+   vector<TLorentzVector> GetLorentzVector( jlist Ls, double jpx[], double jpy[], double jpz[], double jE[] );
+
+   //ClassDef(HadWMassFitter, 1);
 
 };
 
-class FitVectors : public TObject {
-
-public:
-
-   FitVectors(){}
-   ~FitVectors(){}
-
-   TLorentzVector jv1;
-
-   TLorentzVector jv2;
-
-   ClassDef(FitVectors, 1);
-};
 
 //#if !defined(__CINT__)
 //    ClassImp(HadWMassFitter);

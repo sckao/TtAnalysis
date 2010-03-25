@@ -58,7 +58,7 @@ public:
    void Smearing( TString mName, double sgm = 0.7, TH1D* hSmearW = NULL );
    void SmearAndMatch( TString mName );
 
-   ClassDef(JES, 1);
+   //ClassDef(JES, 1);
 
 };
 

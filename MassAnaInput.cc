@@ -56,6 +56,8 @@ TTree* MassAnaInput::GetTree( string chName, TString treeName, TFile* file  ) {
     cout<<" * fileName = "<< theFileName <<endl;
     if ( file == NULL ) file = TFile::Open( theFileName );
     tr = (TTree*) file->Get( treeName );
+    //theChain->Add( theFileName );
+    //tr = theChain ;
   }
 
   return tr ;
@@ -525,7 +527,7 @@ void MassAnaInput::getFakeData( int rbin, TH1D* ttadd, THStack* ttstk, vector<TH
 
 }
 
-vector<TLorentzVector> MassAnaInput::GetNeutrinos( TTree* tr, int evtIdx, int& synId, bool& nextEvt ){
+vector<TLorentzVector> MassAnaInput::GetNeutrinos( TTree* tr, int evtIdx, int& synId, bool nextEvt ){
 
   double px,py,pz,E ;
   int evtId,objId ;
@@ -560,14 +562,13 @@ vector<TLorentzVector> MassAnaInput::GetNeutrinos( TTree* tr, int evtIdx, int& s
          if ( evtId > evtIdx ) break;
       }
       neu_str = neu_str + neuV.size()  ;
-      nextEvt = false ;
   }
   //cout<<"   final str = "<< neu_str <<endl;
   return neuV;
 
 }
 
-vector<TLorentzVector> MassAnaInput::GetJets( TTree* tr, int evtIdx, vector<double>& bCut, int& synId, bool& nextEvt ){
+vector<TLorentzVector> MassAnaInput::GetJets( TTree* tr, int evtIdx, vector<double>& bCut, int& synId, bool nextEvt ){
 
   double px,py,pz,E, bDis ;
   int evtId,objId ;
@@ -587,7 +588,7 @@ vector<TLorentzVector> MassAnaInput::GetJets( TTree* tr, int evtIdx, vector<doub
      for (int i=jet_str; i<= tr->GetEntries() ; i++) {
          tr->GetEntry(i);
 
-         //cout<<"  evtIdx = "<< evtIdx <<" evtId = "<< evtId <<" jet_str = "<< jet_str <<" objId = "<< objId ;
+         //cout<<" evtIdx = "<< evtIdx <<" evtId = "<< evtId <<" jet_str = "<< jet_str <<" objId = "<< objId ;
          //cout<<" synId = "<< synId << endl;
          if ( evtId < evtIdx ) continue;
 
@@ -605,13 +606,12 @@ vector<TLorentzVector> MassAnaInput::GetJets( TTree* tr, int evtIdx, vector<doub
          if ( evtId > evtIdx ) break;
      }
      jet_str = jet_str + jetV.size()  ;
-     nextEvt = false ;
   }
   //cout<<"   final str = "<< jet_str <<endl;
   return jetV;
 }
 
-vector<TLorentzVector> MassAnaInput::GetMuons( TTree* tr, int evtIdx, int& synId, bool& nextEvt ){
+vector<TLorentzVector> MassAnaInput::GetMuons( TTree* tr, int evtIdx, int& synId, bool nextEvt ){
 
   double px,py,pz,E ;
   int evtId,objId ;
@@ -646,7 +646,6 @@ vector<TLorentzVector> MassAnaInput::GetMuons( TTree* tr, int evtIdx, int& synId
          if ( evtId > evtIdx ) break;
      }
      mu_str = mu_str + muV.size()  ;
-     nextEvt = false ;
   }
   //cout<<"   final str = "<< mu_str <<endl;
   return muV;
@@ -696,7 +695,7 @@ void MassAnaInput::NormalizeComponents(  string theChannel, TH1D* tmp ){
   if ( idx >= 0 ) {
      double nBase = xsec[idx]*Eff[idx];
      double Scal = (nBase*lumi) / nEvents[idx] ;
-     cout<<" Scal of "<< channel[idx]<< " = " << Scal <<endl;
+     cout<<"-- Scal of "<< channel[idx]<< " = " << Scal <<endl;
      tmp->Scale(Scal);
   
   } else {
@@ -822,6 +821,8 @@ void MassAnaInput::GetParameters(string paraName, vector<double>* thePara ){
      vector<double>  vvec;
 
      while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
            pos = line.find( paraName );
            vpos = pos + paraName.size() + 1;
            if ( pos < line.npos ) {
@@ -856,6 +857,8 @@ void MassAnaInput::GetParameters(string paraName, vector<string>* thePara ){
      vector<string>  vvec;
 
      while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
            pos = line.find( paraName );
            vpos = pos + paraName.size() + 1;
            if ( pos < line.npos ) {
@@ -890,6 +893,8 @@ void MassAnaInput::GetParameters(string paraName, vector<int>* thePara ){
      vector<int>  vvec;
 
      while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
            pos = line.find( paraName );
            vpos = pos + paraName.size() + 1;
            if ( pos < line.npos ) {

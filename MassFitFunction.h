@@ -40,7 +40,7 @@ public:
    std::vector<bool> DataRejection( TF1* fitfunc, Double_t* x, Double_t* y, int N_data );
    bool DataRejection(double sigma, double deviation, int N_data );
 
-   ClassDef(MassFitFunction, 1);
+   //ClassDef(MassFitFunction, 1);
 
 };
 

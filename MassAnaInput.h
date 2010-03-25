@@ -22,6 +22,7 @@
 #include <TString.h>
 #include <TSystem.h>
 #include <TLorentzVector.h>
+#include "WFormat.h"
 
 class MassAnaInput : public TObject {
 
@@ -82,9 +83,9 @@ public:
 
    void getFakeData( int rbin, TH1D* ttadd, THStack* ttstk, vector<TH1D*>& hlist );
 
-   vector<TLorentzVector> GetNeutrinos( TTree* tr, int evtIdx, int& synId, bool& nextEvt );
-   vector<TLorentzVector> GetJets( TTree* tr, int evtIdx, vector<double>& bCuts, int& synId, bool& nextEvt );
-   vector<TLorentzVector> GetMuons( TTree* tr, int evtIdx, int& synId, bool& nextEvt );
+   vector<TLorentzVector> GetNeutrinos( TTree* tr, int evtIdx, int& synId, bool nextEvt = true );
+   vector<TLorentzVector> GetJets( TTree* tr, int evtIdx, vector<double>& bCuts, int& synId, bool nextEvt = true );
+   vector<TLorentzVector> GetMuons( TTree* tr, int evtIdx, int& synId, bool nextEvt = true );
 
    void NormalizeComponents( double lumi, double nEvents, int channel, TH1D* tmp );
    void NormalizeComponents( string theChhannel, TH1D* tmp );
@@ -102,11 +103,9 @@ public:
    void getData(TH1D* h_data, TString thefileName, int rbin );
    */
 
-   ClassDef(MassAnaInput, 1);
+   //ClassDef(MassAnaInput, 1);
 
 };
-
-
 
 //#if !defined(__CINT__)
 //    ClassImp(MassAnaInput);

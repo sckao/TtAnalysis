@@ -73,7 +73,7 @@ public:
 
    void SetFitParameters( double mass, Double_t* para, int nPara, int NBTag, int nbin );
 
-   ClassDef(AlgoZero, 1);
+   //ClassDef(AlgoZero, 1);
 
 };
 
