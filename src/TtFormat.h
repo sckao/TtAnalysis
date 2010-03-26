@@ -121,9 +121,13 @@ struct tNtuple {
     ObjNtp  *muTree ;  // Tree hold muon solutions
     ObjNtp  *jetTree ; // Tree hold jet  solutions
     ObjNtp  *neuTree ; // Tree hold neutrino solutions
-    ObjNtp  *genTree ; // Tree hold gen information
     SolNtp  *solTree ; // Tree hold all the solutions
+
     SolNtp  *mcmTree ; // Tree hold MC-matching solutions
+    ObjNtp  *genTree ; // Tree hold gen information
+
+    SolNtp2  *mu3Jets ; // Tree hold the solutions
+    SolNtp2  *mu4Jets ; // Tree hold the solutions
 };
 
 struct TtResult {

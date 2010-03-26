@@ -112,9 +112,11 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const 
    int nJet = selectedJets.size();
    int nLep = nEle + nMu ;
    std::vector<bool> softJbTags;
-   std::vector<const reco::Candidate*> additionalJets = ttJet->SoftJetSelection( jets, isoMu, jetSetup[0], jetSetup[2], &softJbTags, bTagAlgo, NULL, bDisList );
+   std::vector<double> softBDisList;
+   std::vector<const reco::Candidate*> additionalJets = ttJet->SoftJetSelection( jets, isoMu, jetSetup[0], jetSetup[2], &softJbTags, bTagAlgo, NULL, &softBDisList );
    if ( additionalJets.size() > 0  && additionalJets[0]->et() > 20. ) {
       selectedJets.push_back( additionalJets[0] );
+      bDisList->push_back( softBDisList[0] );
       if ( bTags != NULL ) bTags->push_back( softJbTags[0] );
    }
 

@@ -11,9 +11,12 @@
 #include "TBranch.h"
 #include "TFile.h"
 #include "TString.h"
+#include "TMath.h"
 #include <string>
 #include <iostream>
 //#include "TtFormat.h"
+typedef math::XYZTLorentzVector LorentzVector;
+
 
 using namespace std;
 
@@ -147,6 +150,116 @@ private:
      double hadWM;      
      double lepWM;      
 
+};
+
+
+// new solution tree
+class SolNtp2 {
+public:
+
+ SolNtp2( TString treeName ) {
+
+    solTree2 = new TTree( treeName ,"");
+ 
+    solTree2->Branch("evtId"     ,&evtId,    "evtId/I");
+
+    solTree2->Branch("nJ"    ,&nJ,     "nJ/I");
+    solTree2->Branch("jpx"   ,&jpx,    "jpx[nJ]/D");
+    solTree2->Branch("jpy"   ,&jpy,    "jpy[nJ]/D");
+    solTree2->Branch("jpz"   ,&jpz,    "jpz[nJ]/D");
+    solTree2->Branch("jE"    ,&jE,     "jE[nJ]/D");
+    solTree2->Branch("jpt"   ,&jpt,    "jpt[nJ]/D");
+    solTree2->Branch("bTh"   ,&bTh,    "bTh[nJ]/D");
+
+    solTree2->Branch("nNu"    ,&nNu,     "nNu/I");
+    solTree2->Branch("npx"    ,&npx,     "npx[nNu]/D");
+    solTree2->Branch("npy"    ,&npy,     "npy[nNu]/D");
+    solTree2->Branch("npz"    ,&npz,     "npz[nNu]/D");
+    solTree2->Branch("nE"     ,&nE,      "nE[nNu]/D");
+    solTree2->Branch("npt"    ,&npt,     "npt[nNu]/D");
+
+    solTree2->Branch("nMu"    ,&nMu,     "nMu/I");
+    solTree2->Branch("mpx"    ,&mpx,     "mpx[nMu]/D");
+    solTree2->Branch("mpy"    ,&mpy,     "mpy[nMu]/D");
+    solTree2->Branch("mpz"    ,&mpz,     "mpz[nMu]/D");
+    solTree2->Branch("mE"     ,&mE,      "mE[nMu]/D");
+    solTree2->Branch("mpt"    ,&mpt,     "mpt[nMu]/D");
+ } 
+
+ /// Destructor
+ virtual ~SolNtp2() {
+    delete solTree2;
+ }
+
+ 
+ void FillB( int eventId, vector<double> bThV, vector<const reco::Candidate*> jp4V, vector<LorentzVector> np4V,
+                          vector<const reco::Candidate*> mp4V ) {
+      evtId   = eventId ;
+
+      nJ      = jp4V.size() ;
+      for (int i = 0; i < nJ; i++) {
+          bTh[i] = bThV[i] ;
+          jpx[i] = jp4V[i]->px() ;
+          jpy[i] = jp4V[i]->py() ;
+          jpz[i] = jp4V[i]->pz() ;
+          jE[i]  = jp4V[i]->energy()  ;
+          jpt[i] = jp4V[i]->pt() ;
+      }
+
+      nNu      = np4V.size() ;
+      for (int i = 0; i < nNu; i++) {
+          npx[i] = np4V[i].Px() ;
+          npy[i] = np4V[i].Py() ;
+          npz[i] = np4V[i].Pz() ;
+          nE[i]  = np4V[i].E()  ;
+          npt[i] = np4V[i].Pt() ;
+      }
+
+      nMu      = mp4V.size() ;
+      for (int i = 0; i < nMu; i++) {
+          mpx[i] = mp4V[i]->px() ;
+          mpy[i] = mp4V[i]->py() ;
+          mpz[i] = mp4V[i]->pz() ;
+          mE[i]  = mp4V[i]->energy()  ;
+          mpt[i] = mp4V[i]->pt() ;
+      }
+
+      solTree2->Fill();
+ }
+
+
+ void Write() {
+      solTree2->Write();
+ }
+
+ TTree *solTree2;
+
+private:
+
+     static const int maxCount = 10 ;
+
+     int evtId;
+     int nJ;
+     double bTh[maxCount];
+     double jpx[maxCount];
+     double jpy[maxCount];
+     double jpz[maxCount];
+     double jE[maxCount];
+     double jpt[maxCount];
+
+     int nNu;
+     double npx[maxCount];
+     double npy[maxCount];
+     double npz[maxCount];
+     double nE[maxCount];
+     double npt[maxCount];
+
+     int nMu;
+     double mpx[maxCount];
+     double mpy[maxCount];
+     double mpz[maxCount];
+     double mE[maxCount];
+     double mpt[maxCount];
 };
 
 // deceased version

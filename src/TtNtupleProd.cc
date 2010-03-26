@@ -48,10 +48,19 @@ TtNtupleProd::TtNtupleProd(const edm::ParameterSet& iConfig)
   semiSol     = new TtSemiEventSolution( iConfig );
 
   theFile->cd();
-  ntuples.muTree  = new ObjNtp("selMu");
-  ntuples.jetTree = new ObjNtp("selJet");
-  ntuples.neuTree = new ObjNtp("solNeu");
-  ntuples.solTree = new SolNtp("solTt");
+  //ntuples.muTree  = new ObjNtp("selMu");
+  //ntuples.jetTree = new ObjNtp("selJet");
+  //ntuples.neuTree = new ObjNtp("solNeu");
+  //ntuples.solTree = new SolNtp("solTt");
+
+  ntuples.muTree  = 0 ;
+  ntuples.jetTree = 0 ;
+  ntuples.neuTree = 0 ;
+  ntuples.solTree = 0 ;
+  ntuples.mu3Jets = new SolNtp2("mu3Jets");
+  ntuples.mu4Jets = new SolNtp2("mu4Jets");
+  ntuples.mcmTree = 0 ;
+  ntuples.genTree = 0 ;
   if ( !isData ) ntuples.mcmTree = new SolNtp("mcmTt");
   if ( !isData ) ntuples.genTree = new ObjNtp("gen");
 
@@ -68,10 +77,12 @@ TtNtupleProd::~TtNtupleProd()
    delete semiSol;
    
    theFile->cd();
-   ntuples.muTree->Write();
-   ntuples.jetTree->Write();
-   ntuples.neuTree->Write();
-   ntuples.solTree->Write();
+   //ntuples.muTree->Write();
+   //ntuples.jetTree->Write();
+   //ntuples.neuTree->Write();
+   //ntuples.solTree->Write();
+   ntuples.mu3Jets->Write();
+   ntuples.mu4Jets->Write();
    if ( !isData ) ntuples.mcmTree->Write();
    if ( !isData ) ntuples.genTree->Write();
 
@@ -79,7 +90,7 @@ TtNtupleProd::~TtNtupleProd()
 
    //Release the memory
    //delete &ntuples;
-   if (debug) cout << "[Release the memory of historgrams]" << endl;
+   if (debug) cout << "[Release the memory of ntuples]" << endl;
 
    //Close the Root file
    theFile->Close();
@@ -106,7 +117,9 @@ void TtNtupleProd::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    evtIt++;
 
    //cout<<" 1. building "<<endl;
-   semiSol->BuildSemiTt(iEvent, 1, evtIt, &ntuples );
+   //semiSol->BuildSemiTt(iEvent, 1, evtIt, &ntuples );
+   semiSol->RecordSolutions(iEvent, 1, evtIt, 3, ntuples.mu3Jets );
+   semiSol->RecordSolutions(iEvent, 1, evtIt, 4, ntuples.mu4Jets );
 
    // The Feed the gen Tree 
    if ( !isData ) {
@@ -117,7 +130,6 @@ void TtNtupleProd::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       //cout<<" 3. MC Matching "<<endl;
       semiSol->MCBuildSemiTt(iEvent, 1, evtIt, &ntuples );
    }
-
    //cout<<" Done !!! "<<endl;
 
 }
