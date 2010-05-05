@@ -24,9 +24,19 @@
 #include <TLorentzVector.h>
 #include "WFormat.h"
 
+struct jlist {
+    int w1 ;
+    int w2 ;
+    int bh ;
+    int bl ;
+};
+
 class MassAnaInput : public TObject {
 
 private:
+
+   vector<TTree*> MuJForest ;
+   vector<TTree*> mcTtForest ;
 
    TString channel;
    TString hname;
@@ -60,7 +70,9 @@ public:
  
    void Initialize( TString* hfolder );
 
-   TTree* GetTree( string chName, TString treeName, TFile* file );
+   vector<TTree*> GetForest( string DataSet, TString treeName );
+
+   TTree* GetTree( string chName, TString treeName, TFile* file = NULL );
 
    void get_h1Obj(TString fName, TString TName, TString BName, TH1D* h1, double theScale = 1., bool weight = false );
    void get_h1Obj(TChain* tChain, TString BName, TH1D* h1, double theScale = 1., bool weight = false );
@@ -87,6 +99,8 @@ public:
    vector<TLorentzVector> GetJets( TTree* tr, int evtIdx, vector<double>& bCuts, int& synId, bool nextEvt = true );
    vector<TLorentzVector> GetMuons( TTree* tr, int evtIdx, int& synId, bool nextEvt = true );
 
+   void GetPermutes( int njets, vector<jlist>& jlistV );
+
    void NormalizeComponents( double lumi, double nEvents, int channel, TH1D* tmp );
    void NormalizeComponents( string theChhannel, TH1D* tmp );
    double NormalizeComponents( string theChhannel );
@@ -94,9 +108,9 @@ public:
    void GetParameters( string paraName, int* thePara );
    void GetParameters( string paraName, double* thePara );
    void GetParameters( string paraName, string* thePara );
-   void GetParameters( string paraName, vector<int>* thePara );
    void GetParameters( string paraName, vector<double>* thePara );
    void GetParameters( string paraName, vector<string>* thePara );
+   void GetParameters( string paraName, vector<int>* thePara );
 
    /*
    void combineBG( TString mName, TH1D* allbg, int rbin );

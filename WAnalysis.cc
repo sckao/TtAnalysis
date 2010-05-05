@@ -7,12 +7,11 @@ WAnalysis::WAnalysis( double massL, double massH ){
   fitInput->GetParameters( "Path", &hfolder );
   fitInput->GetParameters( "bThreshold", &bTh);
   fitInput->GetParameters( "n_btag", &n_btag);
+  fitInput->GetParameters( "n_Jets", &n_Jets);
 
   wmfitter  = new HadWMassFitter( massL, massH );
+  ltmfitter = new LepTopMassFitter( massL, massH );
   pseudoExp = new PseudoExp( massL, massH );
-
-  mL = massL;
-  mH = massH;
 
   TString theFolder = hfolder ;
 
@@ -25,97 +24,51 @@ WAnalysis::WAnalysis( double massL, double massH ){
   gSystem->mkdir( "EtaM3" );
   gSystem->mkdir( "YM2" );
   gSystem->mkdir( "YM3" );
-  gSystem->cd("../../");
+  gSystem->mkdir( "M2MET" );
+  gSystem->mkdir( "M2dF" );
+
+  gSystem->mkdir( "M2M3Lep" );
+  gSystem->mkdir( "M3M3ReFit" );
+  gSystem->mkdir( "M2tM3" );
+  gSystem->mkdir( "PhiM3" );
+  gSystem->mkdir( "M2M3ReFit" );
+
+  gSystem->cd("../");
 
 }
 
 WAnalysis::~WAnalysis(){
 
   delete fitInput ;
-
+  delete wmfitter ;
+  delete ltmfitter ; 	
+  delete pseudoExp ;
 }
 
-
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::TWFitter( string channelName, int type, TString DrawOpt, bool isMCMatched ){
- 
-  string fileName;
-
-  string channelType = channelName.substr( 0, 2 )  ;
-  vector<string> chlist;
-  fitInput->GetParameters( "channel", &chlist );
-
-  double scale = 1. ;
-  if ( channelType == "tt" ) {
-     vector<string> mlist;
-     fitInput->GetParameters( "Signals", &mlist );
-     for ( size_t j = 0; j< mlist.size(); j++){
-         if ( channelName == mlist[j] ) fileName =  mlist[j];
-     }
-     scale = fitInput->NormalizeComponents( chlist[0] );
-     
-  } else { 
-     vector<string> bglist;
-     fitInput->GetParameters( "Backgrounds", &bglist );
-     for ( size_t j = 0; j< bglist.size(); j++) {
-         if ( channelName == bglist[j] ) {
-            fileName = bglist[j] ;
-            scale = fitInput->NormalizeComponents( chlist[j+1] );
-         }
-     }
-  }
-
-  // refit the solutions
-  hadWBoson* wbh = new hadWBoson();
-  wmfitter->ReFitSolution( fileName, wbh , type, isMCMatched );
-
-  // retrieve the histograms
-  wbh->scale( scale );	
-  vector<TH2D*> h2Ds = wbh->Output2D();
-
-  M2M3Plotter( h2Ds, fileName, DrawOpt, isMCMatched );
-
-  delete wbh ;
-  cout<<" DONE !! "<<endl;
-}
 
 // For new SolTree
 // Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::TWFitter1( int njets, string channelName, int type, TString DrawOpt, bool isMCMatched  ){
+void WAnalysis::HadTopFitter( string fileName, TString DrawOpt, bool isMCMatched  ){
  
-  string fileName;
-
-  string channelType = channelName.substr( 0, 2 )  ;
-  vector<string> chlist;
-  fitInput->GetParameters( "channel", &chlist );
-
-  double scale = 1. ;
-  if ( channelType == "tt" ) {
-     vector<string> mlist;
-     fitInput->GetParameters( "Signals", &mlist );
-     for ( size_t j = 0; j< mlist.size(); j++){
-         if ( channelName == mlist[j] ) fileName =  mlist[j];
-     }
-     scale = fitInput->NormalizeComponents( chlist[0] );
-     
-  } else { 
-     vector<string> bglist;
-     fitInput->GetParameters( "Backgrounds", &bglist );
-     for ( size_t j = 0; j< bglist.size(); j++) {
-         if ( channelName == bglist[j] ) {
-            fileName = bglist[j] ;
-            scale = fitInput->NormalizeComponents( chlist[j+1] );
-         }
+  string channelType ;
+  if ( fileName.size() > 2) {
+     vector<string>  channel;
+     fitInput->GetParameters( "channel" , &channel );
+     for (size_t i=0; i < channel.size(); i++ ) {
+         if ( channel[i][0] != fileName[0] ) continue ;
+         if ( channel[i][1] != fileName[1] ) continue ;
+         channelType = channel[i] ;
      }
   }
+
+  double scale = fitInput->NormalizeComponents( channelType );
 
   // refit the solutions
   hadWBoson* wbh = new hadWBoson();
   if ( isMCMatched ) {
-     wmfitter->MCSolution( fileName, wbh, type );
+     wmfitter->MCSolution( fileName, wbh );
   } else {
-     if ( type == 0 ) wmfitter->ReFitSolution1( fileName, njets, wbh );
-     if ( type  > 0 ) wmfitter->ReFitSolution1( fileName, njets, wbh, type );
+     wmfitter->ReFitSolution( fileName, wbh );
   }
   // retrieve the histograms
   wbh->scale( scale );	
@@ -127,224 +80,39 @@ void WAnalysis::TWFitter1( int njets, string channelName, int type, TString Draw
   cout<<" DONE !! "<<endl;
 }
 
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::EnsembleTest( int type, int randomSeed, TString DrawOpt ){
+void WAnalysis::LepTopFitter( string fileName, TString DrawOpt, bool isMCMatched ){
  
-  vector<string> flist;
-  fitInput->GetParameters( "FakeData", &flist );
+  string channelType ;
+  if ( fileName.size() > 2) {
+     vector<string>  channel;
+     fitInput->GetParameters( "channel" , &channel );
+     for (size_t i=0; i < channel.size(); i++ ) {
+         if ( channel[i][0] != fileName[0] ) continue ;
+         if ( channel[i][1] != fileName[1] ) continue ;
+         channelType = channel[i] ;
+     }
+  }
 
-  // ttbar
-  hadWBoson* sg1 = new hadWBoson();
-  vector< pair<int,int> > sglist = pseudoExp->GetEnsemble( flist[0], 15.7, randomSeed );
-  wmfitter->ReFitSolution( flist[0], sg1 , sglist, type );
-  vector<TH2D*> hs0 = sg1->Output2D();
+  double scale = fitInput->NormalizeComponents( channelType );
 
-  cout<<" tt test done "<<endl;
-
-  // w+jets
-  hadWBoson* bg1 = new hadWBoson();
-  vector< pair<int,int> > bg1list = pseudoExp->GetEnsemble( flist[1], 1.15, randomSeed );
-  wmfitter->ReFitSolution( flist[1], bg1 , bg1list, type );
-  vector<TH2D*> hs1 = bg1->Output2D();
-
-  cout<<" wj test done "<<endl;
-
-  // QCD
-  hadWBoson* bg2 = new hadWBoson();
-  vector< pair<int,int> > bg2list = pseudoExp->GetEnsemble( flist[2], 7.31, randomSeed );
-  wmfitter->ReFitSolution( flist[2], bg2 , bg2list, type );
-  // retrieve the histograms
-  vector<TH2D*> hs2 = bg2->Output2D();
-
-  cout<<" qcd test done "<<endl;
-
-  // Making plots
-  M2M3Plotter( hs0, "pseudoSG", DrawOpt );
-
-  TH2D* h0M2M3  = new TH2D("h0M2M3", " M3(X) vs M2(Y) ", 15, 50, 350, 15, 10, 310);
-  h0M2M3->Add( hs1[0] ) ;
-  h0M2M3->Add( hs2[0] ) ;
-  TH2D* h0M3M3  = new TH2D("h0M3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
-  h0M3M3->Add( hs1[1] ) ;
-  h0M3M3->Add( hs2[1] ) ;
-  TH2D* h0M2M2t = new TH2D("h0M2M2t", " M2t(X) vs M2(Y) ", 15, 10, 310, 15, 10, 310); 
-  h0M2M2t->Add( hs1[2] );
-  h0M2M2t->Add( hs2[2] );
-  TH2D* h0EtaM2 = new TH2D("h0EtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM2->Add( hs1[3] );
-  h0EtaM2->Add( hs2[3] );
-  TH2D* h0EtaM3 = new TH2D("h0EtaM3", " Eta of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM3->Add( hs1[4] );
-  h0EtaM3->Add( hs2[4] );
-  TH2D* h0YM2 = new TH2D("h0YM2", " Rapidity of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM2->Add( hs1[5] );
-  h0YM2->Add( hs2[5] );
-  TH2D* h0YM3 = new TH2D("h0YM3", " Rapidity of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM3->Add( hs1[6] );
-  h0YM3->Add( hs2[6] );
-
-  vector<TH2D*> h2Ds;
-  h2Ds.push_back( h0M2M3 ); 
-  h2Ds.push_back( h0M3M3 ); 
-  h2Ds.push_back( h0M2M2t ); 
-  h2Ds.push_back( h0EtaM2 ); 
-  h2Ds.push_back( h0EtaM3 ); 
-  h2Ds.push_back( h0YM2 ); 
-  h2Ds.push_back( h0YM3 ); 
-
-  M2M3Plotter( h2Ds, "pseudoBG", DrawOpt );
-
-  h0M2M3->Add( hs0[0] ) ;
-  h0M3M3->Add( hs0[1] ) ;
-  h0M2M2t->Add( hs0[2] );
-  h0EtaM2->Add( hs0[3] );
-  h0EtaM3->Add( hs0[4] );
-  h0YM2->Add( hs0[5] );
-  h0YM3->Add( hs0[6] );
-
-  /*
-  vector<TH2D*> hAll;
-  hAll.push_back( h0M2M3 ); 
-  hAll.push_back( h0M3M3 ); 
-  hAll.push_back( h0M2M2t ); 
-  hAll.push_back( h0EtaM2 ); 
-  hAll.push_back( h0EtaM3 ); 
-  hAll.push_back( h0YM2 ); 
-  hAll.push_back( h0YM3 ); 
-  M2M3Plotter( hAll, "pseudoExp", DrawOpt );
-  */
-  M2M3Plotter( h2Ds, "pseudoExp", DrawOpt );
-
-  delete sg1 ;
-  delete bg1 ;
-  delete bg2 ;
-  cout<<" YA !!! "<<endl;
-}
-
-
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::MixBG( int type, TString DrawOpt ){
- 
   // refit the solutions
-  hadWBoson* bg1 = new hadWBoson();
-  wmfitter->ReFitSolution( "wj_336", bg1 , type );
-  double scale1 = fitInput->NormalizeComponents( "wj" );
-  bg1->scale( scale1 );	
-  cout<<" all bg wjet scale = "<< scale1 <<endl;
-  vector<TH2D*> hs1 = bg1->Output2D();
-
-  hadWBoson* bg2 = new hadWBoson();
-  wmfitter->ReFitSolution( "QCD+", bg2 , type );
-  double scale2 = fitInput->NormalizeComponents( "qcd" );
-  bg2->scale( scale2 );	
-  cout<<" all bg qcd scale = "<< scale2 <<endl;
+  lepWBoson* wbh = new lepWBoson();
+  if ( isMCMatched ) {
+     ltmfitter->LepTopMCSolution( fileName, wbh );
+  } else {
+     ltmfitter->ReFitLepTopSolution( fileName, wbh );
+  }
   // retrieve the histograms
-  vector<TH2D*> hs2 = bg2->Output2D();
-
-  TH2D* h0M2M3  = new TH2D("h0M2M3", " M3(X) vs M2(Y) ", 15, 50, 350, 15, 10, 310);
-  h0M2M3->Add( hs1[0] ) ;
-  h0M2M3->Add( hs2[0] ) ;
-  TH2D* h0M3M3  = new TH2D("h0M3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
-  h0M3M3->Add( hs1[1] ) ;
-  h0M3M3->Add( hs2[1] ) ;
-  TH2D* h0M2M2t = new TH2D("h0M2M2t", " M2t(X) vs M2(Y) ", 15, 10, 310, 15, 10, 310); 
-  h0M2M2t->Add( hs1[2] );
-  h0M2M2t->Add( hs2[2] );
-  TH2D* h0EtaM2 = new TH2D("h0EtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM2->Add( hs1[3] );
-  h0EtaM2->Add( hs2[3] );
-  TH2D* h0EtaM3 = new TH2D("h0EtaM3", " Eta of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM3->Add( hs1[4] );
-  h0EtaM3->Add( hs2[4] );
-  TH2D* h0YM2 = new TH2D("h0YM2", " Rapidity of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM2->Add( hs1[5] );
-  h0YM2->Add( hs2[5] );
-  TH2D* h0YM3 = new TH2D("h0YM3", " Rapidity of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM3->Add( hs1[6] );
-  h0YM3->Add( hs2[6] );
-
- 
+  wbh->scale( scale );	
   vector<TH2D*> h2Ds;
-  h2Ds.push_back( h0M2M3 ); 
-  h2Ds.push_back( h0M3M3 ); 
-  h2Ds.push_back( h0M2M2t ); 
-  h2Ds.push_back( h0EtaM2 ); 
-  h2Ds.push_back( h0EtaM3 ); 
-  h2Ds.push_back( h0YM2 ); 
-  h2Ds.push_back( h0YM3 ); 
-  M2M3Plotter( h2Ds, "allBG", DrawOpt ) ;
+  wbh->Fill2DVec( h2Ds );
 
-  delete bg1;
-  delete bg2;
+  LepTopPlotter( h2Ds, fileName, DrawOpt, isMCMatched );
 
+  delete wbh ;
+  cout<<" DONE !!! "<<endl;
 }
 
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::MixAll( int type, TString DrawOpt ){
- 
-  cout<<" Mix All  "<<endl;
-  hadWBoson* sg1 = new hadWBoson();
-  wmfitter->ReFitSolution( "tt171_336", sg1 , type );
-  double scale0 = fitInput->NormalizeComponents( "tt" );
-  sg1->scale( scale0 );	
-  vector<TH2D*> hs0 = sg1->Output2D();
- 
-  hadWBoson* bg1 = new hadWBoson();
-  wmfitter->ReFitSolution( "wj_336", bg1 , type );
-  double scale1 = fitInput->NormalizeComponents( "wj" );
-  bg1->scale( scale1 );	
-  vector<TH2D*> hs1 = bg1->Output2D();
-
-  hadWBoson* bg2 = new hadWBoson();
-  wmfitter->ReFitSolution( "QCD+", bg2 , type );
-  double scale2 = fitInput->NormalizeComponents( "qcd" );
-  bg2->scale( scale2 );	
-  vector<TH2D*> hs2 = bg2->Output2D();
-
-  TH2D* h0M2M3  = new TH2D("h0M2M3", " M3(X) vs M2(Y) ", 15, 50, 350, 15, 10, 310);
-  h0M2M3->Add( hs0[0] ) ;
-  h0M2M3->Add( hs1[0] ) ;
-  h0M2M3->Add( hs2[0] ) ;
-  TH2D* h0M3M3  = new TH2D("h0M3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
-  h0M3M3->Add( hs0[1] ) ;
-  h0M3M3->Add( hs1[1] ) ;
-  h0M3M3->Add( hs2[1] ) ;
-  TH2D* h0M2M2t = new TH2D("h0M2M2t", " M2t(X) vs M2(Y) ", 15, 10, 310, 15, 10, 310); 
-  h0M2M2t->Add( hs0[2] );
-  h0M2M2t->Add( hs1[2] );
-  h0M2M2t->Add( hs2[2] );
-  TH2D* h0EtaM2 = new TH2D("h0EtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM2->Add( hs0[3] );
-  h0EtaM2->Add( hs1[3] );
-  h0EtaM2->Add( hs2[3] );
-  TH2D* h0EtaM3 = new TH2D("h0EtaM3", " Eta of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM3->Add( hs0[4] );
-  h0EtaM3->Add( hs1[4] );
-  h0EtaM3->Add( hs2[4] );
-  TH2D* h0YM2 = new TH2D("h0YM2", " Rapidity of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM2->Add( hs0[5] );
-  h0YM2->Add( hs1[5] );
-  h0YM2->Add( hs2[5] );
-  TH2D* h0YM3 = new TH2D("h0YM3", " Rapidity of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM3->Add( hs0[6] );
-  h0YM3->Add( hs1[6] );
-  h0YM3->Add( hs2[6] );
- 
-  vector<TH2D*> h2Ds;
-  h2Ds.push_back( h0M2M3 ); 
-  h2Ds.push_back( h0M3M3 ); 
-  h2Ds.push_back( h0M2M2t ); 
-  h2Ds.push_back( h0EtaM2 ); 
-  h2Ds.push_back( h0EtaM3 ); 
-  h2Ds.push_back( h0YM2 ); 
-  h2Ds.push_back( h0YM3 ); 
-
-  M2M3Plotter( h2Ds, "ALL", DrawOpt ) ;
-  delete sg1;
-  delete bg1;
-  delete bg2;
-
-}
 
 void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt, bool isMCMatched ){
  
@@ -355,6 +123,8 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   TH2D* hEtaM3 = h2Ds[4] ;
   TH2D* hYM2   = h2Ds[5] ;
   TH2D* hYM3   = h2Ds[6] ;
+  TH2D* hM2MET = h2Ds[7] ;
+  TH2D* hM2dF  = h2Ds[8] ;
 
   gStyle->SetOptStat("neirom");
   gStyle->SetStatY(0.95);
@@ -410,7 +180,7 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   c2->Update();
 
   c2->cd(3);
-  TH1D* hM3M3_px = hM2M3->ProjectionX("hM3M3_px");
+  TH1D* hM3M3_px = hM3M3->ProjectionX("hM3M3_px");
   hM3M3_px->Draw();
   c2->Update();
 
@@ -567,6 +337,64 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   if ( isMCMatched ) plotname7 = hfolder + "YM3/" + fileName + "_YM3_MC.gif" ;
   c7->Print( plotname7 );
 
+  // plot  M2 MET
+  TCanvas* c8 = new TCanvas("c8","", 800, 600);
+  c8->SetGrid();
+  c8->SetFillColor(10);
+  c8->Divide(2,2);
+
+  c8->cd(1);
+  gStyle->SetNumberContours(5);
+  hM2MET->Draw( DrawOpt );
+  c8->Update();
+
+  c8->cd(2);
+  TH1D* hM2MET_py = hM2MET->ProjectionY("hM2MET_py");
+  hM2MET_py->Draw();
+  c8->Update();
+
+  c8->cd(3);
+  TH1D* hM2MET_px = hM2MET->ProjectionX("hM2MET_px");
+  hM2MET_px->Draw();
+  c8->Update();
+
+  c8->cd(4);
+  hM2MET->Draw("LEGO2Z" );
+  c8->Update();
+
+  TString plotname8 = hfolder + "M2MET/" + fileName + "_M2MET.gif" ;
+  if ( isMCMatched ) plotname8 = hfolder + "M2MET/" + fileName + "_M2MET_MC.gif" ;
+  c8->Print( plotname8 );
+
+  // plot  M2 dF
+  TCanvas* c9 = new TCanvas("c9","", 800, 600);
+  c9->SetGrid();
+  c9->SetFillColor(10);
+  c9->Divide(2,2);
+
+  c9->cd(1);
+  gStyle->SetNumberContours(5);
+  hM2dF->Draw( DrawOpt );
+  c9->Update();
+
+  c9->cd(2);
+  TH1D* hM2dF_py = hM2dF->ProjectionY("hM2dF_py");
+  hM2dF_py->Draw();
+  c9->Update();
+
+  c9->cd(3);
+  TH1D* hM2dF_px = hM2dF->ProjectionX("hM2dF_px");
+  hM2dF_px->Draw();
+  c9->Update();
+
+  c9->cd(4);
+  hM2dF->Draw("LEGO2Z" );
+  c9->Update();
+
+  TString plotname9 = hfolder + "M2dF/" + fileName + "_M2dF.gif" ;
+  if ( isMCMatched ) plotname9 = hfolder + "M2dF/" + fileName + "_M2dF_MC.gif" ;
+  c9->Print( plotname9 );
+
   delete c1;
   delete c2;
   delete c3;
@@ -574,8 +402,180 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   delete c5;
   delete c6;
   delete c7;
+  delete c8;
+  delete c9;
 
   cout<<" FINISHED  "<<endl;
+}
+
+void WAnalysis::LepTopPlotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt, bool isMCMatched ){
+ 
+  TH2D* hM2M3L = h2Ds[0] ;
+  TH2D* hM2tM3 = h2Ds[1] ;
+  TH2D* hM3M3  = h2Ds[2] ;
+  TH2D* hPhiM3 = h2Ds[3] ;
+  TH2D* hM2M3  = h2Ds[4] ;
+
+  gStyle->SetOptStat("neirom");
+  gStyle->SetStatY(0.95);
+  gStyle->SetStatTextColor(1);
+  gStyle->SetPalette(1);
+
+  // plot  M2 vs M3 
+  TCanvas* c1 = new TCanvas("c1","", 800, 600);
+  c1->SetGrid();
+  c1->SetFillColor(10);
+  c1->SetFillColor(10);
+  c1->Divide(2,2);
+  c1->cd(1);
+  gStyle->SetNumberContours(5);
+  hM2M3L->Draw( DrawOpt );
+  c1->Update();
+
+  c1->cd(2);
+  TH1D* hM2M3L_py = hM2M3L->ProjectionY("hM2M3L_py");
+  hM2M3L_py->Draw();
+  c1->Update();
+
+  c1->cd(3);
+  TH1D* hM2M3L_px = hM2M3L->ProjectionX("hM2M3L_px");
+  hM2M3L_px->Draw();
+  c1->Update();
+
+  c1->cd(4);
+  hM2M3L->Draw( "LEGO2Z" );
+  c1->Update();
+
+  TString plotname1 = hfolder + "M2M3Lep/"+  fileName +  "_M2M3L.gif" ;
+  if ( isMCMatched ) plotname1 = hfolder + "M2M3Lep/" + fileName + "_M2M3L_MC.gif" ;
+  c1->Print( plotname1 );
+
+  // plot  hadronic M2t M3
+  TCanvas* c2 = new TCanvas("c2","", 800, 600);
+  c2->SetGrid();
+  c2->SetFillColor(10);
+  c2->Divide(2,2);
+
+  c2->cd(1);
+  gStyle->SetStatY(0.55);
+  gStyle->SetNumberContours(5);
+  hM2tM3->Draw( DrawOpt );
+  c2->Update();
+
+  c2->cd(2);
+  gStyle->SetStatY(0.90);
+  TH1D* hM2tM3_py = hM2tM3->ProjectionY("hM2tM3_py");
+  hM2tM3_py->Draw();
+  c2->Update();
+
+  c2->cd(3);
+  TH1D* hM2tM3_px = hM2tM3->ProjectionX("hM2tM3_px");
+  hM2tM3_px->Draw();
+  c2->Update();
+
+  c2->cd(4);
+  hM2tM3->Draw("LEGO2Z" );
+  c2->Update();
+
+  TString plotname2 = hfolder + "M2tM3/" + fileName + "_M2tM3.gif" ;
+  if ( isMCMatched ) plotname2 = hfolder + "M2tM3/" + fileName + "_M2tM3_MC.gif" ;
+  c2->Print( plotname2 );
+
+  // plot  M3(lep) vs M3(had) without JES
+  TCanvas* c3 = new TCanvas("c3","", 800, 600);
+  c3->SetGrid();
+  c3->SetFillColor(10);
+  c3->SetFillColor(10);
+  c3->Divide(2,2);
+  c3->cd(1);
+  gStyle->SetStatX(0.90);
+  gStyle->SetNumberContours(5);
+  hM3M3->Draw( DrawOpt );
+  c3->Update();
+
+  c3->cd(2);
+  TH1D* hM3M3_py = hM3M3->ProjectionY("hM3M3_py");
+  hM3M3_py->Draw();
+  c3->Update();
+
+  c3->cd(3);
+  TH1D* hM3M3_px = hM3M3->ProjectionX("hM3M3_px");
+  hM3M3_px->Draw();
+  c3->Update();
+
+  c3->cd(4);
+  hM3M3->Draw( "LEGO2Z" );
+  c3->Update();
+
+  TString plotname3 = hfolder + "M3M3ReFit/"+ fileName + "_M3M3.gif" ;
+  if ( isMCMatched ) plotname3 = hfolder + "M3M3ReFit/" + fileName + "_M3M3_MC.gif" ;
+  c3->Print( plotname3 );
+
+  // plot  Phi M3 
+  TCanvas* c4 = new TCanvas("c4","", 800, 600);
+  c4->SetGrid();
+  c4->SetFillColor(10);
+  c4->Divide(2,2);
+
+  c4->cd(1);
+  gStyle->SetNumberContours(5);
+  hPhiM3->Draw( DrawOpt );
+  c4->Update();
+
+  c4->cd(2);
+  TH1D* hPhiM3_py = hPhiM3->ProjectionY("hPhiM3_py");
+  hPhiM3_py->Draw();
+  c4->Update();
+
+  c4->cd(3);
+  TH1D* hPhiM3_px = hPhiM3->ProjectionX("hPhiM3_px");
+  hPhiM3_px->Draw();
+  c4->Update();
+
+  c4->cd(4);
+  hPhiM3->Draw("LEGO2Z" );
+  c4->Update();
+
+  TString plotname4 = hfolder + "PhiM3/" + fileName + "_PhiM3.gif" ;
+  if ( isMCMatched ) plotname4 = hfolder + "PhiM3/" + fileName + "_PhiM3_MC.gif" ;
+  c4->Print( plotname4 );
+
+  // plot  had M2 vs had M3 
+  TCanvas* c5 = new TCanvas("c5","", 800, 600);
+  c5->SetGrid();
+  c5->SetFillColor(10);
+  c5->SetFillColor(10);
+  c5->Divide(2,2);
+  c5->cd(1);
+  gStyle->SetNumberContours(5);
+  hM2M3->Draw( DrawOpt );
+  c5->Update();
+
+  c5->cd(2);
+  TH1D* hM2M3_py = hM2M3->ProjectionY("hM2M3_py");
+  hM2M3_py->Draw();
+  c5->Update();
+
+  c5->cd(3);
+  TH1D* hM2M3_px = hM2M3->ProjectionX("hM2M3_px");
+  hM2M3_px->Draw();
+  c5->Update();
+
+  c5->cd(4);
+  hM2M3->Draw( "LEGO2Z" );
+  c5->Update();
+
+  TString plotname5 = hfolder + "M2M3ReFit/"+  fileName +  "_M2M3.gif" ;
+  if ( isMCMatched ) plotname5 = hfolder + "M2M3ReFit/" + fileName + "_M2M3_MC.gif" ;
+  c5->Print( plotname5 );
+
+  delete c1;
+  delete c2;
+  delete c3;
+  delete c4;
+  delete c5;
+  cout<<" FINISHED !! "<<endl;
+
 }
 
 
@@ -616,227 +616,211 @@ void WAnalysis::BJetEff( string fileName ) {
 
 
 // for new soltree
-void WAnalysis::MixBG1( int njets, int type, TString DrawOpt ){
+void WAnalysis::MixBG( TString DrawOpt ){
  
   // refit the solutions
-  hadWBoson* bg1 = new hadWBoson();
-  if ( type==0 ) wmfitter->ReFitSolution1( "wj_336a", njets, bg1, type );
-  if ( type >0 ) wmfitter->ReFitSolution1( "wj_336a", njets, bg1 );
+  cout<<" Mix Background  "<<endl;
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  // define the histograms
+  hadWBoson* bg = new hadWBoson();
+
   double scale1 = fitInput->NormalizeComponents( "wj" );
-  bg1->scale( scale1 );	
   cout<<" all bg wjet scale = "<< scale1 <<endl;
-  vector<TH2D*> hs1 = bg1->Output2D();
+  wmfitter->ReFitSolution( flist[1], bg, scale1 );
 
-  hadWBoson* bg2 = new hadWBoson();
-  wmfitter->ReFitSolution1( "qcd1_336a", njets, bg2 );
   double scale2 = fitInput->NormalizeComponents( "qcd" );
-  bg2->scale( scale2 );	
   cout<<" all bg qcd scale = "<< scale2 <<endl;
+  wmfitter->ReFitSolution( flist[2], bg, scale2 );
 
-  // retrieve the histograms
-  vector<TH2D*> hs2 = bg2->Output2D();
+  vector<TH2D*> h2Ds ;
+  bg->Fill2DVec( h2Ds );
 
-  TH2D* h0M2M3  = new TH2D("h0M2M3", " M3(X) vs M2(Y) ", 15, 50, 350, 15, 10, 310);
-  h0M2M3->Add( hs1[0] ) ;
-  h0M2M3->Add( hs2[0] ) ;
-  TH2D* h0M3M3  = new TH2D("h0M3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
-  h0M3M3->Add( hs1[1] ) ;
-  h0M3M3->Add( hs2[1] ) ;
-  TH2D* h0M2M2t = new TH2D("h0M2M2t", " M2t(X) vs M2(Y) ", 15, 10, 310, 15, 10, 310); 
-  h0M2M2t->Add( hs1[2] );
-  h0M2M2t->Add( hs2[2] );
-  TH2D* h0EtaM2 = new TH2D("h0EtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM2->Add( hs1[3] );
-  h0EtaM2->Add( hs2[3] );
-  TH2D* h0EtaM3 = new TH2D("h0EtaM3", " Eta of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM3->Add( hs1[4] );
-  h0EtaM3->Add( hs2[4] );
-  TH2D* h0YM2 = new TH2D("h0YM2", " Rapidity of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM2->Add( hs1[5] );
-  h0YM2->Add( hs2[5] );
-  TH2D* h0YM3 = new TH2D("h0YM3", " Rapidity of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM3->Add( hs1[6] );
-  h0YM3->Add( hs2[6] );
-
- 
-  vector<TH2D*> h2Ds;
-  h2Ds.push_back( h0M2M3 ); 
-  h2Ds.push_back( h0M3M3 ); 
-  h2Ds.push_back( h0M2M2t ); 
-  h2Ds.push_back( h0EtaM2 ); 
-  h2Ds.push_back( h0EtaM3 ); 
-  h2Ds.push_back( h0YM2 ); 
-  h2Ds.push_back( h0YM3 ); 
   M2M3Plotter( h2Ds, "allBG", DrawOpt ) ;
 
-  delete bg1;
-  delete bg2;
+  delete bg;
 
 }
 
 // Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::MixAll1( int njets, TString DrawOpt ){
+void WAnalysis::MixAll( TString DrawOpt ){
  
   cout<<" Mix All  "<<endl;
-  hadWBoson* sg1 = new hadWBoson();
-  wmfitter->ReFitSolution1( "tt171_336a", njets, sg1 );
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  hadWBoson* allh = new hadWBoson();
+
   double scale0 = fitInput->NormalizeComponents( "tt" );
-  sg1->scale( scale0 );	
-  vector<TH2D*> hs0 = sg1->Output2D();
+  wmfitter->ReFitSolution( flist[0], allh, scale0 );
  
-  hadWBoson* bg1 = new hadWBoson();
-  wmfitter->ReFitSolution1( "wj_336a", njets, bg1 );
   double scale1 = fitInput->NormalizeComponents( "wj" );
-  bg1->scale( scale1 );	
-  vector<TH2D*> hs1 = bg1->Output2D();
+  wmfitter->ReFitSolution( flist[1], allh, scale1 );
 
-  hadWBoson* bg2 = new hadWBoson();
-  wmfitter->ReFitSolution1( "qcd1_336a", njets, bg2 );
   double scale2 = fitInput->NormalizeComponents( "qcd" );
-  bg2->scale( scale2 );	
-  vector<TH2D*> hs2 = bg2->Output2D();
+  wmfitter->ReFitSolution( flist[2], allh, scale2 );
 
-  TH2D* h0M2M3  = new TH2D("h0M2M3", " M3(X) vs M2(Y) ", 15, 50, 350, 15, 10, 310);
-  h0M2M3->Add( hs0[0] ) ;
-  h0M2M3->Add( hs1[0] ) ;
-  h0M2M3->Add( hs2[0] ) ;
-  TH2D* h0M3M3  = new TH2D("h0M3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
-  h0M3M3->Add( hs0[1] ) ;
-  h0M3M3->Add( hs1[1] ) ;
-  h0M3M3->Add( hs2[1] ) ;
-  TH2D* h0M2M2t = new TH2D("h0M2M2t", " M2t(X) vs M2(Y) ", 15, 10, 310, 15, 10, 310); 
-  h0M2M2t->Add( hs0[2] );
-  h0M2M2t->Add( hs1[2] );
-  h0M2M2t->Add( hs2[2] );
-  TH2D* h0EtaM2 = new TH2D("h0EtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM2->Add( hs0[3] );
-  h0EtaM2->Add( hs1[3] );
-  h0EtaM2->Add( hs2[3] );
-  TH2D* h0EtaM3 = new TH2D("h0EtaM3", " Eta of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM3->Add( hs0[4] );
-  h0EtaM3->Add( hs1[4] );
-  h0EtaM3->Add( hs2[4] );
-  TH2D* h0YM2 = new TH2D("h0YM2", " Rapidity of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM2->Add( hs0[5] );
-  h0YM2->Add( hs1[5] );
-  h0YM2->Add( hs2[5] );
-  TH2D* h0YM3 = new TH2D("h0YM3", " Rapidity of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM3->Add( hs0[6] );
-  h0YM3->Add( hs1[6] );
-  h0YM3->Add( hs2[6] );
- 
-  vector<TH2D*> h2Ds;
-  h2Ds.push_back( h0M2M3 ); 
-  h2Ds.push_back( h0M3M3 ); 
-  h2Ds.push_back( h0M2M2t ); 
-  h2Ds.push_back( h0EtaM2 ); 
-  h2Ds.push_back( h0EtaM3 ); 
-  h2Ds.push_back( h0YM2 ); 
-  h2Ds.push_back( h0YM3 ); 
+  vector<TH2D*> h2Ds ;
+  allh->Fill2DVec( h2Ds );
 
   M2M3Plotter( h2Ds, "ALL", DrawOpt ) ;
-  delete sg1;
-  delete bg1;
-  delete bg2;
+
+  delete allh;
 
 }
 
-
 // Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::EnsembleTest1( int njets, int randomSeed, TString DrawOpt ){
+void WAnalysis::EnsembleTest( int randomSeed, TString DrawOpt ){
  
   vector<string> flist;
   fitInput->GetParameters( "FakeData", &flist );
 
-  TString treeName ;
-  if ( njets == 3 ) treeName = "mu3Jets" ;
-  if ( njets == 4 ) treeName = "mu4Jets" ;
+  TString treeName = "muJets";
+
+  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
+
+  hadWBoson* sg = new hadWBoson();
 
   // ttbar
-  hadWBoson* sg1 = new hadWBoson();
-  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, 15.7, randomSeed );
-  wmfitter->ReFitSolution1( flist[0], njets, sg1 , &sglist );
-  vector<TH2D*> hs0 = sg1->Output2D();
-
+  double inputMean_tt = ( n_Jets == 4 ) ? (11.196*1.324) : 8.701 ;
+  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
+  wmfitter->ReFitSolution( flist[0], sg,  1, &sglist );
   cout<<" tt test done "<<endl;
 
-  // w+jets
-  hadWBoson* bg1 = new hadWBoson();
-  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, 1.15, randomSeed );
-  wmfitter->ReFitSolution1( flist[1], njets, bg1 , &bg1list );
-  vector<TH2D*> hs1 = bg1->Output2D();
+  // Making signal plots
+  vector<TH2D*> hs0 = sg->Output2D();
+  M2M3Plotter( hs0, "pseudoSG", DrawOpt );
 
+  hadWBoson* bg = new hadWBoson();
+
+  // w+jets
+  double inputMean_wj = ( n_Jets == 4 ) ? (3.902*1.251) : 92.0 ;
+  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
+  wmfitter->ReFitSolution( flist[1], bg , 1, &bg1list, 0, true );
   cout<<" wj test done "<<endl;
 
   // QCD
-  hadWBoson* bg2 = new hadWBoson();
-  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, 7.31, randomSeed );
-  wmfitter->ReFitSolution1( flist[2], njets, bg2 , &bg2list );
-  // retrieve the histograms
-  vector<TH2D*> hs2 = bg2->Output2D();
-
+  double inputMean_qcd = ( n_Jets == 4 ) ? 5.982 : 131.352 ;
+  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
+  wmfitter->ReFitSolution( flist[2], bg , 1, &bg2list, 0, true );
   cout<<" qcd test done "<<endl;
 
-  // Making plots
-  M2M3Plotter( hs0, "pseudoSG", DrawOpt );
+  // retrieve the histograms
+  vector<TH2D*> hBgs = bg->Output2D();
+  M2M3Plotter( hBgs, "pseudoBG", DrawOpt );
 
-  TH2D* h0M2M3  = new TH2D("h0M2M3", " M3(X) vs M2(Y) ", 15, 50, 350, 15, 10, 310);
-  h0M2M3->Add( hs1[0] ) ;
-  h0M2M3->Add( hs2[0] ) ;
-  TH2D* h0M3M3  = new TH2D("h0M3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
-  h0M3M3->Add( hs1[1] ) ;
-  h0M3M3->Add( hs2[1] ) ;
-  TH2D* h0M2M2t = new TH2D("h0M2M2t", " M2t(X) vs M2(Y) ", 15, 10, 310, 15, 10, 310); 
-  h0M2M2t->Add( hs1[2] );
-  h0M2M2t->Add( hs2[2] );
-  TH2D* h0EtaM2 = new TH2D("h0EtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM2->Add( hs1[3] );
-  h0EtaM2->Add( hs2[3] );
-  TH2D* h0EtaM3 = new TH2D("h0EtaM3", " Eta of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0EtaM3->Add( hs1[4] );
-  h0EtaM3->Add( hs2[4] );
-  TH2D* h0YM2 = new TH2D("h0YM2", " Rapidity of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM2->Add( hs1[5] );
-  h0YM2->Add( hs2[5] );
-  TH2D* h0YM3 = new TH2D("h0YM3", " Rapidity of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
-  h0YM3->Add( hs1[6] );
-  h0YM3->Add( hs2[6] );
+  for ( size_t i =0; i < hs0.size(); i++ ) {
+      hs0[i]->Add( hBgs[i] );
+  }
+  M2M3Plotter( hs0, "pseudoExp", DrawOpt );
 
-  vector<TH2D*> h2Ds;
-  h2Ds.push_back( h0M2M3 ); 
-  h2Ds.push_back( h0M3M3 ); 
-  h2Ds.push_back( h0M2M2t ); 
-  h2Ds.push_back( h0EtaM2 ); 
-  h2Ds.push_back( h0EtaM3 ); 
-  h2Ds.push_back( h0YM2 ); 
-  h2Ds.push_back( h0YM3 ); 
-
-  M2M3Plotter( h2Ds, "pseudoBG", DrawOpt );
-
-  h0M2M3->Add( hs0[0] ) ;
-  h0M3M3->Add( hs0[1] ) ;
-  h0M2M2t->Add( hs0[2] );
-  h0EtaM2->Add( hs0[3] );
-  h0EtaM3->Add( hs0[4] );
-  h0YM2->Add( hs0[5] );
-  h0YM3->Add( hs0[6] );
-
-  /*
-  vector<TH2D*> hAll;
-  hAll.push_back( h0M2M3 ); 
-  hAll.push_back( h0M3M3 ); 
-  hAll.push_back( h0M2M2t ); 
-  hAll.push_back( h0EtaM2 ); 
-  hAll.push_back( h0EtaM3 ); 
-  hAll.push_back( h0YM2 ); 
-  hAll.push_back( h0YM3 ); 
-  M2M3Plotter( hAll, "pseudoExp", DrawOpt );
-  */
-  M2M3Plotter( h2Ds, "pseudoExp", DrawOpt );
-
-  delete sg1 ;
-  delete bg1 ;
-  delete bg2 ;
+  delete sg ;
+  delete bg ;
   cout<<" YA !!! "<<endl;
+}
+
+// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
+/*
+void WAnalysis::HadTEnsembleTest( int randomSeed, TString DrawOpt ){
+ 
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  TString treeName = "muJets";
+
+  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
+
+  // ttbar
+  hadWBoson* sg = new hadWBoson();
+  double inputMean_tt = ( n_Jets == 4 ) ? 9.28 : 8.701 ;
+  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
+  wmfitter->ReFitLepTopSolution( flist[0], sg, 1, &sglist );
+  cout<<" tt test done "<<endl;
+
+  // Making signal plots
+  vector<TH2D*> h_sg;
+  sg->Fill2DVec( h_sg );
+  M2M3Plotter( h_sg, "pseudoSG", DrawOpt );
+
+  // w+jets
+  hadWBoson* bg = new hadWBoson();
+  double inputMean_wj = ( n_Jets == 4 ) ? 2.458 : 92.0 ;
+  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
+  wmfitter->ReFitLepTopSolution( flist[1], bg, 1, &bg1list );
+  cout<<" wj test done "<<endl;
+
+  // QCD
+  double inputMean_qcd = ( n_Jets == 4 ) ?  3.31 : 131.352 ;
+  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
+  wmfitter->ReFitLepTopSolution( flist[2], bg, 1, &bg2list );
+  cout<<" qcd test done "<<endl;
+
+  // retrieve the histograms
+  vector<TH2D*> h_bg;
+  bg->Fill2DVec( h_bg );
+  M2M3Plotter( h_bg, "pseudoBG", DrawOpt );
+
+  for ( size_t i =0; i < h_sg.size(); i++ ) {
+      h_sg[i]->Add( h_bg[i] );
+  }
+  M2M3Plotter( h_sg, "pseudoExp", DrawOpt );
+
+  delete sg ;
+  delete bg ;
+  cout<<" YA !!! "<<endl;
+
+}
+*/
+
+// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
+void WAnalysis::LepTEnsembleTest( int randomSeed, TString DrawOpt ){
+ 
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  TString treeName = "muJets";
+
+  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
+
+  // ttbar
+  lepWBoson* sg = new lepWBoson();
+  double inputMean_tt = ( n_Jets == 4 ) ? 9.28 : 8.701 ;
+  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
+  ltmfitter->ReFitLepTopSolution( flist[0], sg, 1, &sglist );
+  cout<<" tt test done "<<endl;
+
+  // Making signal plots
+  vector<TH2D*> h_sg;
+  sg->Fill2DVec( h_sg );
+  LepTopPlotter( h_sg, "pseudoSG", DrawOpt );
+
+  // w+jets
+  lepWBoson* bg = new lepWBoson();
+  double inputMean_wj = ( n_Jets == 4 ) ? 2.458 : 92.0 ;
+  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
+  ltmfitter->ReFitLepTopSolution( flist[1], bg, 1, &bg1list );
+  cout<<" wj test done "<<endl;
+
+  // QCD
+  double inputMean_qcd = ( n_Jets == 4 ) ?  3.31 : 131.352 ;
+  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
+  ltmfitter->ReFitLepTopSolution( flist[2], bg, 1, &bg2list );
+  cout<<" qcd test done "<<endl;
+
+  // retrieve the histograms
+  vector<TH2D*> h_bg;
+  bg->Fill2DVec( h_bg );
+  LepTopPlotter( h_bg, "pseudoBG", DrawOpt );
+
+  for ( size_t i =0; i < h_sg.size(); i++ ) {
+      h_sg[i]->Add( h_bg[i] );
+  }
+  LepTopPlotter( h_sg, "pseudoExp", DrawOpt );
+
+  delete sg ;
+  delete bg ;
+  cout<<" YA !!! "<<endl;
+
 }
 

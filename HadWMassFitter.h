@@ -17,16 +17,8 @@
 #include <string>
 
 #include "MassAnaInput.h"
-#include "MassAna.h"
-#include "MassFitFunction.h"
 #include "WFormat.h"
-
-struct jlist {
-    int w1 ;
-    int w2 ;
-    int bh ;
-    int bl ;
-};
+#include "PseudoExp.h"
 
 
 class FitVectors : public TObject {
@@ -59,13 +51,16 @@ private:
 
    double bTh;
    int    n_btag;
+   int    n_Jets;
+   int    JESType;
 
    MassAnaInput*    fitInput;
-   MassAna*         fitTools;
-   MassFitFunction* fitFunc;
- 
+   PseudoExp*       pseudoExp;
+
    TCanvas* c1;
    TCanvas* c2;
+
+   TFile* theFiles[3] ;
 
    string hfolder;
 
@@ -84,13 +79,13 @@ public:
 
    double ReFitLepTopMass( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3, Double_t *par );
 
-   double KinematicProb( int jid[] , vector<TLorentzVector> nvlist, TLorentzVector mV4, TLorentzVector nV4, Double_t *par, Double_t* wtX = NULL );
+   double KinematicProb( vector<TLorentzVector> nvlist, TLorentzVector mV4, TLorentzVector nV4, Double_t *par, Double_t* wtX = NULL );
 
    double Get2BodySigma( TLorentzVector v1, TLorentzVector v2 );
 
    double Get3BodySigma( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3 );
 
-   double BTagProbability( vector<double> bCut, int NofB, int jid[], bool isJES = false );
+   double BTagProbability( double bCut[], int NofB, int jid[], bool isJES = false );
 
    vector<TLorentzVector> newVector( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3, TLorentzVector v4, Double_t *par );
 
@@ -98,19 +93,18 @@ public:
 
    Double_t jetAngle( TLorentzVector v1, TLorentzVector v2 );
 
-   // methods for old soltree
-   void ReFitSolution( string mName, recoObj* wObj, int type, bool isMCMatched = false );
-   void ReFitSolution( string mName, recoObj* wObj, vector< pair<int,int> >& evtlist, int type );
-
-   void ReFitSolution1( string mName, int njets, recoObj* wObj, vector<int>* evtlist = NULL );
-
-   void ReFitSolution1( string mName, int njets, recoObj* wObj, int type , vector<int>* evtlist = NULL );
-
-   void MCSolution( string fileName, recoObj* wObj, int type );
-
-   void GetPermutes( int njets, vector<jlist>& jlistV );
+   //void GetPermutes( int njets, vector<jlist>& jlistV );
 
    vector<TLorentzVector> GetLorentzVector( jlist Ls, double jpx[], double jpy[], double jpz[], double jE[] );
+
+   vector<TLorentzVector> GetLorentzVector( vector<TLorentzVector>& oblist, jlist Ls );
+
+   vector<TLorentzVector> GetEventObjects( int nj, double jpx[], double jpy[], double jpz[], double jE[], double mpx, double mpy, double mpz, double mE );
+
+   // methods for old soltree
+   void ReFitSolution( string mName, recoObj* wObj, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0, bool smearing = false, TTree* theTree = NULL );
+
+   void MCSolution( string fileName, recoObj* wObj );
 
    //ClassDef(HadWMassFitter, 1);
 

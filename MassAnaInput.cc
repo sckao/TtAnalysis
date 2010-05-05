@@ -33,6 +33,19 @@ void MassAnaInput::Initialize( TString* hfolder ) {
 
 }
 
+vector<TTree*> MassAnaInput::GetForest( string DataSet, TString treeName ) {
+
+    cout<<"  =>>> getting a forest of "<< treeName <<endl ;
+    vector<string> fileList;
+    GetParameters( DataSet , &fileList );
+
+    vector<TTree*> forest ;
+    for ( size_t i =0 ; i< fileList.size(); i++ ) {
+        TTree* tr = GetTree( fileList[i], treeName ) ;
+        forest.push_back( tr );
+    }
+    return forest ;
+}
 
 TTree* MassAnaInput::GetTree( string chName, TString treeName, TFile* file  ) {
   
@@ -736,11 +749,39 @@ double MassAnaInput::NormalizeComponents(  string theChannel ){
   return Scal;
 }
 
+void MassAnaInput::GetPermutes( int njets, vector<jlist>& jlistV ) {
+
+    vector<int> pools ;
+    for (int i=0; i < njets; i++) {
+        pools.push_back(i) ;
+    }
+
+    jlistV.clear() ;
+
+    do {
+       for (int i=0; i< njets-1 ; i++) {
+           for (int j=i+1; j < njets; j++ ) {
+               if ( pools[0] == i && pools[1] == j ) {
+                  jlist theEntry ;
+                  theEntry.w1 = pools[0] ;
+                  theEntry.w2 = pools[1] ;
+                  theEntry.bh = pools[2] ;
+                  if ( pools.size() >= 4 ) theEntry.bl = pools[3] ;
+                  if ( pools.size() < 4  ) theEntry.bl = 0 ;
+                  jlistV.push_back( theEntry ) ;
+               }
+           }
+       }
+    } while ( next_permutation( pools.begin() ,pools.end() ) ) ;
+
+}
+
 
 // Methods to read DataCard.txt
 void MassAnaInput::GetParameters(string paraName, int* thePara ){
 
      fstream paraFile("DataCard.txt");
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
      string  getValue;
@@ -759,11 +800,13 @@ void MassAnaInput::GetParameters(string paraName, int* thePara ){
               //cout<< paraName <<" = "<< *thePara << endl;
            }
      }
+     paraFile.close();
 }
 
 void MassAnaInput::GetParameters(string paraName, double* thePara ){
 
      fstream paraFile("DataCard.txt");
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
      string  getValue;
@@ -782,11 +825,13 @@ void MassAnaInput::GetParameters(string paraName, double* thePara ){
               //cout<< paraName <<" = "<< *thePara << endl;
            }
      }
+     paraFile.close();
 }
 
 void MassAnaInput::GetParameters(string paraName, string* thePara ){
 
      fstream paraFile("DataCard.txt");
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
      size_t  pos ;
@@ -808,11 +853,13 @@ void MassAnaInput::GetParameters(string paraName, string* thePara ){
               }
            }
      }
+     paraFile.close();
 }
 
 void MassAnaInput::GetParameters(string paraName, vector<double>* thePara ){
 
      fstream paraFile("DataCard.txt");
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
      string  getValue;
@@ -843,12 +890,15 @@ void MassAnaInput::GetParameters(string paraName, vector<double>* thePara ){
               *thePara = vvec ;
            }
      }
+     paraFile.close();
 
 } 
 
 void MassAnaInput::GetParameters(string paraName, vector<string>* thePara ){
 
      fstream paraFile("DataCard.txt");
+
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
      string  getValue;
@@ -879,12 +929,14 @@ void MassAnaInput::GetParameters(string paraName, vector<string>* thePara ){
               *thePara = vvec ;
            }
      }
+     paraFile.close();
 
 }
  
 void MassAnaInput::GetParameters(string paraName, vector<int>* thePara ){
 
      fstream paraFile("DataCard.txt");
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
      string  getValue;
@@ -915,6 +967,7 @@ void MassAnaInput::GetParameters(string paraName, vector<int>* thePara ){
               *thePara = vvec ;
            }
      }
+     paraFile.close();
 
 }
  

@@ -36,7 +36,11 @@ public:
    // random seed = 0 => using the system time for the seed
    vector< pair<int,int> > GetEnsemble( string fileName, double pMean, int RandomSeed = 0 );
    vector<int> GetEnsemble( string fileName, TString treeName, double pMean, int RandomSeed = 0 );
-
+ 
+   vector<int> EventShuffle( int theSize, int RandomSeed );
+ 
+   void PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed = 0 ) ;
+   
    //ClassDef(PseudoExp, 1);
 
 };
