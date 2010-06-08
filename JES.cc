@@ -1,14 +1,13 @@
 #include "JES.h"
 
-JES::JES( double massL, double massH ) {
+JES::JES() {
 
-  fitInput = new MassAnaInput( "had", massL, massH );
+  fitInput = new MassAnaInput();
   fitFunc  = new MassFitFunction();
 
   fitInput->Initialize( &hfolder  );
-  
-  mL = massL;
-  mH = massH;
+  fitInput->GetParameters( "MassLBound", &mL);
+  fitInput->GetParameters( "MassHBound", &mH);
 
 }
 

@@ -30,21 +30,31 @@ private:
    int    n_btag;
    int    n_Jets;
 
+   bool isFolderCreate ;
+   bool smearing ;
+   vector<double> inputMean ;
+
+   string phaseSmear;
+   string hfolder;
+
    MassAnaInput*      fitInput;
    HadWMassFitter*    wmfitter;
    LepTopMassFitter*  ltmfitter;
    PseudoExp*         pseudoExp;
 
-   string hfolder;
 
 public:
 
-   WAnalysis( double massL, double massH );     
+   WAnalysis();     
    ~WAnalysis();     
- 
+
+   void CreateFolders(); 
+
    void HadTopFitter( string mName, TString DrawOpt = "COLZ", bool isMCMatched = false );
 
    void LepTopFitter( string mName, TString DrawOpt = "COLZ", bool isMCMatched = false );
+
+   void Had_SBRatio();
 
    void EnsembleTest( int randomSeed = 0 ,TString DrawOpt = "COLZ" );
    void LepTEnsembleTest( int randomSeed = 0 ,TString DrawOpt = "COLZ" );

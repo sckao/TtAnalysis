@@ -1,20 +1,23 @@
 #include "AlgoKcon.h"
 
-AlgoKcon::AlgoKcon( TString channel, double massL, double massH  ){
+AlgoKcon::AlgoKcon(){
 
   ptype  = ".gif";
+  fitInput = new MassAnaInput();
+  fitInput->Initialize( &hfolder );
 
-  cname = channel;
-  hname = channel+"TM";
+  string decayType;
+  fitInput->GetParameters( "DecayType", &decayType );
+  fitInput->GetParameters( "MassLBound", &mL);
+  fitInput->GetParameters( "MassHBound", &mH);
 
-  mL = massL ;
-  mH = massH ;
+  cname = decayType;
+
+  hname = decayType+"TM";
 
   
   //fitFunc  = new MassFitFunction();
-  fitInput = new MassAnaInput( channel, massL, massH );
-  fitInput->Initialize( &hfolder );
-  fitTools = new MassAna( channel, massL, massH );
+  fitTools = new MassAna();
   //wmFitter = new WMassFitter();
 }
 

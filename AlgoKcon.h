@@ -63,7 +63,7 @@ private:
  
 public:
 
-   AlgoKcon( TString channel, double massL = 0, double massH = 480 );     
+   AlgoKcon();     
    ~AlgoKcon();     
  
    void ConstrainFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag );

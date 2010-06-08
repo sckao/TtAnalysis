@@ -218,10 +218,6 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //MCMatching->CheckGenParticle( genParticles );
 
    // 1. Build semi-mu tt events and compare the result
-   semiSol->BuildSemiTt(  iEvent, 1,  evtIt,  &histos );
-   semiSol->MCBuildSemiTt(iEvent, 1,  evtIt,  &histos );
-   //semiSol->McRecoCompare( 1, 0, passSelect, histos );
-
    // 2. Trigger studies of semi-Tt events
    if ( trigOn ) {
       Handle<edm::TriggerResults>  triggers;
@@ -232,30 +228,18 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //3. Muon and Leptonic W analysis
    std::vector<const reco::Candidate*> isoMu   = ttMuon->IsoMuonSelection( muons );
    std::vector<const reco::Candidate*> theJets = ttJet->JetSelection( jets, isoMu, 30 ) ;
-   if ( jpass > 3) {
-      std::vector<iReco> lepW;
-      LorentzVector metP4 = ttMET->METfromObjects( isoMu, theJets );
-      semiSol->recoW( isoMu, metP4, lepW );
-      if ( lepW.size() > 0 ) {
-         int wl = MCMatching->matchLeptonicW( genParticles, lepW, histos.hMObj );
-         if ( wl != -1 ) ttJet->JetAndLepW( theJets, lepW[wl].p4, histos.hJet );
-      }
-   }
 
    //4. Jet Studies
    ttJet->jetAnalysis(jets, histos.hJet);
    //ttJet->JetTrigger( jets, triggers );
 
+   std::vector<const reco::Candidate*> genCollects = MCMatching->GenTtCollection( genParticles ) ;
+
    std::vector<const reco::Candidate*> nonIsoMu = ttMuon->nonIsoMuonSelection(muons);
-   std::vector<jmatch> mcjets  = MCMatching->matchJets(genParticles, theJets );
    ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histos.hMuon, true );
 
-   if ( topo == 1) {
-      ttJet->matchedWJetsAnalysis( mcjets, isoMu, jets, histos.hWJet );
-   } 
    // looking for the leptonic b jet effect 
    if ( jpass > 3 ) {
-      ttJet->matchedbJetsAnalysis( mcjets, isoMu, jets, histos.hBJet );
       std::vector<const reco::Candidate*> isoMufromB = MCMatching->matchMuonfromB( genParticles, theJets, nonIsoMu, histos.hBJet,true ); 
    }
 

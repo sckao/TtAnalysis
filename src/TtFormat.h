@@ -45,7 +45,7 @@
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
 #include "TtAnalysisHisto.h"
-#include "TtAnalysisNtuple.h"
+//#include "TtAnalysisNtuple.h"
 
 #include "TFile.h"
 #include "TVector3.h"
@@ -59,11 +59,9 @@
 //
 typedef math::XYZTLorentzVector LorentzVector;
 // hfPos[0]:eta, hfPos[1]:phi, hfPos[2]:pt
-typedef std::vector<double> hfPos ;
+//typedef std::vector<double> hfPos ;
 typedef std::vector<int> Idx;
 typedef std::pair<int, double> IDPair;
-
-enum ttChannel{ hadronic, semiMuon, dilep, semiElectron, semiTau, other };
 
 // iParton< pdgId, p4 >
 typedef std::pair<int, LorentzVector> iParton;
@@ -82,7 +80,7 @@ struct jmatch {
        int Idx ;                          // Index of selected recoJet collection
        double res_P;                      // momentum resolution
        LorentzVector p4 ;
-       const reco::Candidate* trueJet ;
+//       const reco::Candidate* trueJet ;
        const reco::Candidate* mom ;
        bool hasMatched;
        double dR;
@@ -117,29 +115,21 @@ struct tHisto {
     HTOP11 *hTops[4]; // 0: Lep-MC , 1: Lep-Reco , 2: Had-MC , 3: Had-Reco
 };
 
+struct ttCandidate {
+   LorentzVector p4;
+   double eta;
+   double iso;
+   double cuts[3] ;     // muon:(d0,X2,calE) jet:(bTh,emF,E/H ), electron:(E/P,H/E,calE)
+   int    charge ;
+   int    nHits ;      // muon:nHits of inner track,  jet:n90 
+   int    pdgId ;
+};
+/*
 struct tNtuple {
-    ObjNtp  *muTree ;  // Tree hold muon solutions
-    ObjNtp  *jetTree ; // Tree hold jet  solutions
-    ObjNtp  *neuTree ; // Tree hold neutrino solutions
-    SolNtp  *solTree ; // Tree hold all the solutions
 
-    SolNtp  *mcmTree ; // Tree hold MC-matching solutions
-    ObjNtp  *genTree ; // Tree hold gen information
-
-    SolNtp2  *mu3Jets ; // Tree hold the solutions
-    SolNtp2  *mu4Jets ; // Tree hold the solutions
+    SolNtp2  *muJets ; // Tree hold the solutions
+    mcNtp    *mcmTree ;
+    mcNtp    *genTree ;
 };
-
-struct TtResult {
-
-    std::vector<iReco>                   Tt ;
-    std::vector<const reco::Candidate*>  Ls ;
-    std::vector<const reco::Candidate*>  Js ;
-    std::vector<const reco::Candidate*>  bJ ;
-    std::vector<const reco::Candidate*>  WJ ;
-    std::vector<LorentzVector> metP4;
-    bool isData;
-
-};
-
+*/
 #endif

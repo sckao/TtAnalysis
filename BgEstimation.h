@@ -32,12 +32,17 @@ private:
    HadWMassFitter*    wmfitter;
    PseudoExp*         pseudoExp;
 
+   string hfolder;
+   TString theFolder;
+   bool smearing ;
+   vector<double> inputMean ;
+
 public:
 
-   BgEstimation( double massL, double massH );     
+   BgEstimation();     
    ~BgEstimation();     
  
-   vector<double> Ratio42( bool isHalf );
+   vector<double> Ratio42( int statIdx = 0 );
 
    void MethodTest() ;
 
@@ -46,13 +51,11 @@ public:
    void EnsembleTest( int randomSeed );
    void EnsembleTest( int nRun, int randomSeed );
 
-   vector<double> RunEnsembles( int treeSize, string fileName, double pMean, int nRun, int randomSeed, TTree* theTree = NULL );
+   vector<double> RunEnsembles( int treeSize, string fileName, double pMean, int nRun, int randomSeed, TTree* theTree = NULL, TH1D* hGen = NULL );
 
    vector<double> StatErr( double m );
    vector<double> ErrAovB( double A, double s_A, double B, double s_B );
    vector<double> ErrAxB( double A, double s_A, double B, double s_B );
-
-   //void BoostTester() ;
 
    //ClassDef(BgEstimation, 1);
 

@@ -558,35 +558,16 @@ public:
  
  HTOP6() {
 
-    dRb_dRw_lep = new TH2F("dRb_dRw_lep","leptonic T dR(mcB, recoB), dR(mcW, recoW) ", 200,-0.025,9.975, 200, -0.025, 9.975 );
-    dRb_dRw_had = new TH2F("dRb_dRw_had","hadronic T dR(mcB, recoB), dR(mcW, recoW) ", 200,-0.025,9.975, 200, -0.025, 9.975 );
-    dRtt        = new TH2F("dRtt"," dR(rec, mc)_lep, dR(rec, mc)_had", 400, -0.22, 9.78, 400, -0.22, 9.78 );
-
-    dRbw_had = new TH2F("dRbw_had","hadronic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
-    dRbw_lep = new TH2F("dRbw_lep","leptonic T dR(mcb, mcW), dR( rcb, rcW )", 200, -0.025, 9.975, 200, -0.025, 9.975 );
-
     dR_neu     = new TH1F("dR_neu"," dR(reco - gen) for neutrino ",200,0.,10.);
     PtRes_lepW = new TH1F("PtRes_lepW"," Pt Res for matched leptonic W ",200,-1.005,0.995);
     PzRes_lepW = new TH1F("PzRes_lepW"," Pz Res for matched leptonic W ",200,-1.005,0.995);
     NeuMET_Pz  = new TH2F("NeuMET_Pz"  ," Neutrio Pz vs MET Pz from W solution", 400,-200.,200., 400, -200.,200.);
     METPzSol   = new TH2F("METPzSol"  ," 2 MET Pz from W solution", 400,-200.,200., 400, -200.,200.);
  
-    mcTtMass   = new TH2F("mcTtMass"  ," mc Tt mass matched w/ reco cuts all", 480,0.,480., 480,0.,480.);
-    mcTtMass0  = new TH2F("mcTtMass0" ," mc Tt mass matched w/ reco cuts  4j", 480,0.,480., 480,0.,480.);
-    mcTtMass1  = new TH2F("mcTtMass1" ," mc Tt mass matched w/ reco cuts  5j", 480,0.,480., 480,0.,480.);
-    mcTtMass2  = new TH2F("mcTtMass2" ," mc Tt mass matched w/ reco cuts  6j", 480,0.,480., 480,0.,480.);
-    mcTtMass3  = new TH2F("mcTtMass3" ," mc Tt mass matched w/ reco cuts >7j", 480,0.,480., 480,0.,480.);
-
  } 
 
  /// Destructor
  virtual ~HTOP6() {
-
-    delete dRb_dRw_lep;
-    delete dRb_dRw_had;
-    delete dRbw_had;
-    delete dRbw_lep;
-    delete dRtt;
 
     delete dR_neu;
     delete PtRes_lepW;
@@ -594,38 +575,8 @@ public:
     delete NeuMET_Pz;
     delete METPzSol;
 
-    delete mcTtMass;
-    delete mcTtMass0;
-    delete mcTtMass1;
-    delete mcTtMass2;
-    delete mcTtMass3;
-
  }
 
- void Fill6a( double dRt0, double dRbj0, double dRw0, double dRt1, double dRbj1, double dRw1 ) {
-    dRb_dRw_lep->Fill( dRbj0, dRw0);
-    dRb_dRw_had->Fill( dRbj1, dRw1);
-    dRtt->Fill(dRt0,dRt1);
- }
- void Fill6b( double dRbw_mcl, double dRbw_rcl, double dRbw_mch, double dRbw_rch ){
-    dRbw_had->Fill( dRbw_mch, dRbw_rch );
-    dRbw_lep->Fill( dRbw_mcl, dRbw_rcl );
- }
- void Fill6c( double mclepTMass, double mchadTMass ){
-    mcTtMass->Fill( mclepTMass, mchadTMass );
- } 
- void Fill6c0( double mclepTMass, double mchadTMass ){
-    mcTtMass0->Fill( mclepTMass, mchadTMass );
- } 
- void Fill6c1( double mclepTMass, double mchadTMass ){
-    mcTtMass1->Fill( mclepTMass, mchadTMass );
- } 
- void Fill6c2( double mclepTMass, double mchadTMass ){
-    mcTtMass2->Fill( mclepTMass, mchadTMass );
- } 
- void Fill6c3( double mclepTMass, double mchadTMass ){
-    mcTtMass3->Fill( mclepTMass, mchadTMass );
- } 
  void Fill6d( double dR, double PtRes, double MRes, double neuPz, double metPz ) {
     dR_neu->Fill(dR);
     PtRes_lepW->Fill(PtRes);
@@ -640,43 +591,19 @@ public:
 
     file->cd( theFolder );
 
-    dRb_dRw_lep->Write();
-    dRb_dRw_had->Write();
-    dRbw_had->Write();
-    dRbw_lep->Write();
-    dRtt->Write();
-
     dR_neu->Write();
     PtRes_lepW->Write();
     PzRes_lepW->Write();
     NeuMET_Pz->Write();  
     METPzSol->Write();  
 
-    mcTtMass->Write();
-    mcTtMass0->Write();
-    mcTtMass1->Write();
-    mcTtMass2->Write();
-    mcTtMass3->Write();
-
  }
-
-  TH2F *dRb_dRw_lep;
-  TH2F *dRb_dRw_had;
-  TH2F *dRbw_had;
-  TH2F *dRbw_lep;
-  TH2F *dRtt;
 
   TH1F *dR_neu;
   TH1F *PtRes_lepW;
   TH1F *PzRes_lepW;
   TH2F *NeuMET_Pz;
   TH2F *METPzSol;
-
-  TH2F *mcTtMass;
-  TH2F *mcTtMass0;
-  TH2F *mcTtMass1;
-  TH2F *mcTtMass2;
-  TH2F *mcTtMass3;
 
 };
 
@@ -685,17 +612,8 @@ public:
  
  HTOP7() {
 
-    hRes_Pt   = new TH1F("hRes_Pt","Resolutio  of b jet pt ",400, -2., 2. ); 
-    dR_RelPt_bmu = new TH2F("dR_RelPt_bmu","dRmin vs RelPt for b and  iso muon ",200, 0.,5., 100, 0.,200. );  
-    hdRbWj = new TH1F("hdRbWj","dR for b and  W matched jets ",300, 0.,15. );  
-    bDis_bj = new TH1F("bDis_bj","b Discriminator for matched b jets ", 40,-10.25,9.75 );
-
     bDis_phi_d0  = new TH2F("bDis_phi_d0" ," phi vs d0  ",63, -3.15,3.15, 200,-0.5,0.5);
     bDis_dR_RelPt = new TH2F("bDis_dR_RelPt"," dR vs RelPt ",100, 0.,1., 300, 0.,60.);
-
-    hNTk_mc  = new TH1F("hNTk_mc"," # of charge track of a bjet", 50, -1.5, 48.5);
-    hemE     = new TH1F("hemE"," em Energy fraction ", 150, -0.2, 1.3);
-    hPt_Eta_mc = new TH2F("hPt_Eta_mc", " eta vs pt (bjets)", 500, 0.,250, 71, -3.55, 3.55);
 
     // parton level
     hEta     = new TH2F("hEta"," MC(X) vs reco(Y) , eta distribution for bjets of semiTt ",71,-3.55,3.55,71,-3.55,3.55);
@@ -709,16 +627,8 @@ public:
  /// Destructor
  virtual ~HTOP7() {
 
-    delete hRes_Pt;
-    delete dR_RelPt_bmu;
-    delete hdRbWj;
-    delete bDis_bj;
     delete bDis_dR_RelPt;
     delete bDis_phi_d0;
-
-    delete hNTk_mc;
-    delete hemE;
-    delete hPt_Eta_mc;
 
     delete hEta;
     delete hPhi;
@@ -728,21 +638,6 @@ public:
     delete dR_RelPtr;
  }
 
- void Fill7a(double pt, double eta,  size_t nTrk, double emE, double Res_pt, double muTag ){
-
-    hNTk_mc->Fill(nTrk);
-    hemE->Fill(emE);
-    hPt_Eta_mc->Fill(pt,eta);
-
-    hRes_Pt->Fill(Res_pt);
-    bDis_bj->Fill( muTag );
- }
- void Fill7b( double dR_bmu , double RelPt ){
-    dR_RelPt_bmu->Fill(dR_bmu, RelPt);
- }
- void Fill7c( double dR_bwj ){
-    hdRbWj->Fill(dR_bwj);
- }
  void Fill7d( double phi, double d0 ){
     bDis_phi_d0->Fill( phi, d0 );
  }
@@ -765,17 +660,9 @@ public:
 
     file->cd( theFolder );
 
-    hRes_Pt->Write();
-    dR_RelPt_bmu->Write();
-    hdRbWj->Write();
 
-    bDis_bj->Write();
     bDis_dR_RelPt->Write();
     bDis_phi_d0->Write();
-
-    hNTk_mc->Write();
-    hemE->Write();
-    hPt_Eta_mc->Write();
 
     hEta->Write();
     hPhi->Write();
@@ -785,17 +672,8 @@ public:
     dR_RelPtr->Write();
  }
 
-  TH1F *hRes_Pt;
-  TH2F *dR_RelPt_bmu;
-  TH1F *hdRbWj;
-
-  TH1F *bDis_bj;
   TH2F *bDis_dR_RelPt;
   TH2F *bDis_phi_d0;
-
-  TH1F *hNTk_mc;
-  TH1F *hemE;
-  TH2F *hPt_Eta_mc;
 
   TH2F *hEta;
   TH2F *hPhi;
@@ -890,7 +768,6 @@ public:
     hWJetEff   = new TH1F("hWJetEff"," # of correctly matched Wjet ", 4,-0.5,3.5 );
     hWLepEff   = new TH1F("hWLepEff"," # of correctly matched lep. ", 4,-0.5,3.5 );
     hHLTBits   = new TH2F("hHLTBits","HLT Trigger bits(names) for hadronic tt", 166, -0.5, 165.5, 6,-0.5,5.5 );
-    hHLTSelect = new TH1F("hHLTSelect","HLT Trigger Selected result "  , 15, -7.5, 7.5 );
     NJ_NBTags  = new TH2F("NJ_NBTags"," NJets vs NBTags", 10, 0.5, 10.5, 10, -0.5, 9.5 );
 
  } 
@@ -905,7 +782,6 @@ public:
     delete hWJetEff;
     delete hWLepEff;
     delete hHLTBits;
-    delete hHLTSelect;
     delete NJ_NBTags;
  }
 
@@ -931,9 +807,6 @@ public:
  void Fill9k( int hlt, int topo ) {
     hHLTBits->Fill( hlt, topo );
  }
- void Fill9l( int hlt ) {
-    hHLTSelect->Fill( hlt );
- }
 
 
  void Write( TString theFolder , TFile* file  ) {
@@ -947,7 +820,6 @@ public:
     hWJetEff->Write();
     hWLepEff->Write();
     hHLTBits->Write();
-    hHLTSelect->Write();
     NJ_NBTags->Write();
 
  }
@@ -959,7 +831,6 @@ public:
   TH1F *hWJetEff;
   TH1F *hWLepEff;
   TH2F *hHLTBits;
-  TH1F *hHLTSelect;
   TH2F *NJ_NBTags;
 
 };

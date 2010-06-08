@@ -73,12 +73,6 @@
 
 //
 // class decleration
-/*
-class TtMuon;
-class TtMET;
-class TtElectron;
-*/
-class TtJet;
 
 class TtEvtSelector {
    public:
@@ -90,13 +84,14 @@ class TtEvtSelector {
 
     /// Perform the real analysis
 
-    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, std::vector<bool>* bTags = NULL , std::vector<double>* bDisList = NULL );
+    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, std::vector<double>* bDisList = NULL );
+
+    int eventSelection(int topo, std::vector<ttCandidate>& isoLep,  std::vector<ttCandidate>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType );
 
     int eventSelection( int topo, double JetEtCut, const edm::Event& iEvent, string MetType );
 
     int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
-    bool HLTSemiSelection( edm::Handle <edm::TriggerResults> triggers, int setup );
     void TriggerStudy( edm::Handle <edm::TriggerResults> triggers, int topo, int setup, HTOP9* histo9 );
 
    private:

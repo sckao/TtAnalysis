@@ -69,7 +69,7 @@
 //
 // class decleration
 //
-class TtMuon;
+//class TtMuon;
 
 class TtMET {
    public:
@@ -90,6 +90,7 @@ class TtMET {
     LorentzVector CaloMET( const edm::Event & iEvent );
 
     LorentzVector METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets );
+    LorentzVector METfromObjects( std::vector<ttCandidate>& theLep, std::vector<ttCandidate>& theJets );
 
     void MetAndMuon( edm::Handle<std::vector<pat::MET> > patMet, std::vector<const reco::Candidate*> isoMuons, HTOP2* histo2, int njets  );
     void MetAndJets( edm::Handle<std::vector<pat::MET> > met, std::vector<const reco::Candidate*> theJets, HTOP2* histo2 );

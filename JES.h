@@ -42,7 +42,7 @@ private:
 
 public:
 
-   JES( double massL, double massH );     
+   JES();     
    ~JES();     
  
    double WMSC( TLorentzVector v1, TLorentzVector v2, double jes = 1. );

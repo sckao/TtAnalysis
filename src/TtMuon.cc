@@ -64,10 +64,11 @@ TtMuon::~TtMuon()
 //
 //typedef std::pair<double, pat::Jet> ptjet ;
 static bool PtDecreasing(const reco::Candidate* s1, const reco::Candidate* s2) { return ( s1->pt() > s2->pt() ); }
-static bool PtDecreasing1(const pat::Muon* s1, const pat::Muon* s2) { return ( s1->pt() > s2->pt() ); }
+//static bool PtDecreasing1(const pat::Muon* s1, const pat::Muon* s2) { return ( s1->pt() > s2->pt() ); }
+static bool PtDecreasing2(ttCandidate s1, ttCandidate s2) { return ( s1.p4.pt() > s2.p4.pt() ); }
 
 // ------------ method called to for each event  ------------
-void TtMuon::PatMuonScope( std::vector<const pat::Muon*>&  patMu, const edm::Event& iEvent, HOBJ3* histo ){
+void TtMuon::PatMuonScope( Handle<std::vector<pat::Muon> > patMu, const edm::Event& iEvent, HOBJ3* histo ){
 
      // get the beam spot information
      //edm::Handle<reco::BeamSpot> theBeamSpot;
@@ -78,7 +79,7 @@ void TtMuon::PatMuonScope( std::vector<const pat::Muon*>&  patMu, const edm::Eve
      //math::XYZPoint pos_beamspot( theBeamSpot->x0(), theBeamSpot->y0(), theBeamSpot->z0() );
 
      int N_glbMu = 0;
-     for (std::vector<const pat::Muon*>::iterator m1 = patMu.begin(); m1!= patMu.end(); m1++) {
+     for (std::vector<pat::Muon>::const_iterator m1 = patMu->begin(); m1!= patMu->end(); m1++) {
 
          //1. Muon Isolation
          /*
@@ -90,18 +91,19 @@ void TtMuon::PatMuonScope( std::vector<const pat::Muon*>&  patMu, const edm::Eve
 	 std::pair<double, int> tkR3 = trackIso->depositAndCountWithin(0.3);
          double RelIso =  (emR3.first + hdR3.first + tkR3.first)/(*m1)->pt()  ;
          */
-         double ecalDepo = 0 ;
-         double hcalDepo = 0 ;
-         double trkDepo = 0 ;
-         double RelIso = PatMuonRelIso( *(*m1), 0.3,  ecalDepo, hcalDepo, trkDepo ) ;
+         double emIso = m1->isolationR03().emEt ;
+	 double hdIso = m1->isolationR03().hadEt ;
+	 double tkIso = m1->isolationR03().sumPt ;
+	 double RelIso = ( tkIso + emIso + hdIso )/ m1->pt() ;
+
          //histo->Fill_3d( (*m1)->pt(), (*m1)->eta(), RelIso, emR3.first, hdR3.first, tkR3.first );
-         histo->Fill_3d( (*m1)->pt(), (*m1)->eta(), RelIso, ecalDepo, hcalDepo, trkDepo );
+         histo->Fill_3d( m1->pt(), m1->eta(), RelIso, emIso, hdIso, tkIso );
 
          // track quality
          int nSeg = 0 ;
          double stdX2 = -1 ;
-         if ( (*m1)->isStandAloneMuon() ) {
-            reco::TrackRef outTrack = (*m1)->outerTrack();
+         if ( m1->isStandAloneMuon() ) {
+            reco::TrackRef outTrack = m1->outerTrack();
             nSeg  = outTrack->numberOfValidHits();
             stdX2 = outTrack->normalizedChi2();
             histo->Fill_3e( nSeg, stdX2 );
@@ -109,8 +111,8 @@ void TtMuon::PatMuonScope( std::vector<const pat::Muon*>&  patMu, const edm::Eve
 
          int nHit = 0 ;
          double trkX2 = -1 ;
-         if ( (*m1)->isTrackerMuon() ) {
-            reco::TrackRef inTrack = (*m1)->innerTrack();
+         if ( m1->isTrackerMuon() ) {
+            reco::TrackRef inTrack = m1->innerTrack();
             nHit  = inTrack->numberOfValidHits();
             trkX2 = inTrack->normalizedChi2();
             // beam spot study , according to https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideFindingBeamSpot
@@ -120,7 +122,7 @@ void TtMuon::PatMuonScope( std::vector<const pat::Muon*>&  patMu, const edm::Eve
             double beamWdthY = theBeamSpot->BeamWidthY() ;
             double d0Err = sqrt( inTrack->d0Error()*inTrack->d0Error() + 0.5*beamWdthX*beamWdthX + 0.5* beamWdthY*beamWdthY );
             */
-            double d0    = (*m1)->innerTrack()->d0();
+            double d0    = m1->innerTrack()->d0();
             double d0Err = inTrack->d0Error()  ;
             double ipSig = d0 / d0Err ;
             histo->Fill_3f( nHit, trkX2, ipSig );
@@ -128,57 +130,97 @@ void TtMuon::PatMuonScope( std::vector<const pat::Muon*>&  patMu, const edm::Eve
 
          int aHit = 0 ;
          double glbX2 = -1 ;
-         if ( (*m1)->isGlobalMuon() ) {
-            reco::TrackRef inTrack = (*m1)->innerTrack();
-            reco::TrackRef glbTrack = (*m1)->globalTrack();
+         if ( m1->isGlobalMuon() ) {
+            reco::TrackRef inTrack = m1->innerTrack();
+            reco::TrackRef glbTrack = m1->globalTrack();
             aHit  = glbTrack->numberOfValidHits();
             glbX2 = glbTrack->normalizedChi2();
 
             double Pt_Res = (glbTrack->pt()/inTrack->pt()) - 1  ;
-            histo->Fill_3g( aHit, glbX2, glbTrack->pt(), (*m1)->eta(), RelIso, inTrack->pt(), Pt_Res );
+            histo->Fill_3g( aHit, glbX2, glbTrack->pt(), m1->eta(), RelIso, inTrack->pt(), Pt_Res );
             N_glbMu++;
          }
 
      }
-     int muSize = static_cast<int>( patMu.size() );
+     int muSize = static_cast<int>( patMu->size() );
      histo->Fill_3c( muSize, N_glbMu );
-
-}
-
-std::vector<const pat::Muon*> TtMuon::GeneralMuonSelection( Handle<std::vector<pat::Muon> > patMu, const edm::Event& iEvent, std::vector<double>& Settings ) {
-
- std::vector<const pat::Muon*> selMuons;
- selMuons.clear();
- for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
-
-     bool isoCut = IsoMuonID( *it, Settings[2] );    
-     bool pass = true ;
-     if ( it->pt()         < Settings[0]  ) pass = false ;
-     if ( fabs(it->eta())  > Settings[1]  ) pass = false ;
-     if ( isoCut && pass ) selMuons.push_back( &*it ) ;
- }
- if ( selMuons.size() > 1 ) sort( selMuons.begin(), selMuons.end(), PtDecreasing1 );
-
- return selMuons ;
 
 }
 
 std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector<pat::Muon> > patMu) {
 
- //std::vector<pat::Muon> isoMuons;
  std::vector<const reco::Candidate*> isoMuons;
  isoMuons.clear();
  bool isolated = false ;
  for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
 
+     if ( !(it->isGlobalMuon()) ) continue ;
      isolated = IsoMuonID( *it, muSetup[2] );    
 
+     if ( !(it->isTrackerMuon()) ) continue ;
+     reco::TrackRef inTrack = it->innerTrack();
+     int    nHit  = inTrack->numberOfValidHits();
+     double d0    = inTrack->d0();
+     double d0Err = inTrack->d0Error()  ;
+     double ipSig = d0 / d0Err ;
+     
+
      bool pass = true ;
-     if ( it->pt()         < muSetup[0]  ) pass = false ;
-     if ( fabs(it->eta())  > muSetup[1]  ) pass = false ;
-     if ( it->isGlobalMuon() && isolated && pass ) isoMuons.push_back( &*it );
+     if ( it->pt()         < muSetup[0]  ) pass = false ;  
+     if ( fabs(it->eta())  > muSetup[1]  ) pass = false ;  
+     if ( nHit             < muSetup[3]  ) pass = false ;  
+     if ( it->normChi2()   > muSetup[4]  ) pass = false ;
+     if ( ipSig            > muSetup[5]  ) pass = false ;
+
+     if ( isolated && pass ) isoMuons.push_back( &*it );
  }
  if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing );
+ return isoMuons ;
+
+}
+
+std::vector<ttCandidate> TtMuon::IsoMuonSelection1( Handle<std::vector<pat::Muon> > patMu) {
+
+ std::vector<ttCandidate> isoMuons;
+ isoMuons.clear();
+ for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
+
+     if ( !(it->isGlobalMuon()) ) continue ;
+     double relIso = IsoMuonID( *it );    
+
+     if ( !(it->isTrackerMuon()) ) continue ;
+     reco::TrackRef inTrack = it->innerTrack();
+     int    nHit  = inTrack->numberOfValidHits();
+     double d0    = inTrack->d0();
+     double d0Err = inTrack->d0Error()  ;
+     double ipSig = d0 / d0Err ;
+    
+     reco::MuonEnergy muE = it->calEnergy() ;
+     double muCalE = muE.em + muE.had ;
+
+     bool pass = true ;
+     if ( it->pt()         < muSetup[0]  ) pass = false ;  
+     if ( fabs(it->eta())  > muSetup[1]  ) pass = false ;  
+     if ( relIso           > muSetup[2]  ) pass = false ;  
+     if ( nHit             < muSetup[3]  ) pass = false ;  
+     if ( it->normChi2()   > muSetup[4]  ) pass = false ;
+     if ( fabs(ipSig)      > muSetup[5]  ) pass = false ;
+
+     if ( pass ) {
+        ttCandidate ttMuon ;
+        ttMuon.p4 = it->p4() ;
+        ttMuon.eta = it->eta() ;
+        ttMuon.iso =  relIso ;
+        ttMuon.cuts[0] =  d0 ;
+        ttMuon.cuts[1] = it->normChi2() ;
+        ttMuon.cuts[2] = muCalE  ;
+        ttMuon.charge = it->charge() ;
+        ttMuon.nHits = nHit ;
+        ttMuon.pdgId = it->pdgId() ;
+        isoMuons.push_back( ttMuon );
+     }
+ }
+ if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing2 );
  return isoMuons ;
 
 }
@@ -204,22 +246,54 @@ bool TtMuon::IsoMuonID( pat::Muon muon, double isoCut ) {
 
     bool isolation = false;
     //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+    /*
     const reco::IsoDeposit* ecalIso  = muon.ecalIsoDeposit();
     const reco::IsoDeposit* hcalIso  = muon.hcalIsoDeposit();
     const reco::IsoDeposit* trackIso = muon.trackIsoDeposit();
     std::pair<double, int> emR3 = ecalIso->depositAndCountWithin(0.3);
     std::pair<double, int> hdR3 = hcalIso->depositAndCountWithin(0.3);
     std::pair<double, int> tkR3 = trackIso->depositAndCountWithin(0.3);
-
+    //double RelIso =  (emR3.first + hdR3.first + tkR3.first)/muon.pt()  ;
+    */
+    double emIso = muon.isolationR03().emEt ;
+    double hdIso = muon.isolationR03().hadEt ;
+    double tkIso = muon.isolationR03().sumPt ;
+    if ( isoCut > 0.3 ) {
+       emIso = muon.isolationR05().emEt ;
+       hdIso = muon.isolationR05().hadEt ;
+       tkIso = muon.isolationR05().sumPt ;
+    }
     //double RelIso = muon.pt() / ( muon.pt() + emR3.first + hdR3.first + tkR3.first ) ;
     //if ( RelIso >= isoCut ) isolation = true;
     // new Iso definition
-    double RelIso =  (emR3.first + hdR3.first + tkR3.first)/muon.pt()  ;
-
+    double RelIso = ( tkIso + emIso + hdIso )/ muon.pt() ;
     // Isolation Cut
     if ( RelIso < isoCut ) isolation = true;
 
     return isolation;
+}
+
+double TtMuon::IsoMuonID( pat::Muon muon ) {
+
+    //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+    /*
+    const reco::IsoDeposit* ecalIso  = muon.ecalIsoDeposit();
+    const reco::IsoDeposit* hcalIso  = muon.hcalIsoDeposit();
+    const reco::IsoDeposit* trackIso = muon.trackIsoDeposit();
+    std::pair<double, int> emR3 = ecalIso->depositAndCountWithin(0.3);
+    std::pair<double, int> hdR3 = hcalIso->depositAndCountWithin(0.3);
+    std::pair<double, int> tkR3 = trackIso->depositAndCountWithin(0.3);
+    //double RelIso =  (emR3.first + hdR3.first + tkR3.first)/muon.pt()  ;
+    */
+    double emIso = muon.isolationR03().emEt ;
+    double hdIso = muon.isolationR03().hadEt ;
+    double tkIso = muon.isolationR03().sumPt ;
+    double RelIso = ( tkIso + emIso + hdIso )/ muon.pt() ;
+    //double RelIso = muon.pt() / ( muon.pt() + emR3.first + hdR3.first + tkR3.first ) ;
+    //if ( RelIso >= isoCut ) isolation = true;
+    // new Iso definition
+
+    return RelIso;
 }
 
 std::vector<double> TtMuon::MuonEtCorrection( Handle<std::vector<pat::Muon> > mu ) {

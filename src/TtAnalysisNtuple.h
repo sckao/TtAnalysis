@@ -12,13 +12,234 @@
 #include "TFile.h"
 #include "TString.h"
 #include "TMath.h"
+#include "TtFormat.h"
 #include <string>
 #include <iostream>
-//#include "TtFormat.h"
+
 typedef math::XYZTLorentzVector LorentzVector;
 
-
 using namespace std;
+
+// new solution tree
+class SolNtp2 {
+public:
+
+ SolNtp2( TString treeName ) {
+
+    solTree2 = new TTree( treeName ,"");
+ 
+    solTree2->Branch("evtId"     ,&evtId,    "evtId/I");
+
+    solTree2->Branch("nJ"    ,&nJ,     "nJ/I");
+    solTree2->Branch("jpx"   ,&jpx,    "jpx[nJ]/D");
+    solTree2->Branch("jpy"   ,&jpy,    "jpy[nJ]/D");
+    solTree2->Branch("jpz"   ,&jpz,    "jpz[nJ]/D");
+    solTree2->Branch("jE"    ,&jE,     "jE[nJ]/D");
+    solTree2->Branch("bTh"   ,&bTh,    "bTh[nJ]/D");
+
+    solTree2->Branch("nNu"    ,&nNu,   "nNu/I");
+    solTree2->Branch("npx"    ,&npx,   "npx[nNu]/D");
+    solTree2->Branch("npy"    ,&npy,   "npy[nNu]/D");
+    solTree2->Branch("npz"    ,&npz,   "npz[nNu]/D");
+    solTree2->Branch("nE"     ,&nE,    "nE[nNu]/D");
+
+    solTree2->Branch("nMu"    ,&nMu,   "nMu/I");
+    solTree2->Branch("mpx"    ,&mpx,   "mpx[nMu]/D");
+    solTree2->Branch("mpy"    ,&mpy,   "mpy[nMu]/D");
+    solTree2->Branch("mpz"    ,&mpz,   "mpz[nMu]/D");
+    solTree2->Branch("mE"     ,&mE,    "mE[nMu]/D");
+ } 
+
+ /// Destructor
+ virtual ~SolNtp2() {
+    delete solTree2;
+ }
+
+ 
+ void FillB( int eventId, vector<double> bThV, vector<const reco::Candidate*> jp4V, vector<LorentzVector> np4V,
+                          vector<const reco::Candidate*> mp4V ) {
+      evtId   = eventId ;
+
+      nJ      = jp4V.size() ;
+      for (int i = 0; i < nJ; i++) {
+          bTh[i] = bThV[i] ;
+          jpx[i] = jp4V[i]->px() ;
+          jpy[i] = jp4V[i]->py() ;
+          jpz[i] = jp4V[i]->pz() ;
+          jE[i]  = jp4V[i]->energy()  ;
+      }
+
+      nNu      = np4V.size() ;
+      for (int i = 0; i < nNu; i++) {
+          npx[i] = np4V[i].Px() ;
+          npy[i] = np4V[i].Py() ;
+          npz[i] = np4V[i].Pz() ;
+          nE[i]  = np4V[i].E()  ;
+      }
+
+      nMu      = mp4V.size() ;
+      for (int i = 0; i < nMu; i++) {
+          mpx[i] = mp4V[i]->px() ;
+          mpy[i] = mp4V[i]->py() ;
+          mpz[i] = mp4V[i]->pz() ;
+          mE[i]  = mp4V[i]->energy()  ;
+      }
+
+      solTree2->Fill();
+ }
+
+ void FillB1( int eventId, vector<ttCandidate> jp4V, vector<LorentzVector> np4V, vector<ttCandidate> mp4V ) {
+      evtId   = eventId ;
+
+      nJ      = jp4V.size() ;
+      for (int i = 0; i < nJ; i++) {
+          bTh[i] = jp4V[i].cuts[0] ;
+          jpx[i] = jp4V[i].p4.Px() ;
+          jpy[i] = jp4V[i].p4.Py() ;
+          jpz[i] = jp4V[i].p4.Pz() ;
+          jE[i]  = jp4V[i].p4.E()  ;
+      }
+
+      nNu      = np4V.size() ;
+      for (int i = 0; i < nNu; i++) {
+          npx[i] = np4V[i].Px() ;
+          npy[i] = np4V[i].Py() ;
+          npz[i] = np4V[i].Pz() ;
+          nE[i]  = np4V[i].E()  ;
+      }
+
+      nMu      = mp4V.size() ;
+      for (int i = 0; i < nMu; i++) {
+          mpx[i] = mp4V[i].p4.Px() ;
+          mpy[i] = mp4V[i].p4.Py() ;
+          mpz[i] = mp4V[i].p4.Pz() ;
+          mE[i]  = mp4V[i].p4.E()  ;
+      }
+
+      solTree2->Fill();
+ }
+
+
+ void Write() {
+      solTree2->Write();
+ }
+
+ TTree *solTree2;
+
+private:
+
+     static const int maxCount  = 15 ;
+     static const int maxCount1 = 2 ;
+
+     int evtId;
+     int nJ ;
+     double bTh[maxCount];
+     double jpx[maxCount];
+     double jpy[maxCount];
+     double jpz[maxCount];
+     double jE[maxCount];
+
+     int nNu;
+     double npx[maxCount1];
+     double npy[maxCount1];
+     double npz[maxCount1];
+     double nE[maxCount1];
+
+     int nMu;
+     double mpx[maxCount1];
+     double mpy[maxCount1];
+     double mpz[maxCount1];
+     double mE[maxCount1];
+};
+ 
+// new solution tree
+class mcNtp {
+public:
+
+ mcNtp( TString treeName ) {
+
+    mcTree = new TTree( treeName ,"");
+ 
+    mcTree->Branch("evtId"   ,&evtId,   "evtId/I");
+    mcTree->Branch("nParton" ,&nParton, "nParton/I");
+    mcTree->Branch("pId"     ,&pId,     "pId[nParton]/I"); // particle ID or matched ID
+    mcTree->Branch("px"      ,&px,      "px[nParton]/D");
+    mcTree->Branch("py"      ,&py,      "py[nParton]/D");
+    mcTree->Branch("pz"      ,&pz,      "pz[nParton]/D");
+    mcTree->Branch("E"       ,&E,       "E[nParton]/D");
+
+ } 
+
+ /// Destructor
+ virtual ~mcNtp() {
+    delete mcTree;
+ }
+
+ 
+ void FillB( int eventId, int matchId[], vector<ttCandidate> jp4V, LorentzVector np4V, LorentzVector mp4V ) {
+
+      evtId   = eventId ;
+      nParton = jp4V.size() + 2;
+      for (int i = 0; i < 4; i++) {
+          pId[i] = matchId[i] ;
+          px[i] = jp4V[ matchId[i] ].p4.Px() ;
+          py[i] = jp4V[ matchId[i] ].p4.Py() ;
+          pz[i] = jp4V[ matchId[i] ].p4.Pz() ;
+          E[i]  = jp4V[ matchId[i] ].p4.E()  ;
+      }
+      pId[4]= matchId[4];
+      px[4] = np4V.Px() ;
+      py[4] = np4V.Py() ;
+      pz[4] = np4V.Pz() ;
+      E[4]  = np4V.E() ; 
+
+      pId[5]= matchId[5];
+      px[5] = mp4V.Px() ;
+      py[5] = mp4V.Py() ;
+      pz[5] = mp4V.Pz() ; 
+      E[5]  = mp4V.E()  ;
+
+      mcTree->Fill();
+ }
+
+ void FillB1( int eventId, vector<const reco::Candidate*> jp4V ) {
+
+      evtId   = eventId ;
+      nParton = jp4V.size() ;
+      for (size_t i = 0; i < jp4V.size() ; i++) {
+          pId[i] = jp4V[i]->pdgId() ;
+          px[i]  = jp4V[i]->px() ;
+          py[i]  = jp4V[i]->py() ;
+          pz[i]  = jp4V[i]->pz() ;
+          E[i]   = jp4V[i]->energy()  ;
+      }
+
+      mcTree->Fill();
+ }
+
+
+ void Write() {
+      mcTree->Write();
+ }
+
+ TTree *mcTree;
+
+private:
+
+     static const int maxCount = 12;
+
+     int evtId;
+     int nParton;
+     int pId[maxCount];
+     double px[maxCount];
+     double py[maxCount];
+     double pz[maxCount];
+     double E[maxCount];
+
+};
+
+
+
 
 class ObjNtp {
 public:
@@ -152,256 +373,12 @@ private:
 
 };
 
+struct tNtuple {
 
-// new solution tree
-class SolNtp2 {
-public:
-
- SolNtp2( TString treeName ) {
-
-    solTree2 = new TTree( treeName ,"");
- 
-    solTree2->Branch("evtId"     ,&evtId,    "evtId/I");
-
-    solTree2->Branch("nJ"    ,&nJ,     "nJ/I");
-    solTree2->Branch("jpx"   ,&jpx,    "jpx[nJ]/D");
-    solTree2->Branch("jpy"   ,&jpy,    "jpy[nJ]/D");
-    solTree2->Branch("jpz"   ,&jpz,    "jpz[nJ]/D");
-    solTree2->Branch("jE"    ,&jE,     "jE[nJ]/D");
-    solTree2->Branch("jpt"   ,&jpt,    "jpt[nJ]/D");
-    solTree2->Branch("bTh"   ,&bTh,    "bTh[nJ]/D");
-
-    solTree2->Branch("nNu"    ,&nNu,     "nNu/I");
-    solTree2->Branch("npx"    ,&npx,     "npx[nNu]/D");
-    solTree2->Branch("npy"    ,&npy,     "npy[nNu]/D");
-    solTree2->Branch("npz"    ,&npz,     "npz[nNu]/D");
-    solTree2->Branch("nE"     ,&nE,      "nE[nNu]/D");
-    solTree2->Branch("npt"    ,&npt,     "npt[nNu]/D");
-
-    solTree2->Branch("nMu"    ,&nMu,     "nMu/I");
-    solTree2->Branch("mpx"    ,&mpx,     "mpx[nMu]/D");
-    solTree2->Branch("mpy"    ,&mpy,     "mpy[nMu]/D");
-    solTree2->Branch("mpz"    ,&mpz,     "mpz[nMu]/D");
-    solTree2->Branch("mE"     ,&mE,      "mE[nMu]/D");
-    solTree2->Branch("mpt"    ,&mpt,     "mpt[nMu]/D");
- } 
-
- /// Destructor
- virtual ~SolNtp2() {
-    delete solTree2;
- }
-
- 
- void FillB( int eventId, vector<double> bThV, vector<const reco::Candidate*> jp4V, vector<LorentzVector> np4V,
-                          vector<const reco::Candidate*> mp4V ) {
-      evtId   = eventId ;
-
-      nJ      = jp4V.size() ;
-      for (int i = 0; i < nJ; i++) {
-          bTh[i] = bThV[i] ;
-          jpx[i] = jp4V[i]->px() ;
-          jpy[i] = jp4V[i]->py() ;
-          jpz[i] = jp4V[i]->pz() ;
-          jE[i]  = jp4V[i]->energy()  ;
-          jpt[i] = jp4V[i]->pt() ;
-      }
-
-      nNu      = np4V.size() ;
-      for (int i = 0; i < nNu; i++) {
-          npx[i] = np4V[i].Px() ;
-          npy[i] = np4V[i].Py() ;
-          npz[i] = np4V[i].Pz() ;
-          nE[i]  = np4V[i].E()  ;
-          npt[i] = np4V[i].Pt() ;
-      }
-
-      nMu      = mp4V.size() ;
-      for (int i = 0; i < nMu; i++) {
-          mpx[i] = mp4V[i]->px() ;
-          mpy[i] = mp4V[i]->py() ;
-          mpz[i] = mp4V[i]->pz() ;
-          mE[i]  = mp4V[i]->energy()  ;
-          mpt[i] = mp4V[i]->pt() ;
-      }
-
-      solTree2->Fill();
- }
-
-
- void Write() {
-      solTree2->Write();
- }
-
- TTree *solTree2;
-
-private:
-
-     static const int maxCount = 10 ;
-
-     int evtId;
-     int nJ;
-     double bTh[maxCount];
-     double jpx[maxCount];
-     double jpy[maxCount];
-     double jpz[maxCount];
-     double jE[maxCount];
-     double jpt[maxCount];
-
-     int nNu;
-     double npx[maxCount];
-     double npy[maxCount];
-     double npz[maxCount];
-     double nE[maxCount];
-     double npt[maxCount];
-
-     int nMu;
-     double mpx[maxCount];
-     double mpy[maxCount];
-     double mpz[maxCount];
-     double mE[maxCount];
-     double mpt[maxCount];
+    SolNtp2  *muJets ; // Tree hold the solutions
+    mcNtp    *mcmTree ;
+    mcNtp    *genTree ;
 };
 
-// deceased version
-class TtNtp {
-public:
- 
 
- TtNtp() {
-
-    topTree = new TTree("topTree"," Ttbar infomaton tree");
-    genB     = topTree->Branch("gen"    ,&gen.evtId,   "evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
-    selJetB  = topTree->Branch("selJet" ,&selJet.evtId,"evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
-    selMuB   = topTree->Branch("selMu"  ,&selMu.evtId, "evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
-    solNeuB  = topTree->Branch("solNeu" ,&solNeu.evtId,"evtId/I:objId/I:qCut/D:px:py:pz:E:pt"); 
-    solTtB   = topTree->Branch("solTt"  ,&solTt.evtId, "evtId/I:wj1:wj2:bjh:bjl:prob/D:hadTM:lepTM:hadWM:lepWM"); 
-    mcmTtB   = topTree->Branch("mcmTt"  ,&mcmTt.evtId, "evtId/I:wj1:wj2:bjh:bjl:prob/D:hadTM:lepTM:hadWM:lepWM"); 
-
- } 
-
- /// Destructor
- virtual ~TtNtp() {
-    delete topTree;
- }
-
- // Fill topTree
- void FillB_gen( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
-      gen.evtId  = evtId;
-      gen.objId  = objId;
-      gen.qCut   = qCut;
-      gen.px     = px;
-      gen.py     = py;
-      gen.pz     = pz;
-      gen.E      = E ;
-      gen.pt     = pt;
-      genB->Fill();
- }
-
- void FillB_selJet( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
-      selJet.evtId = evtId ;
-      selJet.objId = objId ;
-      selJet.qCut  = qCut  ;
-      selJet.px    = px ;
-      selJet.py    = py ;
-      selJet.pz    = pz ;
-      selJet.E     = E ;
-      selJet.pt    = pt ;
-      selJetB->Fill();
- }
-
- void FillB_selMu( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
-      selMu.evtId = evtId ;
-      selMu.objId = objId ;
-      selMu.qCut  = qCut  ;
-      selMu.px    = px ;
-      selMu.py    = py ;
-      selMu.pz    = pz ;
-      selMu.E     = E ;
-      selMu.pt    = pt ;
-      selMuB->Fill();
- }
-
- void FillB_solNeu( int evtId, int objId, double qCut, double px, double py, double pz, double E, double pt) {
-      solNeu.evtId = evtId ;
-      solNeu.objId = objId ;
-      solNeu.qCut  = qCut  ;
-      solNeu.px    = px ;
-      solNeu.py    = py ;
-      solNeu.pz    = pz ;
-      solNeu.E     = E ;
-      solNeu.pt    = pt ;
-      solNeuB->Fill();
- }
-
- void FillB_solTt( int evtId, int wj1, int wj2, int bjh, int bjl, double prob, double hadTM, double lepTM, double hadWM, double lepWM ) {
-      solTt.evtId = evtId ;
-      solTt.wj1   = wj1 ;
-      solTt.wj2   = wj2 ;
-      solTt.bjh   = bjh ;
-      solTt.bjl   = bjl ;
-      solTt.prob  = prob  ;
-      solTt.hadTM = hadTM ;
-      solTt.lepTM = lepTM ;
-      solTt.hadWM = hadWM ;
-      solTt.lepWM = lepWM ;
-      //solTtB->Fill();
- }
-
- void FillB_mcmTt( int evtId, int wj1, int wj2, int bjh, int bjl, double prob, double hadTM, double lepTM, double hadWM, double lepWM ) {
-      mcmTt.evtId = evtId ;
-      mcmTt.wj1   = wj1 ;
-      mcmTt.wj2   = wj2 ;
-      mcmTt.bjh   = bjh ;
-      mcmTt.bjl   = bjl ;
-      mcmTt.prob  = prob  ;
-      mcmTt.hadTM = hadTM ;
-      mcmTt.lepTM = lepTM ;
-      mcmTt.hadWM = hadWM ;
-      mcmTt.lepWM = lepWM ;
-      mcmTtB->Fill();
- }
- 
- void Fill() {
-      topTree->Fill();
- }
-
- void Write() {
-      topTree->Write();
- }
-
- TTree *topTree;
- TBranch *genB;
- TBranch *selJetB;
- TBranch *selMuB;
- TBranch *solNeuB;
- TBranch *solTtB;
- TBranch *mcmTtB;
-
-private:
-
- struct ObjPar {
-        int evtId;
-        int objId;
-        double qCut;
-        double px;      
-        double py;      
-        double pz;      
-        double E;      
-        double pt;      
- } selJet,selMu,solNeu,gen;
-
- struct EvtSol {
-        int evtId;
-        int wj1;
-        int wj2;
-        int bjh;
-        int bjl;
-        double prob;
-        double hadTM;
-        double lepTM;
-        double hadWM;
-        double lepWM;
- } solTt, mcmTt;
-
-};
 #endif

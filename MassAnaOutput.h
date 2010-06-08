@@ -45,8 +45,7 @@ private:
 
 public:
 
-   MassAnaOutput() {}     
-   MassAnaOutput( TString channel, double massL, double massH );     
+   MassAnaOutput();     
    ~MassAnaOutput();     
 
    void test();

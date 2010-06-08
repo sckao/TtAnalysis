@@ -219,6 +219,26 @@ LorentzVector  TtMET::METfromObjects( std::vector<const reco::Candidate*> theLep
 
 }
 
+LorentzVector  TtMET::METfromObjects( std::vector<ttCandidate>& theLep, std::vector<ttCandidate>& theJets ) {
+
+  double Psum[3] ={ 0.0 };
+  for (size_t i=0; i < theLep.size(); i++ ) {
+      Psum[0] -= theLep[i].p4.Px() ;
+      Psum[1] -= theLep[i].p4.Py() ;
+  }
+  for (size_t i=0; i < theJets.size(); i++ ) {
+      Psum[0] -= theJets[i].p4.Px() ;
+      Psum[1] -= theJets[i].p4.Py() ;
+  }
+
+  Psum[2] = sqrt( Psum[0]*Psum[0] + Psum[1]*Psum[1] );
+
+  LorentzVector theMET( Psum[0], Psum[1], 0., Psum[2] );
+  
+  return theMET;
+
+}
+
 // return 4 momentum of neutrino
 LorentzVector TtMET::METfromNeutrino( const edm::Event& iEvent ) {
 

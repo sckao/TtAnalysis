@@ -67,7 +67,6 @@
 #include "TtElectron.h"
 #include "TtMET.h"
 #include "TtJet.h"
-#include "TtEfficiency.h"
 #include "TtFormat.h"
 #include "TtTools.h"
 
@@ -81,13 +80,6 @@
 
 //
 // class decleration
-//
-class TtEvtSelector;
-class TtMCMatching;
-class TtMuon;
-class TtMET;
-class TtJet;
-
 typedef std::vector<int> Idx;
 
 class TtSemiEventSolution {
@@ -99,43 +91,16 @@ class TtSemiEventSolution {
     ~TtSemiEventSolution();
 
     /// Perform the real analysis
-    void BuildSemiTt(const edm::Event & iEvent,   int topo, int evtId, tNtuple* ntuples );
-
     void RecordSolutions(const edm::Event & iEvent,   int topo, int evtId, int njets, SolNtp2* solTree );
 
     void MCBuildSemiTt(const edm::Event & iEvent, int topo, int evtId, tNtuple* ntuples );
 
     // 
-    bool recoW( std::vector<const reco::Candidate*> wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 = NULL, std::vector<bool>* btags = NULL );
+    bool recoW( std::vector<ttCandidate>& wjets, std::vector<iReco>& wCandidate, HTOP10* histo10 = NULL );
 
-    bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
-                std::vector<iReco>& wCandidate, HTOP10* hitso10 = NULL );
-    bool recoW( std::vector<const reco::Candidate*> lepton, LorentzVector metP4,
-                std::vector<iReco>& wCandidates, bool FoundWSolution, HTOP10* hitso10 = NULL );
+    bool recoW( ttCandidate& lepton, LorentzVector metP4, std::vector<iReco>& wCandidate, HTOP10* hitso10 = NULL );
+    bool recoW( ttCandidate& lepton, LorentzVector metP4, std::vector<iReco>& wCandidates, bool FoundWSolution, HTOP10* hitso10 = NULL );
 
-    bool recoTop( std::vector<iReco> wCandidate, std::vector<const reco::Candidate*> bjets, std::vector<iReco>& tCandidate, std::vector<bool>* btags = NULL , HTOP11* histo11 = NULL, bool isMCMatching = false );
-
-    // General method 
-    std::vector<iReco> recoSemiLeptonicTtEvent( std::vector<const reco::Candidate*> theJets,
-                  std::vector<const reco::Candidate*> theLep, std::vector<LorentzVector>& solvedMetP4,
-                  std::vector<bool>* btags = NULL, std::vector<iProb>* kProb = NULL , tNtuple* ntuples = NULL );
- 
-    void recoWJetsEvent( std::vector<const reco::Candidate*> theJets,
-                         std::vector<const reco::Candidate*> theLep, std::vector<LorentzVector>& solvedMetP4,
-                         std::vector<bool>* btags = NULL, tNtuple* ntuples = NULL );
-
-    void HadronicTopCombinatoric( std::vector<iReco>& tCandidates, std::vector<iReco>& wCandidates, iReco t2, iReco w2 );
-    
-    void Algo_PtMin( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
-    void Algo_Beta( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> lepWs, std::vector<iReco> hadWs, std::vector<Idx>& twIdx );
-    void Algo_Zero( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx, std::vector<bool>* bTags = NULL );
-    void Algo_KConstrain( std::vector<iReco> lepTops, std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx, std::vector<iProb>* kProb = NULL, std::vector<bool>* bTags = NULL );
-    void Algo_WJets( std::vector<iReco> hadTops, std::vector<iReco> hadWs, std::vector<Idx>& twIdx, std::vector<bool>* bTags = NULL );
-  
-    void ResultRecord( int it, std::vector<Idx> twIdx, 
-                       std::vector<iReco> lepTops, std::vector<iReco> hadTops,
-                       std::vector<iReco> lepWs,   std::vector<iReco> hadWs, 
-                       std::vector<iProb>* kProb= NULL, tNtuple* ntuples = NULL );
    
    private:
       // ----------member data ---------------------------
@@ -148,37 +113,29 @@ class TtSemiEventSolution {
     TtTools*       tools;
 
     std::vector<iReco> semiTt;
-    std::vector<const reco::Candidate*> isoLep;
-    std::vector<const reco::Candidate*> selectedJets;
-    //LorentzVector metP4;
+    std::vector<ttCandidate> isoLep;
+    std::vector<ttCandidate> selectedJets;
     std::vector<LorentzVector> solvedMetP4;
-    //std::vector<double> KProbability ;
-    std::vector<iProb> KProbability ;
 
-    std::vector<iReco> semiMCTt; 
-    std::vector<const reco::Candidate*> mcLep;
-    std::vector<const reco::Candidate*> mcWJets ;
-    std::vector<const reco::Candidate*> mcbJets ;
+    std::vector<ttCandidate> mcLep;
+    std::vector<ttCandidate> mcWJets ;
+    std::vector<LorentzVector> mcbJets ;
    
-    int evt_Id;
     int ini_Id;
     int ent_Id;
     int ent_sz;
     int pass;
 
-    // Switch for debug output
+    // variables for py config
     bool debug;
-    bool btag;
-    int  nbtagged;
     std::vector<double> jetSetup;
 
-    std::string recoMuon;
+    //std::string recoMuon;
     std::string algo;
     edm::InputTag muonSrc;
     edm::InputTag electronSrc;
     edm::InputTag metSrc;
     edm::InputTag jetSrc;
-    edm::InputTag genJetSrc;
     edm::InputTag genSrc;
 
 };

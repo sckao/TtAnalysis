@@ -39,8 +39,11 @@ class HadWMassFitter : public TObject {
 
 private:
 
-   double mL;
-   double mH;
+
+   vector<double> M2M3Cut;
+   double LepM2tCutL ;
+   double dM3Cut ;
+   double JES ;
 
    double sigma1;
    double sigma2;
@@ -66,7 +69,7 @@ private:
 
 public:
 
-   HadWMassFitter( double massL, double massH );     
+   HadWMassFitter();     
    ~HadWMassFitter();     
 
    void FitW( TLorentzVector jetv1, TLorentzVector jetv2, Double_t* pars, Double_t* errs, bool isJES );
@@ -91,9 +94,10 @@ public:
 
    bool JetPtFilter( vector<TLorentzVector> jpv );
 
-   Double_t jetAngle( TLorentzVector v1, TLorentzVector v2 );
+   double jetAngle( TLorentzVector v1, TLorentzVector v2 );
+   double minTheta_WDecay( TLorentzVector v1, TLorentzVector v2 );
 
-   //void GetPermutes( int njets, vector<jlist>& jlistV );
+   vector<TLorentzVector> NeuP4Solution( TLorentzVector muP4, TLorentzVector neuP4 ) ;
 
    vector<TLorentzVector> GetLorentzVector( jlist Ls, double jpx[], double jpy[], double jpz[], double jE[] );
 
@@ -101,8 +105,10 @@ public:
 
    vector<TLorentzVector> GetEventObjects( int nj, double jpx[], double jpy[], double jpz[], double jE[], double mpx, double mpy, double mpz, double mE );
 
+   void ResetCuts( double m2L = -1, double m2H = -1, double m3L = -1, double m3H = -1, double lepM2tL = -1, double lepM2tH = -1, bool GetDefault = false );
+
    // methods for old soltree
-   void ReFitSolution( string mName, recoObj* wObj, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0, bool smearing = false, TTree* theTree = NULL );
+   double ReFitSolution( string mName, recoObj* wObj, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0, bool smearing = false, TTree* theTree = NULL );
 
    void MCSolution( string fileName, recoObj* wObj );
 

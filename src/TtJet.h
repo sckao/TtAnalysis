@@ -78,7 +78,6 @@
 #include "TtAnalysisNtuple.h"
 #include "TtMuon.h"
 #include "TtMCMatching.h"
-#include "TtEvtSelector.h"
 #include "TtFormat.h"
 
 #include "TFile.h"
@@ -94,9 +93,8 @@
 //
 //typedef math::XYZTLorentzVector LorentzVector;
 
-class TtMuon;
-class TtMCMatching;
-class TtEvtSelector;
+//class TtMuon;
+//class TtMCMatching;
 
 template<typename T> 
 struct EtSorting{
@@ -121,17 +119,6 @@ class TtJet {
     void MuonAndJet( std::vector<const reco::Candidate*> patJet, const reco::Candidate* isoMu, HOBJ1* histo1 );
     void ElectronAndJet( std::vector<const reco::Candidate*> patJet, const reco::Candidate* isoEl, HOBJ1* histo1 );
 
-    void JetAndLepW( std::vector<const reco::Candidate*> patJet,  LorentzVector p1, HTOP1* histo1 );
-
-    void matchedWJetsAnalysis(std::vector<jmatch> mcwjets, std::vector<const reco::Candidate*> isoMuons,
-                              edm::Handle<std::vector<pat::Jet> > patJets, HTOP8* histo8);
-
-    void matchedbJetsAnalysis(std::vector<jmatch> mcjets, std::vector<const reco::Candidate*> isoMuons,
-                              edm::Handle<std::vector<pat::Jet> > patJets, HTOP7* histo7);
-
-    std::vector< const reco::Candidate* > WJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons, double JetEtCut );
-    std::vector< const reco::Candidate* > bJetSelection( edm::Handle<std::vector<pat::Jet> > jets, std::vector<const reco::Candidate*> IsoMuons, string bTagAlgo );    
-
     double NofJetConstituents( pat::Jet theJet );
     double EoverH( pat::Jet theJet );
     //return W 4-momentum
@@ -143,14 +130,17 @@ class TtJet {
     FreeTrajectoryState getFTS(GlobalPoint GP, GlobalVector GV, int charge,
                                const AlgebraicSymMatrix66& cov, const MagneticField* field);
 
-    void bTagAnalysis( const edm::Event& iEvent, edm::Handle<std::vector<pat::Jet> > patJet, HBJet* histo );
+    void bTagAnalysis( const edm::Event& iEvent, edm::Handle<std::vector<pat::Jet> > patJet, double etaCut, double EtCut, HBJet* histo );
 
     //void JetTrigger( edm::Handle<std::vector<pat::Jet> > jets, edm::Handle <edm::TriggerResults> triggers);
 
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL, string bTagAlgo = "", std::vector<double>* bDisList = NULL );
-    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::CaloJet> > caloJets, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, std::vector<bool>* bTags = NULL );
+    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, string bTagAlgo = "", std::vector<double>* bDisList = NULL );
+    std::vector<const reco::Candidate*> JetSelection( edm::Handle<std::vector<reco::CaloJet> > caloJets, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL );
 
-    std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<pat::Jet> > recoJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., std::vector<bool>* bTags = NULL, string bTagAlgo="", HOBJ1* histo1 = NULL, std::vector<double>* bDisList = NULL );
+    std::vector< const reco::Candidate* > SoftJetSelection( edm::Handle<std::vector<pat::Jet> > recoJet, std::vector<const reco::Candidate*> IsoMuons, double EtThreshold, double fScale = 1., string bTagAlgo="", HOBJ1* histo1 = NULL, std::vector<double>* bDisList = NULL );
+
+    std::vector<ttCandidate> JetSelection1( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<ttCandidate> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, string bTagAlgo = "" );
+    std::vector<ttCandidate> SoftJetSelection1( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<ttCandidate> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, string bTagAlgo = "" );
 
     template<typename jetT>
     void JetEtSpectrum( std::vector<jetT> theJet, HOBJ1* histo1);
@@ -160,8 +150,6 @@ class TtJet {
    private:
 
     TtTools*       tools;
-    TtMuon*        ttMuon;
-    TtMCMatching*  JetMatching; 
 
     edm::InputTag caloSrc;
     edm::InputTag muonSrc;

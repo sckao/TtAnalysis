@@ -56,27 +56,17 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
   // Create the root file
   theFile = new TFile(rootFileName.c_str(), "RECREATE");
 
-  theFile->mkdir("Muon_Iso");
-  theFile->cd();
   theFile->mkdir("Muon_All");
-  theFile->cd();
-  theFile->mkdir("Muon_MC");
   theFile->cd();
   theFile->mkdir("Ele_Iso");
   theFile->cd();
   theFile->mkdir("Ele_All");
   theFile->cd();
-  theFile->mkdir("Ele_MC");
-  theFile->cd();
 
 
   hMu_All  = new HOBJ3();
-  hMu_Iso  = new HOBJ3();
-  hMu_MC   = new HOBJ3();
-
   hEl_All  = new HOBJ4();
   hEl_Iso  = new HOBJ4();
-  hEl_MC   = new HOBJ4();
 
 }
 
@@ -94,29 +84,20 @@ MuonAnalysis::~MuonAnalysis()
    delete MCMatching;
 
    theFile->cd();
-   hMu_Iso->Write("Muon_Iso",theFile);
-   theFile->cd();
    hMu_All->Write("Muon_All", theFile);
-   theFile->cd();
-   hMu_MC->Write("Muon_MC", theFile);
    theFile->cd();
    hEl_Iso->Write("Ele_Iso",theFile);
    theFile->cd();
    hEl_All->Write("Ele_All", theFile);
-   theFile->cd();
-   hEl_MC->Write("Ele_MC", theFile);
    theFile->cd();
 
    if (debug) cout << "  Number of Events"<< evtIt << endl;
    //Release the memory
 
    delete hMu_All;
-   delete hMu_Iso;
-   delete hMu_MC;
 
    delete hEl_All;
    delete hEl_Iso;
-   delete hEl_MC;
 
    //Close the Root file
    theFile->Close();
@@ -158,35 +139,25 @@ void MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    //int topo = evtSelected->MCEvtSelection(genParticles);
 
    // 2. Muon Isolation analysis
-
-   double newsets[] = { 5, 2.4, 10 };
-   std::vector<double> muSetup0( newsets, newsets+3 ) ;
-   std::vector<const pat::Muon*> mostMuons = ttMuon->GeneralMuonSelection( muons, iEvent, muSetup0 );
-   ttMuon->PatMuonScope( mostMuons, iEvent, hMu_All);
-
-   std::vector<double> muSetup1=  muSetup ;
-   std::vector<const pat::Muon*> isoMuons = ttMuon->GeneralMuonSelection( muons, iEvent, muSetup1 );
-   ttMuon->PatMuonScope( isoMuons, iEvent, hMu_Iso);
+   ttMuon->PatMuonScope( muons, iEvent, hMu_All);
 
    //ttMuon->MuonTrigger( muons, triggers );
    //3. Electron Studies
-   std::vector<const reco::Candidate*> isoEle   = ttEle->IsoEleSelection(electrons, hEl_All, hEl_Iso );
+   ttEle->PatEleScope( electrons, hEl_All );
 
+   /*
    if ( !isData ) {
-      /*
-      std::vector<const reco::Candidate*> isoMuReco ;
-      for (size_t i=0; i< isoMuons.size(); i++) {
-          isoMuReco.push_back( isoMuons[i] );
-      }*/
       //std::vector<const reco::Candidate*> mcMuons = MCMatching->matchMuon(genParticles, isoMuReco );
       //ttMuon->matchedMuonAnalysis( mcMuons, hMu_MC );
-      std::vector<const pat::Muon*> mcMuons = MCMatching->matchMuon(genParticles, isoMuons );
+      std::vector<const reco::Candidate*> genCollects = MCMatching->GenTtCollection( genParticles ) ;
+
+      std::vector<const pat::Muon*> mcMuons = MCMatching->matchMuon( genCollects, isoMuons );
       ttMuon->PatMuonScope( mcMuons, iEvent, hMu_MC );
 
-      std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron(genParticles, isoEle );
+      std::vector<const reco::Candidate*> mcElectrons = MCMatching->matchElectron( genCollects, isoEle );
       ttEle->matchedElectronAnalysis( mcElectrons, hEl_MC );
    }
-
+   */
 }
 
 //define this as a plug-in

@@ -1,15 +1,20 @@
 #include "MassAnaOutput.h"
 
-MassAnaOutput::MassAnaOutput( TString channel, double massL, double massH ){
+MassAnaOutput::MassAnaOutput(){
  
   //fitfunc  = new MassFitFunction();
-  fitter   = new MassAna( channel, massL, massH ); 
-  algo0    = new AlgoZero( channel, massL, massH );
-  algok    = new AlgoKcon( channel, massL, massH );
-  fitInput = new MassAnaInput( channel, massL, massH );
+
+  fitter   = new MassAna(); 
+  algo0    = new AlgoZero();
+  algok    = new AlgoKcon();
+  fitInput = new MassAnaInput();
   fitInput->Initialize( &hfolder ); 
+
+  string decayType;
+  fitInput->GetParameters( "DecayType", &decayType );
+  ch_name = decayType;
+
   ptype = ".gif";
-  ch_name = channel;
 
 }
 

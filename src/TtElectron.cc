@@ -106,20 +106,19 @@ void TtElectron::matchedElectronAnalysis( std::vector<const reco::Candidate*>  m
      double EovP = caloE / (*it)->p() ;
  
      double sumE = emR.first + hdR.first ;
-     int calR_count = emR.second + hdR.second ;
 
      double emCompensation = ecalIso->depositWithin(0.055);
      //double sumIso = emR.first + hdR.first + tkR.first - emCompensation ;
      double sumIso = emR.first + hdR.first - emCompensation ;
      double IsoValue = it1->et() / (it1->et() + sumIso );
 
-     histo4->Fill_4a( (*it)->pt(), (*it)->eta(), emR.first, hdR.first, tkR.first, sumE, calR_count, tkR.second,
-                      IsoValue, HovE, EovP );
+     histo4->Fill_4a( (*it)->pt(), (*it)->eta(), emR.first, hdR.first, tkR.first, sumE, IsoValue, HovE, EovP );
 
  }
 
 }
 
+/*
 std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vector<pat::Electron> > patEle, HOBJ4* histo1, HOBJ4* histo2 ) {
 
  int elSize = static_cast<int>(  patEle->size() );
@@ -173,7 +172,7 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
  return isoEle ;
 
 }
-
+*/
 std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vector<pat::Electron> > patEle) {
 
  //std::vector<pat::Electron> isoEle;
@@ -182,30 +181,135 @@ std::vector<const reco::Candidate*> TtElectron::IsoEleSelection( Handle<std::vec
  for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
 
      //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+     /*
      const reco::IsoDeposit* ecalIso  = it->ecalIsoDeposit();
      const reco::IsoDeposit* hcalIso  = it->hcalIsoDeposit();
      const reco::IsoDeposit* trackIso = it->trackIsoDeposit();
      std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
      std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3); 
-
      double emCompensation = ecalIso->depositWithin(0.055);
-     //double sumIso = emR.first + hdR.first + tkR.first - emCompensation;
-     double sumIso = emR.first + hdR.first - emCompensation;
+     double sumIso = emR.first + hdR.first + tkR.first - emCompensation;
      double IsoValue = it->et() / (it->et() + sumIso );
+     */
+
+     double emIso = it->dr04EcalRecHitSumEt() ;
+     double hdIso = it->dr04HcalTowerSumEt();
+     double tkIso = it->dr04TkSumPt() ;
+     double IsoValue = (emIso + hdIso+ tkIso) / it->et() ;
+     //double IsoValue =  it->et() / ( it->et() + emIso + hdIso );
       
      double EovP = it->caloEnergy() / it->p() ;
      double HovE = it->hadronicOverEm() ;
 
      // Isolation Cut
      if ( it->pt() < eleSetup[0] || fabs( it->eta() ) > eleSetup[1] )  continue ;
-     if ( IsoValue < eleSetup[2] ) continue;     
+     if ( IsoValue > eleSetup[2] ) continue;     
+     //if ( IsoValue < eleSetup[2] ) continue;     
      if ( HovE > eleSetup[3] ) continue;
-     if ( EovP < eleSetup[4] ) continue;
+     if ( EovP < eleSetup[4] || EovP > 1.2 ) continue;
+     //if ( EovP < eleSetup[4]  ) continue;
 
      isoEle.push_back( &*it );
 
  }
+ return isoEle ;
+
+}
+
+void TtElectron::PatEleScope( Handle<std::vector<pat::Electron> > patEle, HOBJ4* histo ) {
+
+ int elSize = static_cast<int>(  patEle->size() );
+ if ( elSize > 20 ) elSize = 20;
+
+ int nIsoEl = 0 ;
+ for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
+
+     //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+     /*
+     const reco::IsoDeposit* ecalIso  = it->ecalIsoDeposit();
+     const reco::IsoDeposit* hcalIso  = it->hcalIsoDeposit();
+     const reco::IsoDeposit* trackIso = it->trackIsoDeposit();
+     std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
+     std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
+     std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3); 
+     double emCompensation = ecalIso->depositWithin(0.055);
+     double sumIso = emR.first + hdR.first + tkR.first - emCompensation;
+     double IsoValue = it->et() / (it->et() + sumIso );
+     */
+
+     double emIso = it->dr04EcalRecHitSumEt() ;
+     double hdIso = it->dr04HcalTowerSumEt();
+     double tkIso = it->dr04TkSumPt() ;
+     double IsoValue = (emIso + hdIso+ tkIso) / it->et() ;
+     double sumE = emIso + hdIso ;
+     double EovP = it->caloEnergy() / it->p() ;
+     double HovE = it->hadronicOverEm() ;
+
+     histo->Fill_4a( it->pt(), it->eta(), emIso, hdIso, tkIso, sumE, IsoValue, HovE, EovP );
+
+     // Isolation Cut
+     if ( it->pt() < eleSetup[0] || fabs( it->eta() ) > eleSetup[1] )  continue ;
+     if ( IsoValue > eleSetup[2] ) continue;     
+     if ( HovE > eleSetup[3] ) continue;
+     if ( EovP < eleSetup[4] || EovP > 1.2 ) continue;
+     nIsoEl++ ;
+ }
+
+ histo->Fill_4b( elSize, nIsoEl ); 
+
+}
+
+std::vector<ttCandidate> TtElectron::IsoEleSelection1( Handle<std::vector<pat::Electron> > patEle) {
+
+ std::vector<ttCandidate> isoEle;
+ isoEle.clear();
+ for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
+
+     //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+     /*
+     const reco::IsoDeposit* ecalIso  = it->ecalIsoDeposit();
+     const reco::IsoDeposit* hcalIso  = it->hcalIsoDeposit();
+     const reco::IsoDeposit* trackIso = it->trackIsoDeposit();
+     std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
+     std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
+     std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3); 
+     double emCompensation = ecalIso->depositWithin(0.055);
+     double sumIso = emR.first + hdR.first + tkR.first - emCompensation;
+     double IsoValue = it->et() / (it->et() + sumIso );
+     */
+
+     double emIso = it->dr04EcalRecHitSumEt() ;
+     double hdIso = it->dr04HcalTowerSumEt();
+     double tkIso = it->dr04TkSumPt() ;
+     double IsoValue = (emIso + hdIso+ tkIso) / it->et() ;
+     //double IsoValue =  it->et() / ( it->et() + emIso + hdIso );
+      
+     double EovP = it->caloEnergy() / it->p() ;
+     double HovE = it->hadronicOverEm() ;
+
+     // Isolation Cut
+     if ( it->pt() < eleSetup[0] || fabs( it->eta() ) > eleSetup[1] )  continue ;
+     if ( IsoValue > eleSetup[2] ) continue;     
+     //if ( IsoValue < eleSetup[2] ) continue;     
+     if ( HovE > eleSetup[3] ) continue;
+     if ( EovP < eleSetup[4] || EovP > 1.2 ) continue;
+     //if ( EovP < eleSetup[4]  ) continue;
+
+     ttCandidate ttEle ;
+     ttEle.p4 = it->p4() ;
+     ttEle.eta = it->eta() ;
+     ttEle.iso =  IsoValue ;
+     ttEle.cuts[0] = EovP ;
+     ttEle.cuts[1] = HovE ;
+     ttEle.cuts[2] = it->caloEnergy()  ;
+     ttEle.charge = it->charge() ;
+     ttEle.nHits = 0 ;
+     ttEle.pdgId = it->pdgId() ;
+     isoEle.push_back( ttEle );
+
+ }
+
  return isoEle ;
 
 }

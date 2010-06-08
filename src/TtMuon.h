@@ -54,6 +54,7 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
+//#include "DataFormats/MuonReco/interface/MuonEnergy.h"
 
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/Math/interface/Point3D.h"
@@ -61,6 +62,7 @@
 #include "TtAnalysisHisto.h"
 #include "TtObjHisto.h"
 #include "TtAnalysisNtuple.h"
+#include "TtFormat.h"
 
 #include "TFile.h"
 #include <vector>
@@ -83,13 +85,13 @@ class TtMuon {
     ~TtMuon();
 
     /// Perform the real analysis
-    std::vector<const pat::Muon*> GeneralMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu, const edm::Event& iEvent, std::vector<double>& Settings );
-
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
+    std::vector<ttCandidate> IsoMuonSelection1( edm::Handle<std::vector<pat::Muon> > patMu );
 
     std::vector<const reco::Candidate*> nonIsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
 
     bool IsoMuonID( pat::Muon Mu, double isoCut );
+    double IsoMuonID( pat::Muon Mu );
 
     std::vector<double> MuonEtCorrection( edm::Handle<std::vector<pat::Muon> > mu );
 
@@ -97,7 +99,7 @@ class TtMuon {
 
     void matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HOBJ3* histo  ); 
 
-    void PatMuonScope( std::vector<const pat::Muon*>& theMu, const edm::Event& iEvent, HOBJ3* histo);
+    void PatMuonScope( edm::Handle<std::vector<pat::Muon> > mu, const edm::Event& iEvent, HOBJ3* histo);
 
     double PatMuonRelIso( const pat::Muon& patMu, double ConeSize, double& ecalIso, double& hcalIso, double& trkIso );
 

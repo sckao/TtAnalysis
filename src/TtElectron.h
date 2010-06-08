@@ -54,6 +54,7 @@
 
 #include "TtAnalysisHisto.h"
 #include "TtObjHisto.h"
+#include "TtFormat.h"
 #include "TtAnalysisNtuple.h"
 
 #include "TFile.h"
@@ -81,12 +82,15 @@ class TtElectron {
 
     void matchedElectronAnalysis( std::vector<const reco::Candidate*> patMu, HOBJ4* histo4 );
 
-    std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patEle, 
-                                                         HOBJ4* histo1, HOBJ4* histo2 );
+    //std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patEle, 
+    //                                                     HOBJ4* histo1, HOBJ4* histo2 );
 
     std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patEle );
 
-    
+    std::vector<ttCandidate> IsoEleSelection1( edm::Handle<std::vector<pat::Electron> > patEle );
+
+    void PatEleScope( edm::Handle<std::vector<pat::Electron> > patEle, HOBJ4* histo ) ;
+   
 
    private:
    std::vector<double> eleSetup ;

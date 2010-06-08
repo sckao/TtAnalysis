@@ -10,6 +10,7 @@
 #include <TLegend.h>
 #include <TRandom.h>
 #include <TRandom2.h>
+#include <TRandom3.h>
 #include <TCanvas.h>
 #include <TSystem.h>
 #include <vector>
@@ -30,7 +31,7 @@ private:
 
 public:
 
-   PseudoExp( double massL, double massH );     
+   PseudoExp();     
    ~PseudoExp();     
  
    // random seed = 0 => using the system time for the seed
@@ -39,7 +40,9 @@ public:
  
    vector<int> EventShuffle( int theSize, int RandomSeed );
  
-   void PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed = 0 ) ;
+   void PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed = 0, bool ReMET = false ) ;
+ 
+   void JetEtReSort( vector<TLorentzVector>& vs );
    
    //ClassDef(PseudoExp, 1);
 

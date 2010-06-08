@@ -43,6 +43,7 @@ class hadWBoson : public recoObj {
   double lepM2_Y;
   double hadM2_Y;
   double hadM2_Mt ;
+  double lepM2_Mt ;
   double lepM3_eta;
   double hadM3_eta;
   double lepM3_Y;
@@ -55,7 +56,7 @@ class hadWBoson : public recoObj {
   public:
 
   hadWBoson(){
-    hM2M3    = new TH2D("hM2M3", " M3(X) vs M2(Y) ", 15, 50, 350, 15, 10, 310);
+    hM2M3    = new TH2D("hM2M3", " M3(X) vs M2(Y) ", 18, 0, 360, 15, 0, 300);
     hM3M3    = new TH2D("hM3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
     hM2M2t   = new TH2D("hM2M2t", " M2t(X) vs M2(Y) ", 15, 10, 310, 15, 10, 310);
     hEtaM2   = new TH2D("hEtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
@@ -64,6 +65,7 @@ class hadWBoson : public recoObj {
     hYM3     = new TH2D("hYM3", " Rapidity of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
     hM2MET   = new TH2D("hM2MET", " M2 had(X) vs MET(Y) ", 15, 10, 310, 12, 0, 240);
     hM2dF    = new TH2D("hM2dF", " M2 had(X) vs dPhi( M2 ) ", 15, 10, 310, 32, 0., 3.2);
+    hMETM2t  = new TH2D("hMETM2t", " MET(X) vs lep M2t(Y) ", 24, 0, 240, 15, 0, 150);
   }
 
   virtual ~hadWBoson(){
@@ -76,6 +78,7 @@ class hadWBoson : public recoObj {
     delete hYM3 ;
     delete hM2MET ;
     delete hM2dF ;
+    delete hMETM2t ;
   }
 
   void Fillh( double weight, double scale = 1. ) {
@@ -89,11 +92,14 @@ class hadWBoson : public recoObj {
        hM2MET->Fill( hadM2, MET, weight*scale );
        double dF = ( fabs(hadF-lepF) < 3.1416 ) ? fabs(hadF-lepF) : 6.2832 - fabs(hadF-lepF) ;
        hM2dF->Fill( hadM2, dF , weight*scale );
+       hMETM2t->Fill( MET, lepM2_Mt , weight*scale );
   }
   void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
        TLorentzVector vM2 = v0 + v1 ;
        TLorentzVector vM3 = v0 + v1 + v2;
-       double Mt2 = (v0.Et()+v1.Et())*(v0.Et()+v1.Et()) - vM2.Pt()*vM2.Pt() ;
+       //double Mt2 = (v0.Et()+v1.Et())*(v0.Et()+v1.Et()) - vM2.Pt()*vM2.Pt() ;
+       double dphi = v0.DeltaPhi( v1 ) ;
+       double Mt2 = 2.*v0.Pt()*v1.Pt()*( 1. - cos(dphi) );
        hadM2 = vM2.M() ;
        hadM3 = vM3.M() ;
        hadM2_Mt  = ( Mt2 >= 0 ) ? sqrt(Mt2) : -1 ;
@@ -106,12 +112,15 @@ class hadWBoson : public recoObj {
   void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){
        TLorentzVector vM2 = v4 + v5 ;
        TLorentzVector vM3 = v3 + v4 + v5;
+       double dphi = v4.DeltaPhi( v5 ) ;
+       double Mt2 = 2.*v4.Pt()*v5.Pt()*( 1. - cos(dphi) );
+       lepM2_Mt = sqrt( Mt2 ) ;
        lepM3 = vM3.M() ;
        lepM2_Y = vM2.Rapidity() ;
        lepM3_Y = vM3.Rapidity() ;
        lepM2_eta = vM2.Eta() ;
        lepM3_eta = vM3.Eta() ;
-       MET = v4.Pt() ;
+       MET = v5.Pt() ;
        lepF = vM2.Phi() ;
   }
   void scale( double scale ) {
@@ -124,6 +133,7 @@ class hadWBoson : public recoObj {
        hYM3->Scale( scale );
        hM2MET->Scale( scale );
        hM2dF->Scale( scale );
+       hMETM2t->Scale( scale );
   }
   vector<TH2D*> Output2D(){
        h2Dlist.clear() ;
@@ -136,6 +146,7 @@ class hadWBoson : public recoObj {
        h2Dlist.push_back(hYM3);
        h2Dlist.push_back(hM2MET);
        h2Dlist.push_back(hM2dF);
+       h2Dlist.push_back(hMETM2t);
        return h2Dlist ;
   }
   void Fill2DVec( vector<TH2D*>& hList ){
@@ -148,6 +159,7 @@ class hadWBoson : public recoObj {
        hList.push_back(hYM3);
        hList.push_back(hM2MET);
        hList.push_back(hM2dF);
+       hList.push_back(hMETM2t);
   }
 
   TH2D* hM2M3 ;
@@ -159,6 +171,7 @@ class hadWBoson : public recoObj {
   TH2D* hM2M2t ;
   TH2D* hM2MET ;
   TH2D* hM2dF ;
+  TH2D* hMETM2t ;
   vector<TH2D*>  h2Dlist ;
 
   //ClassDef(hadWBoson, 1);
@@ -185,14 +198,10 @@ class bgCounter : public recoObj {
   }
 
   void Fillh( double weight, double scale = 1. ) {
-       //if ( hadM2 > 50 && hadM3 > 50 && hadM2 < 300 && hadM3 < 350 ) {
-          hadM2M3  = hadM2M3  + (weight*scale) ; 
-          shadM2M3 = shadM2M3 + (weight*scale*scale) ; 
-       //}
-       //if ( lepM3 > 50 && hadM3 > 50 && lepM3 < 300 && hadM3 < 350 ) {
-          M3M3   = M3M3   + (weight*scale) ; 
-          sM3M3  = sM3M3  + (weight*scale*scale) ; 
-       //}
+       hadM2M3  = hadM2M3  + (weight*scale) ; 
+       shadM2M3 = shadM2M3 + (weight*scale*scale) ; 
+       M3M3   = M3M3   + (weight*scale) ; 
+       sM3M3  = sM3M3  + (weight*scale*scale) ; 
   }
 
   void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
@@ -276,11 +285,13 @@ class lepWBoson : public recoObj {
        hadM3_phi = vM3.Phi() ;
   }
 
-  //             v3 : bjet         v4 : neutrino        v5 : muon             
+  //             v3 : bjet          v4 : muon        v5 : neutrino             
   void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){
        TLorentzVector vM2 = v4 + v5 ;
        TLorentzVector vM3 = v3 + v4 + v5;
-       double Mt2 = (v4.Et()+v5.Et())*(v4.Et()+v5.Et()) - ( vM2.Pt()*vM2.Pt() );
+       //double Mt2 = (v4.Et()+v5.Et())*(v4.Et()+v5.Et()) - ( vM2.Pt()*vM2.Pt() );
+       double dphi = v4.DeltaPhi( v5 ) ;
+       double Mt2 = 2.*v4.Pt()*v5.Pt()*( 1. - cos(dphi) );
        lepM2t = sqrt( Mt2 ) ;
        lepM3 = vM3.M() ;
        lepM3_phi = vM3.Phi() ;
@@ -334,7 +345,7 @@ class hObjs : public recoObj {
     metH    = new TH1D("metH", " MET     ", 70, 0, 350);
 
     muEta   = new TH1D("muEta", " muon Eta ", 55, -2.7, 2.7 );
-    lepWMt  = new TH1D("lepWMt", " lepW Mt ", 50, 0, 150);
+    lepWMt  = new TH1D("lepWMt", " lep M2t ", 15, 0, 150);
   }
 
   virtual ~hObjs(){
@@ -361,14 +372,16 @@ class hObjs : public recoObj {
   }
 
   void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
-       pt0 = v0.Pt() ;
-       pt1 = v1.Pt() ;
-       pt2 = v2.Pt() ;
+       pt0 = v0.Et() ;
+       pt1 = v1.Et() ;
+       pt2 = v2.Et() ;
   }
   void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){
        TLorentzVector vM2 = v4 + v5 ;
-       double Mt2 = (v4.Et()+v5.Et())*(v4.Et()+v5.Et()) - ( vM2.Pt()*vM2.Pt() );
-       pt3 = v3.Pt() ;
+       //double Mt2 = (v4.Et()+v5.Et())*(v4.Et()+v5.Et()) - ( vM2.Pt()*vM2.Pt() );
+       double dphi = v4.DeltaPhi( v5 ) ;
+       double Mt2 = 2.*v4.Pt()*v5.Pt()*( 1. - cos(dphi) );
+       pt3 = v3.Et() ;
        pt4 = v4.Pt() ;
        pt5 = v5.Pt() ;
        mu_eta = v4.Eta() ;

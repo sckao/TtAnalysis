@@ -28,19 +28,19 @@ using namespace std;
 
 int main() { 
 
-  MassAnaInput   *massInput = new MassAnaInput( "had", 0, 480 );
-  //MassAna        *theFitter = new MassAna( "had", 0, 480 );
-  //MassAnaOutput  *FitResult = new MassAnaOutput( "had", 0., 480. );
-  PseudoExp      *pExp      = new PseudoExp( 0., 480. );
-  WAnalysis      *WFitter   = new WAnalysis( 0., 480. );
-  JetSpectrum    *h_objs    = new JetSpectrum(0., 480. );
-  BgEstimation   *bgEst     = new BgEstimation(0., 480. );
+  MassAnaInput   *massInput = new MassAnaInput();
+  //MassAna        *theFitter = new MassAna();
+  //MassAnaOutput  *FitResult = new MassAnaOutput();
+  PseudoExp      *pExp      = new PseudoExp();
+  WAnalysis      *WFitter   = new WAnalysis();
+  JetSpectrum    *h_objs    = new JetSpectrum();
+  BgEstimation   *bgEst     = new BgEstimation();
 
   //theFitter->FitSignal1("171",10) ;
   
   TString DrawOpt = "COLZ";
 
-  int module = 0;
+  vector<int> module;
   massInput->GetParameters( "Module", &module );
 
   string mcMatching ;  // seed = 0 -> using system time as seed
@@ -52,18 +52,38 @@ int main() {
   vector<string> theFiles ;
   massInput->GetParameters( "FakeData", &theFiles );
 
+  vector<string> the2JFiles ;
+  massInput->GetParameters( "2JSamples", &the2JFiles );
+
   int nPseudoExp = 0 ;  // seed = 0 -> using system time as seed
   massInput->GetParameters( "nPseudoExp", &nPseudoExp );
 
-  if ( module == 0 || module == 1 ) {
+  string phaseSmear ;  // seed = 0 -> using system time as seed
+  massInput->GetParameters( "PhaseSmear", &phaseSmear );
+
+  if ( module[0] == 1) {
+     bool smearing =  ( phaseSmear == "ON" ) ? true : false ;
+     h_objs->ObjHistoPlotter( theFiles[0], smearing );
+     h_objs->ObjHistoPlotter( theFiles[1], smearing );
+     h_objs->ObjHistoPlotter( theFiles[2], smearing );
+     h_objs->ObjHistoPlotter( the2JFiles[0], smearing );
+     h_objs->ObjHistoPlotter( the2JFiles[1], smearing );
+     h_objs->ObjHistoPlotter( the2JFiles[2], smearing );
+     //h_objs->ObjHistoPlotter( theFiles[3] );
+  }
+
+  if ( module[1] == 1 ) {
      if ( mcMatching == "ON" )   WFitter->HadTopFitter( theFiles[0],  DrawOpt, true );
      WFitter->HadTopFitter( theFiles[0],  DrawOpt );
      WFitter->HadTopFitter( theFiles[1],  DrawOpt );
      WFitter->HadTopFitter( theFiles[2],  DrawOpt );
+     WFitter->HadTopFitter( the2JFiles[0],  DrawOpt );
+     WFitter->HadTopFitter( the2JFiles[1],  DrawOpt );
+     WFitter->HadTopFitter( the2JFiles[2],  DrawOpt );
      //WFitter->HadTopFitter( theFiles[3],  DrawOpt );
   }
 
-  if ( module == 0 || module == 2 ) {
+  if ( module[2] == 1 ) {
      if ( mcMatching == "ON" )   WFitter->LepTopFitter( theFiles[0],  DrawOpt, true );
      WFitter->LepTopFitter( theFiles[0],  DrawOpt );
      WFitter->LepTopFitter( theFiles[1],  DrawOpt );
@@ -71,21 +91,19 @@ int main() {
      //WFitter->LepTopFitter( theFiles[3],  DrawOpt );
   }
 
-  if ( module == 0 || module == 3 ) {
+  if ( module[3] == 1 ) {
      WFitter->MixBG(  DrawOpt );
      WFitter->MixAll( DrawOpt );
      WFitter->EnsembleTest( randomSeed , DrawOpt );
   }
 
-  if ( module == 0 || module == 4 ) {
-     h_objs->ObjHistoPlotter( theFiles[0] );
-     h_objs->ObjHistoPlotter( theFiles[1] );
-     h_objs->ObjHistoPlotter( theFiles[2] );
-     //h_objs->ObjHistoPlotter( theFiles[3] );
+  if ( module[4] == 1)  {
+     WFitter->Had_SBRatio();
   }
-
-  if ( module == 0 || module == 5 ) {
-     //bgEst->MethodTest() ;
+  if ( module[5] == 1)  {
+     bgEst->MethodTest() ;
+  }
+  if ( module[6] == 1)  {
      bgEst->EnsembleTest( nPseudoExp , randomSeed ) ;
   }
 

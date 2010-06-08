@@ -1,9 +1,9 @@
 #include "LepTopMassFitter.h"
 
-LepTopMassFitter::LepTopMassFitter( double massL, double massH ) {
+LepTopMassFitter::LepTopMassFitter() {
 
-  fitInput = new MassAnaInput( "had", massL, massH );
-  pseudoExp = new PseudoExp( massL, massH );
+  fitInput = new MassAnaInput();
+  pseudoExp = new PseudoExp();
 
   fitInput->GetParameters( "Path", &hfolder );
   fitInput->GetParameters( "bThreshold", &bTh);
@@ -390,8 +390,8 @@ void LepTopMassFitter::ReFitLepTopSolution( string fileName, recoObj* wObj, doub
 	   vlist1.push_back( tjets[1] );
 	   vlist2.push_back( tjets[2] );
 	   vlist3.push_back( tjets[3] );
-	   vlist4.push_back( theNeuSol  );
-	   vlist5.push_back( muP4  );
+	   vlist4.push_back( muP4  );
+	   vlist5.push_back( theNeuSol  );
 
       }
       double weighting = 1. / vlist0.size() ;
@@ -400,35 +400,6 @@ void LepTopMassFitter::ReFitLepTopSolution( string fileName, recoObj* wObj, doub
            wObj->gethad( vlist0[i], vlist1[i], vlist2[i] );
            wObj->getlep( vlist3[i], vlist4[i], vlist5[i] );
            wObj->Fillh( weighting, scale );
-          /*if ( i != pIdx*2 + nIdx ) continue ;
-          //cout<<" the "<< i <<"("<< pIdx <<","<<nIdx <<") selected dM = "<< dM <<endl;
-          if ( NofB > 1 && n_btag > -1 ) {
-             wObj->gethad( vlist0[i], vlist1[i], vlist2[i] );
-             wObj->getlep( vlist3[i], vlist4[i], vlist5[i] );
-             wObj->Fillh( weighting );
-          } 
-          else if ( NofB == 1 && n_btag > -1 ) {
-             wObj->gethad( vlist0[i], vlist1[i], vlist2[i] );
-             wObj->getlep( vlist3[i], vlist4[i], vlist5[i] );
-             wObj->Fillh( weighting/2. );
-
-             wObj->gethad( vlist0[i], vlist1[i], vlist3[i] );
-             wObj->getlep( vlist2[i], vlist4[i], vlist5[i] );
-             wObj->Fillh( weighting/2. );
-          } else {
-             wObj->gethad( vlist0[i], vlist1[i], vlist2[i] );
-	     wObj->getlep( vlist3[i], vlist4[i], vlist5[i] );
-	     wObj->Fillh( weighting/3 );
-
-	     wObj->gethad( vlist0[i], vlist2[i], vlist1[i] );
-	     wObj->getlep( vlist3[i], vlist4[i], vlist5[i] );
-	     wObj->Fillh( weighting/3 );
-
-	     wObj->gethad( vlist2[i], vlist1[i], vlist0[i] );
-             wObj->getlep( vlist3[i], vlist4[i], vlist5[i] );
-             wObj->Fillh( weighting/3 );
-          }
-          */
       }
   }
 
@@ -519,7 +490,7 @@ void LepTopMassFitter::LepTopMCSolution( string fileName,  recoObj* wObj ) {
              //if ( n_btag > -1 && probb == 0 ) continue ;
 
              wObj->gethad( tjets[0], tjets[1], tjets[2] );
-             wObj->getlep( tjets[3], neuSols[nIdx], muP4 );
+             wObj->getlep( tjets[3], muP4, neuSols[nIdx]);
              wObj->Fillh( 1., 1. );
           }
       }

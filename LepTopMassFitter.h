@@ -53,7 +53,7 @@ private:
 
 public:
 
-   LepTopMassFitter( double massL, double massH );     
+   LepTopMassFitter();     
    ~LepTopMassFitter();     
  
    void FitLepTop( TLorentzVector mP4, TLorentzVector nP4, TLorentzVector bP4, Double_t* pars, Double_t* errs, bool isJES );

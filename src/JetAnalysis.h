@@ -85,12 +85,12 @@
 
 //
 // class decleration
-//
+/*
 class TtEvtSelector;
 class TtMuon;
 class TtMET;
 class TtJet;
-
+*/
 class JetAnalysis : public edm::EDAnalyzer {
    public:
     /// Constructor
@@ -116,6 +116,7 @@ class JetAnalysis : public edm::EDAnalyzer {
     HOBJ1 *hJ_Et20;
     HOBJ1 *hJ_Et25;
     HOBJ1 *hJ_Et30;
+    HBJet *hb_Et20;
     HBJet *hb_Et30;
     HOBJ2 *hMET_J20;
     HOBJ2 *hMET_J25;

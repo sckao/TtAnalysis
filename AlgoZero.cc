@@ -1,16 +1,19 @@
 #include "AlgoZero.h"
 
-AlgoZero::AlgoZero( TString channel, double massL, double massH  ){
+AlgoZero::AlgoZero(){
 
   ptype  = ".gif";
 
-  cname = channel;
+  fitInput = new MassAnaInput();
 
-  mL = massL ;
-  mH = massH ;
+  string decayType;
+  fitInput->GetParameters( "DecayType", &decayType );
+  fitInput->GetParameters( "MassLBound", &mL);
+  fitInput->GetParameters( "MassHBound", &mH);
 
-  fitInput = new MassAnaInput( channel, massL, massH );
-  fitTools = new MassAna( channel, massL, massH );
+  cname = decayType;
+
+  fitTools = new MassAna();
   fitInput->Initialize( &hfolder );
 
 }

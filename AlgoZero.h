@@ -61,7 +61,7 @@ private:
 
 public:
 
-   AlgoZero( TString channel, double massL = 0, double massH = 480 );     
+   AlgoZero();     
    ~AlgoZero();     
  
    void MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, int NBTag );

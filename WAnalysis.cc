@@ -1,39 +1,24 @@
 #include "WAnalysis.h"
 #include "WFormat.h"
 
-WAnalysis::WAnalysis( double massL, double massH ){
+WAnalysis::WAnalysis(){
 
-  fitInput = new MassAnaInput( "had", massL, massH );
+  fitInput = new MassAnaInput();
   fitInput->GetParameters( "Path", &hfolder );
   fitInput->GetParameters( "bThreshold", &bTh);
   fitInput->GetParameters( "n_btag", &n_btag);
   fitInput->GetParameters( "n_Jets", &n_Jets);
 
-  wmfitter  = new HadWMassFitter( massL, massH );
-  ltmfitter = new LepTopMassFitter( massL, massH );
-  pseudoExp = new PseudoExp( massL, massH );
+  fitInput->GetParameters( "PhaseSmear", &phaseSmear );
+  smearing = ( phaseSmear == "ON" ) ? true : false ;
 
-  TString theFolder = hfolder ;
+  fitInput->GetParameters( "InputMean", &inputMean );
 
-  gSystem->mkdir( theFolder );
-  gSystem->cd( theFolder );
-  gSystem->mkdir( "M2M3" );
-  gSystem->mkdir( "M3M3" );
-  gSystem->mkdir( "M2M2t" );
-  gSystem->mkdir( "EtaM2" );
-  gSystem->mkdir( "EtaM3" );
-  gSystem->mkdir( "YM2" );
-  gSystem->mkdir( "YM3" );
-  gSystem->mkdir( "M2MET" );
-  gSystem->mkdir( "M2dF" );
+  wmfitter  = new HadWMassFitter();
+  ltmfitter = new LepTopMassFitter();
+  pseudoExp = new PseudoExp();
 
-  gSystem->mkdir( "M2M3Lep" );
-  gSystem->mkdir( "M3M3ReFit" );
-  gSystem->mkdir( "M2tM3" );
-  gSystem->mkdir( "PhiM3" );
-  gSystem->mkdir( "M2M3ReFit" );
-
-  gSystem->cd("../");
+  isFolderCreate = false;
 
 }
 
@@ -45,7 +30,34 @@ WAnalysis::~WAnalysis(){
   delete pseudoExp ;
 }
 
+void WAnalysis::CreateFolders(){
 
+  if ( !isFolderCreate ) {
+     TString theFolder = hfolder ;
+
+     gSystem->mkdir( theFolder );
+     gSystem->cd( theFolder );
+     gSystem->mkdir( "M2M3" );
+     gSystem->mkdir( "M3M3" );
+     gSystem->mkdir( "M2M2t" );
+     gSystem->mkdir( "EtaM2" );
+     gSystem->mkdir( "EtaM3" );
+     gSystem->mkdir( "YM2" );
+     gSystem->mkdir( "YM3" );
+     gSystem->mkdir( "M2MET" );
+     gSystem->mkdir( "M2dF" );
+     
+     gSystem->mkdir( "M2M3Lep" );
+     gSystem->mkdir( "M3M3ReFit" );
+     gSystem->mkdir( "M2tM3" );
+     gSystem->mkdir( "PhiM3" );
+     gSystem->mkdir( "M2M3ReFit" );
+
+     gSystem->cd("../");
+     isFolderCreate = true ;
+  }
+
+}
 // For new SolTree
 // Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
 void WAnalysis::HadTopFitter( string fileName, TString DrawOpt, bool isMCMatched  ){
@@ -68,10 +80,10 @@ void WAnalysis::HadTopFitter( string fileName, TString DrawOpt, bool isMCMatched
   if ( isMCMatched ) {
      wmfitter->MCSolution( fileName, wbh );
   } else {
-     wmfitter->ReFitSolution( fileName, wbh );
+     wmfitter->ReFitSolution( fileName, wbh, scale, NULL, 0, smearing );
   }
   // retrieve the histograms
-  wbh->scale( scale );	
+  //wbh->scale( scale );	
   vector<TH2D*> h2Ds = wbh->Output2D();
 
   M2M3Plotter( h2Ds, fileName, DrawOpt, isMCMatched );
@@ -113,9 +125,406 @@ void WAnalysis::LepTopFitter( string fileName, TString DrawOpt, bool isMCMatched
   cout<<" DONE !!! "<<endl;
 }
 
+void WAnalysis::Had_SBRatio(){
+
+  TString filepath = hfolder+"SBRatio_40.log" ;
+  FILE* logfile = fopen( filepath,"a");
+  fprintf(logfile," WMt    M2M3   dM3   S/B   SS   N_tt  N_bg  N_wj  N_qcd  Eff_tt  Eff_bg  Eff_wj  Eff_qcd  \n" ) ;  
+
+  vector<string> File4J ;
+  fitInput->GetParameters( "FakeData", &File4J );
+
+  vector<TTree*> TrNJ = fitInput->GetForest( "FakeData", "muJets" );
+
+  vector<double> nEvts ;
+  fitInput->GetParameters( "nEvents" , &nEvts );
+
+  double scaleTt  = fitInput->NormalizeComponents( "tt" );
+  double scaleQCD = fitInput->NormalizeComponents( "qcd" );
+  double scaleWJ  = fitInput->NormalizeComponents( "wj" );
+
+  TH2D* hSB = new TH2D("hSB", " S/B with cuts  dM3(X), M2M3(Y) ", 7, 7.5, 42.5, 14, 2.5, 72.5 );
+  TH2D* hCE = new TH2D("hCE", " Cut Eff for signal dM3(X), M2M3(Y) ", 7, 7.5, 42.5, 14, 2.5, 72.5 );
+
+  double nAll[4] = {0.};
+  double cEff[4] = {0.};
+  cout<<" ---  Measuring SB Ratio( tt / wj+qcd ) --- "<<endl;
+  for ( int i = 0; i< 1; i++ ) {
+    for ( int j = 0; j< 6; j++ ) {
+      for ( int k= 0; k< 5; k++ ) {
+
+         // reset the M2M3 windows
+         double lepm2tL = 20. + i*10 ;
+	 double window  = 10. + j*10 ;
+	 double m2L = 80. - window ;
+	 double m2H = 80. + window ;
+	 double m3L = 170. - window ;
+	 double m3H = 170. + window ;
+         double dM3 = 10. + k*5 ;
+
+	 if ( i == 0 && j == 0 && k == 0 ) wmfitter->ResetCuts(  0., 300.,  0., 350.,      0., 999. );
+
+         if ( i != 0 && j == 0 && k == 0 ) wmfitter->ResetCuts(  0., 300.,  0., 350., lepm2tL, 999. );
+         if ( i == 0 && j != 0 && k == 0 ) wmfitter->ResetCuts( m2L,  m2H, m3L,  m3H,      0., 999. );
+         if ( i == 0 && j == 0 && k != 0 ) wmfitter->ResetCuts(  50., 110.,140., 200.,     0.,  dM3 );
+
+         //if ( i == 0 && j != 0 && k != 0 ) continue;         
+         if ( i != 0 && j == 0 && k != 0 ) continue;         
+         if ( i != 0 && j != 0 && k == 0 ) continue;         
+
+         if ( i ==0 && j!=0 && k !=0 ) {
+            wmfitter->ResetCuts( m2L, m2H, m3L, m3H, lepm2tL, dM3 );
+            //cout<<" new LepM2t threshold = "<< lepm2tL<<" , ("<< m2L<<","<<m2H<<","<<m3L<<","<<m3H<<")"<< endl;
+         }
+
+         bgCounter* sg4j = new bgCounter();
+	 wmfitter->ReFitSolution( File4J[0], sg4j, scaleTt, NULL, 0, smearing, TrNJ[0] );
+	 vector<double> nSg4J = sg4j->Output();
+
+	 bgCounter* bg4j = new bgCounter();
+	 wmfitter->ReFitSolution( File4J[1], bg4j, scaleWJ, NULL, 0, smearing, TrNJ[1] );
+	 vector<double> nWj4J = bg4j->Output();
+	 wmfitter->ReFitSolution( File4J[2], bg4j, scaleQCD, NULL, 0, smearing, TrNJ[2] );
+         vector<double> nBg4J = bg4j->Output();
+
+         // get the denumerator and cut efficiency for each channel
+         if ( i == 0 && j == 0 && k == 0 ) {
+            nAll[0] = nSg4J[0] ;
+	    nAll[1] = nWj4J[0] ;
+	    nAll[2] = nBg4J[0] - nWj4J[0];
+	    nAll[3] = nBg4J[0] ;
+         }
+	 cEff[0] = nSg4J[0]/nAll[0] ;
+	 cEff[1] = nWj4J[0]/nAll[1] ;
+	 cEff[2] = (nBg4J[0] - nWj4J[0]) /nAll[2] ;
+	 cEff[3] = nBg4J[0]/nAll[3] ;
+
+         double ssR = nSg4J[0] / sqrt ( nSg4J[0] + nBg4J[0] );
+         //double sbR = nSg4J[0] / sqrt ( nBg4J[0] );
+         double sbR = nSg4J[0] / nBg4J[0] ;
+         //cout<<" M2M3Counter Signal = "<< nSg4J[0] <<" Background = "<< nBg4J[0]  <<endl;
+	 //cout<<" The Cut Efficiency = "<< cEff[0] <<" WJ = "<< cEff[1] <<" QCD = "<< cEff[2] <<" BG = "<< cEff[3] <<endl;
+	 //cout<<"  *** S/B = "<< nSg4J[0] / nBg4J[0] << endl;
+	 //cout<<""<<endl; 
+
+         if ( i == 0 && j != 0 && k !=0 ) {
+            hSB->Fill( dM3, window, sbR );
+            hCE->Fill( dM3, window, cEff[0] );
+         }
+         if (  cEff[0] > 0. ) {
+            fprintf(logfile," %.1f   %.1f   %1.f   %.1f   %.1f   %.1f   %.1f   %.1f   %.1f   %.2f   %.2f   %.2f   %.2f \n",  
+                         lepm2tL, window, dM3, sbR, ssR, nSg4J[0], nBg4J[0], nWj4J[0], (nBg4J[0] - nWj4J[0]), cEff[0], cEff[3], cEff[1], cEff[2]);
+         }
+
+          delete sg4j;
+          delete bg4j;
+      }
+    }
+  }
+  cout<<" SB Ration Measured !! "<<endl;
+
+  fclose(logfile);
+
+  gStyle->SetOptStat("nuom");
+  //gStyle->SetNumberContours(10);
+  gStyle->SetStatX(0.95);
+  gStyle->SetStatY(0.99);
+
+  TCanvas* c1 = new TCanvas("c1","", 800, 600);
+  c1->SetGrid();
+  c1->SetFillColor(10);
+  c1->SetFillColor(10);
+  gStyle->SetPaintTextFormat("2.1f");
+  c1->cd();
+  hSB->SetMarkerSize(2.5);
+  hSB->Draw("TEXT");
+  c1->Update();
+
+  TString plotname1 = hfolder + "SBRatio.gif" ;
+  c1->Print( plotname1 );
+
+  TCanvas* c2 = new TCanvas("c2","", 800, 600);
+  c2->SetGrid();
+  c2->SetFillColor(10);
+  c2->SetFillColor(10);
+  gStyle->SetPaintTextFormat("2.2f");
+  c2->cd();
+  hCE->SetMarkerSize(2.5);
+  hCE->Draw("TEXT");
+  c2->Update();
+
+  TString plotname2 = hfolder + "CutEff.gif" ;
+  c2->Print( plotname2 );
+
+  delete c1;
+  delete c2;
+  delete hSB ;
+  delete hCE ;
+
+}
+
+// for new soltree
+void WAnalysis::MixBG( TString DrawOpt ){
+ 
+  // refit the solutions
+  cout<<" Mix Background  "<<endl;
+  vector<string> flist;
+  //fitInput->GetParameters( "FakeData", &flist );
+  fitInput->GetParameters( "2JSamples", &flist );
+
+  // define the histograms
+  hadWBoson* bg = new hadWBoson();
+
+  double scale1 = fitInput->NormalizeComponents( "wj" );
+  cout<<" all bg wjet scale = "<< scale1 <<endl;
+  wmfitter->ReFitSolution( flist[1], bg, scale1, NULL, 0, smearing );
+
+  double scale2 = fitInput->NormalizeComponents( "qcd" );
+  cout<<" all bg qcd scale = "<< scale2 <<endl;
+  wmfitter->ReFitSolution( flist[2], bg, scale2, NULL, 0, smearing );
+
+  vector<TH2D*> h2Ds ;
+  bg->Fill2DVec( h2Ds );
+
+  M2M3Plotter( h2Ds, "allBG", DrawOpt ) ;
+
+  delete bg;
+
+}
+
+// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
+void WAnalysis::MixAll( TString DrawOpt ){
+ 
+  cout<<" Mix All  "<<endl;
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  // combined plotting
+  gStyle->SetOptStat("neirom");
+  gStyle->SetStatY(0.95);
+  gStyle->SetStatX(0.90);
+  gStyle->SetStatTextColor(1);
+  gStyle->SetPalette(1);
+
+  TCanvas* c1 = new TCanvas("c1","", 800, 600);
+  c1->SetGrid();
+  c1->SetFillColor(10);
+  c1->SetFillColor(10);
+  c1->Divide(2,2);
+
+  hadWBoson* allh  = new hadWBoson();
+
+  double scale1 = fitInput->NormalizeComponents( "wj" );
+  wmfitter->ReFitSolution( flist[1], allh, scale1, NULL, 0, smearing );
+
+  double scale2 = fitInput->NormalizeComponents( "qcd" );
+  wmfitter->ReFitSolution( flist[2], allh, scale2, NULL, 0, smearing );
+
+  vector<TH2D*> hbgs ;
+  allh->Fill2DVec( hbgs );
+  c1->cd(2);
+  TH1D* bgM2M3_py = hbgs[0]->ProjectionY("bgM2M3_py");
+  bgM2M3_py->SetFillColor(2);
+  bgM2M3_py->SetMaximum(3.5);
+  bgM2M3_py->Draw();
+  c1->Update();
+  c1->cd(3);
+  TH1D* bgM2M3_px = hbgs[0]->ProjectionX("bgM2M3_px");
+  bgM2M3_px->SetFillColor(2);
+  bgM2M3_px->SetMaximum(3.5);
+  bgM2M3_px->Draw();
+  c1->Update();
+
+  double scale0 = fitInput->NormalizeComponents( "tt" );
+  wmfitter->ReFitSolution( flist[0], allh, scale0, NULL, 0, smearing );
+ 
+  vector<TH2D*> h2Ds ;
+  allh->Fill2DVec( h2Ds );
+
+  //M2M3Plotter( h2Ds, "ALL", DrawOpt ) ;
+
+  c1->cd(1);
+  gStyle->SetStatX(0.30);
+  gStyle->SetNumberContours(5);
+  h2Ds[0]->Draw( DrawOpt );
+  c1->Update();
+
+  c1->cd(2);
+  gStyle->SetStatX(0.90);
+  TH1D* hM2M3_py = h2Ds[0]->ProjectionY("hM2M3_py");
+  hM2M3_py->Draw("sames");
+  c1->Update();
+
+  c1->cd(3);
+  TH1D* hM2M3_px = h2Ds[0]->ProjectionX("hM2M3_px");
+  hM2M3_px->Draw("sames");
+  c1->Update();
+
+  c1->cd(4);
+  h2Ds[0]->Draw( "LEGO2Z" );
+  c1->Update();
+
+  TString plotname1 = hfolder + "M2M3/ALL_M2M3.gif" ;
+  c1->Print( plotname1 );
+
+  delete allh;
+
+}
+
+// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
+void WAnalysis::EnsembleTest( int randomSeed, TString DrawOpt ){
+ 
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  TString treeName = "muJets";
+
+  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
+
+  hadWBoson* sg = new hadWBoson();
+
+  // ttbar
+  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean[0], randomSeed );
+  wmfitter->ReFitSolution( flist[0], sg,  1, &sglist );
+  cout<<" tt test done "<<endl;
+
+  // Making signal plots
+  vector<TH2D*> hs0 = sg->Output2D();
+  M2M3Plotter( hs0, "pseudoSG", DrawOpt );
+
+  hadWBoson* bg = new hadWBoson();
+  // w+jets
+  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean[1], randomSeed );
+  wmfitter->ReFitSolution( flist[1], bg , 1, &bg1list, 0, true );
+  cout<<" wj test done "<<endl;
+
+  // QCD
+  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean[2], randomSeed );
+  wmfitter->ReFitSolution( flist[2], bg , 1, &bg2list, 0, true );
+  cout<<" qcd test done "<<endl;
+
+  // retrieve the histograms
+  vector<TH2D*> hBgs = bg->Output2D();
+  M2M3Plotter( hBgs, "pseudoBG", DrawOpt );
+
+  for ( size_t i =0; i < hs0.size(); i++ ) {
+      hs0[i]->Add( hBgs[i] );
+  }
+  M2M3Plotter( hs0, "pseudoExp", DrawOpt );
+
+  delete sg ;
+  delete bg ;
+  cout<<" YA !!! "<<endl;
+}
+
+// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
+/*
+void WAnalysis::HadTEnsembleTest( int randomSeed, TString DrawOpt ){
+ 
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  TString treeName = "muJets";
+
+  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
+
+  // ttbar
+  hadWBoson* sg = new hadWBoson();
+  double inputMean_tt = ( n_Jets == 4 ) ? 9.28 : 8.701 ;
+  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
+  wmfitter->ReFitLepTopSolution( flist[0], sg, 1, &sglist );
+  cout<<" tt test done "<<endl;
+
+  // Making signal plots
+  vector<TH2D*> h_sg;
+  sg->Fill2DVec( h_sg );
+  M2M3Plotter( h_sg, "pseudoSG", DrawOpt );
+
+  // w+jets
+  hadWBoson* bg = new hadWBoson();
+  double inputMean_wj = ( n_Jets == 4 ) ? 2.458 : 92.0 ;
+  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
+  wmfitter->ReFitLepTopSolution( flist[1], bg, 1, &bg1list );
+  cout<<" wj test done "<<endl;
+
+  // QCD
+  double inputMean_qcd = ( n_Jets == 4 ) ?  3.31 : 131.352 ;
+  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
+  wmfitter->ReFitLepTopSolution( flist[2], bg, 1, &bg2list );
+  cout<<" qcd test done "<<endl;
+
+  // retrieve the histograms
+  vector<TH2D*> h_bg;
+  bg->Fill2DVec( h_bg );
+  M2M3Plotter( h_bg, "pseudoBG", DrawOpt );
+
+  for ( size_t i =0; i < h_sg.size(); i++ ) {
+      h_sg[i]->Add( h_bg[i] );
+  }
+  M2M3Plotter( h_sg, "pseudoExp", DrawOpt );
+
+  delete sg ;
+  delete bg ;
+  cout<<" YA !!! "<<endl;
+
+}
+*/
+
+// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
+void WAnalysis::LepTEnsembleTest( int randomSeed, TString DrawOpt ){
+ 
+  vector<string> flist;
+  fitInput->GetParameters( "FakeData", &flist );
+
+  TString treeName = "muJets";
+
+  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
+
+  // ttbar
+  lepWBoson* sg = new lepWBoson();
+  double inputMean_tt = ( n_Jets == 4 ) ? 9.28 : 8.701 ;
+  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
+  ltmfitter->ReFitLepTopSolution( flist[0], sg, 1, &sglist );
+  cout<<" tt test done "<<endl;
+
+  // Making signal plots
+  vector<TH2D*> h_sg;
+  sg->Fill2DVec( h_sg );
+  LepTopPlotter( h_sg, "pseudoSG", DrawOpt );
+
+  // w+jets
+  lepWBoson* bg = new lepWBoson();
+  double inputMean_wj = ( n_Jets == 4 ) ? 2.458 : 92.0 ;
+  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
+  ltmfitter->ReFitLepTopSolution( flist[1], bg, 1, &bg1list );
+  cout<<" wj test done "<<endl;
+
+  // QCD
+  double inputMean_qcd = ( n_Jets == 4 ) ?  3.31 : 131.352 ;
+  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
+  ltmfitter->ReFitLepTopSolution( flist[2], bg, 1, &bg2list );
+  cout<<" qcd test done "<<endl;
+
+  // retrieve the histograms
+  vector<TH2D*> h_bg;
+  bg->Fill2DVec( h_bg );
+  LepTopPlotter( h_bg, "pseudoBG", DrawOpt );
+
+  for ( size_t i =0; i < h_sg.size(); i++ ) {
+      h_sg[i]->Add( h_bg[i] );
+  }
+  LepTopPlotter( h_sg, "pseudoExp", DrawOpt );
+
+  delete sg ;
+  delete bg ;
+  cout<<" YA !!! "<<endl;
+
+}
 
 void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt, bool isMCMatched ){
- 
+
+  CreateFolders(); 
+
   TH2D* hM2M3  = h2Ds[0] ;
   TH2D* hM3M3  = h2Ds[1] ;
   TH2D* hM2M2t = h2Ds[2] ;
@@ -125,11 +534,15 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   TH2D* hYM3   = h2Ds[6] ;
   TH2D* hM2MET = h2Ds[7] ;
   TH2D* hM2dF  = h2Ds[8] ;
+  TH2D* hMETM2t= h2Ds[9] ;
 
   gStyle->SetOptStat("neirom");
   gStyle->SetStatY(0.95);
   gStyle->SetStatTextColor(1);
   gStyle->SetPalette(1);
+  gStyle->SetLabelSize( 0.06, "X");
+  gStyle->SetLabelSize( 0.06, "Y");
+  gStyle->SetLabelSize( 0.06, "Z");
 
   // plot  M2 vs M3 without JES
   TCanvas* c1 = new TCanvas("c1","", 800, 600);
@@ -146,11 +559,13 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   c1->cd(2);
   gStyle->SetStatX(0.90);
   TH1D* hM2M3_py = hM2M3->ProjectionY("hM2M3_py");
+  //hM2M3_py->SetMaximum(3.5);
   hM2M3_py->Draw();
   c1->Update();
 
   c1->cd(3);
   TH1D* hM2M3_px = hM2M3->ProjectionX("hM2M3_px");
+  //hM2M3_px->SetMaximum(3.5);
   hM2M3_px->Draw();
   c1->Update();
 
@@ -395,6 +810,39 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   if ( isMCMatched ) plotname9 = hfolder + "M2dF/" + fileName + "_M2dF_MC.gif" ;
   c9->Print( plotname9 );
 
+  // plot  MET LepM2T
+  TCanvas* c10 = new TCanvas("c10","", 800, 600);
+  c10->SetGrid();
+  c10->SetFillColor(10);
+  //c10->Divide(2,2);
+  /*
+  c10->cd(1);
+  gStyle->SetNumberContours(5);
+  hMETM2t->Draw( DrawOpt );
+  c10->Update();
+
+  c10->cd(2);
+  TH1D* hMETM2t_py = hMETM2t->ProjectionY("hMETM2t_py");
+  hMETM2t_py->Draw();
+  c10->Update();
+
+  c10->cd(3);
+  TH1D* hMETM2t_px = hMETM2t->ProjectionX("hMETM2t_px");
+  hMETM2t_px->Draw();
+  c10->Update();
+
+  c10->cd(4);
+  hMETM2t->Draw("LEGO2Z" );
+  c10->Update();
+  */
+  TH1D* hMETM2t_py = hMETM2t->ProjectionY("hMETM2t_py");
+  hMETM2t_py->Draw();
+  c10->Update();
+
+  TString plotname10 = hfolder + "M2MET/" + fileName + "_METM2t.gif" ;
+  if ( isMCMatched ) plotname10 = hfolder + "M2MET/" + fileName + "_METM2t_MC.gif" ;
+  c10->Print( plotname10 );
+
   delete c1;
   delete c2;
   delete c3;
@@ -404,12 +852,15 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
   delete c7;
   delete c8;
   delete c9;
+  delete c10;
 
   cout<<" FINISHED  "<<endl;
 }
 
 void WAnalysis::LepTopPlotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt, bool isMCMatched ){
  
+  CreateFolders(); 
+
   TH2D* hM2M3L = h2Ds[0] ;
   TH2D* hM2tM3 = h2Ds[1] ;
   TH2D* hM3M3  = h2Ds[2] ;
@@ -614,213 +1065,4 @@ void WAnalysis::BJetEff( string fileName ) {
 
 }
 
-
-// for new soltree
-void WAnalysis::MixBG( TString DrawOpt ){
- 
-  // refit the solutions
-  cout<<" Mix Background  "<<endl;
-  vector<string> flist;
-  fitInput->GetParameters( "FakeData", &flist );
-
-  // define the histograms
-  hadWBoson* bg = new hadWBoson();
-
-  double scale1 = fitInput->NormalizeComponents( "wj" );
-  cout<<" all bg wjet scale = "<< scale1 <<endl;
-  wmfitter->ReFitSolution( flist[1], bg, scale1 );
-
-  double scale2 = fitInput->NormalizeComponents( "qcd" );
-  cout<<" all bg qcd scale = "<< scale2 <<endl;
-  wmfitter->ReFitSolution( flist[2], bg, scale2 );
-
-  vector<TH2D*> h2Ds ;
-  bg->Fill2DVec( h2Ds );
-
-  M2M3Plotter( h2Ds, "allBG", DrawOpt ) ;
-
-  delete bg;
-
-}
-
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::MixAll( TString DrawOpt ){
- 
-  cout<<" Mix All  "<<endl;
-  vector<string> flist;
-  fitInput->GetParameters( "FakeData", &flist );
-
-  hadWBoson* allh = new hadWBoson();
-
-  double scale0 = fitInput->NormalizeComponents( "tt" );
-  wmfitter->ReFitSolution( flist[0], allh, scale0 );
- 
-  double scale1 = fitInput->NormalizeComponents( "wj" );
-  wmfitter->ReFitSolution( flist[1], allh, scale1 );
-
-  double scale2 = fitInput->NormalizeComponents( "qcd" );
-  wmfitter->ReFitSolution( flist[2], allh, scale2 );
-
-  vector<TH2D*> h2Ds ;
-  allh->Fill2DVec( h2Ds );
-
-  M2M3Plotter( h2Ds, "ALL", DrawOpt ) ;
-
-  delete allh;
-
-}
-
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::EnsembleTest( int randomSeed, TString DrawOpt ){
- 
-  vector<string> flist;
-  fitInput->GetParameters( "FakeData", &flist );
-
-  TString treeName = "muJets";
-
-  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
-
-  hadWBoson* sg = new hadWBoson();
-
-  // ttbar
-  double inputMean_tt = ( n_Jets == 4 ) ? (11.196*1.324) : 8.701 ;
-  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
-  wmfitter->ReFitSolution( flist[0], sg,  1, &sglist );
-  cout<<" tt test done "<<endl;
-
-  // Making signal plots
-  vector<TH2D*> hs0 = sg->Output2D();
-  M2M3Plotter( hs0, "pseudoSG", DrawOpt );
-
-  hadWBoson* bg = new hadWBoson();
-
-  // w+jets
-  double inputMean_wj = ( n_Jets == 4 ) ? (3.902*1.251) : 92.0 ;
-  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
-  wmfitter->ReFitSolution( flist[1], bg , 1, &bg1list, 0, true );
-  cout<<" wj test done "<<endl;
-
-  // QCD
-  double inputMean_qcd = ( n_Jets == 4 ) ? 5.982 : 131.352 ;
-  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
-  wmfitter->ReFitSolution( flist[2], bg , 1, &bg2list, 0, true );
-  cout<<" qcd test done "<<endl;
-
-  // retrieve the histograms
-  vector<TH2D*> hBgs = bg->Output2D();
-  M2M3Plotter( hBgs, "pseudoBG", DrawOpt );
-
-  for ( size_t i =0; i < hs0.size(); i++ ) {
-      hs0[i]->Add( hBgs[i] );
-  }
-  M2M3Plotter( hs0, "pseudoExp", DrawOpt );
-
-  delete sg ;
-  delete bg ;
-  cout<<" YA !!! "<<endl;
-}
-
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-/*
-void WAnalysis::HadTEnsembleTest( int randomSeed, TString DrawOpt ){
- 
-  vector<string> flist;
-  fitInput->GetParameters( "FakeData", &flist );
-
-  TString treeName = "muJets";
-
-  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
-
-  // ttbar
-  hadWBoson* sg = new hadWBoson();
-  double inputMean_tt = ( n_Jets == 4 ) ? 9.28 : 8.701 ;
-  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
-  wmfitter->ReFitLepTopSolution( flist[0], sg, 1, &sglist );
-  cout<<" tt test done "<<endl;
-
-  // Making signal plots
-  vector<TH2D*> h_sg;
-  sg->Fill2DVec( h_sg );
-  M2M3Plotter( h_sg, "pseudoSG", DrawOpt );
-
-  // w+jets
-  hadWBoson* bg = new hadWBoson();
-  double inputMean_wj = ( n_Jets == 4 ) ? 2.458 : 92.0 ;
-  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
-  wmfitter->ReFitLepTopSolution( flist[1], bg, 1, &bg1list );
-  cout<<" wj test done "<<endl;
-
-  // QCD
-  double inputMean_qcd = ( n_Jets == 4 ) ?  3.31 : 131.352 ;
-  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
-  wmfitter->ReFitLepTopSolution( flist[2], bg, 1, &bg2list );
-  cout<<" qcd test done "<<endl;
-
-  // retrieve the histograms
-  vector<TH2D*> h_bg;
-  bg->Fill2DVec( h_bg );
-  M2M3Plotter( h_bg, "pseudoBG", DrawOpt );
-
-  for ( size_t i =0; i < h_sg.size(); i++ ) {
-      h_sg[i]->Add( h_bg[i] );
-  }
-  M2M3Plotter( h_sg, "pseudoExp", DrawOpt );
-
-  delete sg ;
-  delete bg ;
-  cout<<" YA !!! "<<endl;
-
-}
-*/
-
-// Type : 0 = original jet p4, 1 = JEC tunning , 2 = JES tunning
-void WAnalysis::LepTEnsembleTest( int randomSeed, TString DrawOpt ){
- 
-  vector<string> flist;
-  fitInput->GetParameters( "FakeData", &flist );
-
-  TString treeName = "muJets";
-
-  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
-
-  // ttbar
-  lepWBoson* sg = new lepWBoson();
-  double inputMean_tt = ( n_Jets == 4 ) ? 9.28 : 8.701 ;
-  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean_tt, randomSeed );
-  ltmfitter->ReFitLepTopSolution( flist[0], sg, 1, &sglist );
-  cout<<" tt test done "<<endl;
-
-  // Making signal plots
-  vector<TH2D*> h_sg;
-  sg->Fill2DVec( h_sg );
-  LepTopPlotter( h_sg, "pseudoSG", DrawOpt );
-
-  // w+jets
-  lepWBoson* bg = new lepWBoson();
-  double inputMean_wj = ( n_Jets == 4 ) ? 2.458 : 92.0 ;
-  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean_wj, randomSeed );
-  ltmfitter->ReFitLepTopSolution( flist[1], bg, 1, &bg1list );
-  cout<<" wj test done "<<endl;
-
-  // QCD
-  double inputMean_qcd = ( n_Jets == 4 ) ?  3.31 : 131.352 ;
-  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean_qcd, randomSeed );
-  ltmfitter->ReFitLepTopSolution( flist[2], bg, 1, &bg2list );
-  cout<<" qcd test done "<<endl;
-
-  // retrieve the histograms
-  vector<TH2D*> h_bg;
-  bg->Fill2DVec( h_bg );
-  LepTopPlotter( h_bg, "pseudoBG", DrawOpt );
-
-  for ( size_t i =0; i < h_sg.size(); i++ ) {
-      h_sg[i]->Add( h_bg[i] );
-  }
-  LepTopPlotter( h_sg, "pseudoExp", DrawOpt );
-
-  delete sg ;
-  delete bg ;
-  cout<<" YA !!! "<<endl;
-
-}
 

@@ -30,6 +30,7 @@
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 //#include "FWCore/Framework/interface/MakerMacros.h"
+//#include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/InputTag.h"
@@ -110,6 +111,7 @@ class TtNtupleProd : public edm::EDAnalyzer {
     bool trigOn;
     bool isData;
     int  evtIt;
+    int  nJets ;
 
     string rootFileName;
     edm::InputTag genSrc;

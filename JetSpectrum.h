@@ -21,6 +21,7 @@
 
 #include "MassAnaInput.h"
 #include "WFormat.h"
+#include "PseudoExp.h"
 
 class JetSpectrum : public TObject {
 
@@ -32,18 +33,18 @@ private:
    // for hadronic permutation
 
    MassAnaInput*    fitInput;
-
+   PseudoExp*       pseudoExp;
    string hfolder;
 
 public:
 
-   JetSpectrum( double massL, double massH );     
+   JetSpectrum();     
    ~JetSpectrum();     
  
 
-   void EtSpectrum( string fileName, recoObj* histos );
+   void EtSpectrum( string fileName, recoObj* histos, bool smearing = false );
 
-   void ObjHistoPlotter( string fileName );
+   void ObjHistoPlotter( string fileName, bool smearing = false );
 
    //ClassDef(JetSpectrum, 1);
 

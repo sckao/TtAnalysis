@@ -78,8 +78,10 @@ class TtMCMatching {
     /// Perform the real analysis
     void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, ObjNtp* genTree, int eventId);
 
-    std::vector<jmatch> matchJets(edm::Handle<std::vector<reco::GenParticle> > genParticles, 
-                    std::vector<const reco::Candidate*> selectedJets, HTOP7* histo7 = NULL, HTOP8* histo8 = NULL);
+    std::vector<const reco::Candidate*> GenTtCollection(edm::Handle<std::vector<reco::GenParticle> > genParticles ) ;
+
+    std::vector<jmatch> matchJets(std::vector<const reco::Candidate*> genCollects, 
+                    std::vector<ttCandidate>& selectedJets, HTOP7* histo7 = NULL, HTOP8* histo8 = NULL);
 
     std::vector<jmatch> matchWJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                    std::vector<const pat::Jet*> selectedWJets, HTOP8* histo8, bool fillhisto );
@@ -87,20 +89,17 @@ class TtMCMatching {
     std::vector<jmatch> matchbJets(edm::Handle<std::vector<reco::GenParticle> > genParticles,
                                    std::vector<const pat::Jet*> selectedbJets, HTOP7* histo7, bool fillhisto );
 
-    //std::vector<const reco::Candidate*> matchMuon(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-    //                                    std::vector<const reco::Candidate*> isoMuons, HTOP3* histo3 = NULL );
+    std::vector<ttCandidate> matchMuon( std::vector<const reco::Candidate*> genCollects,
+                                        std::vector<ttCandidate>& isoMuons, HTOP3* histo3 = NULL );
 
-    std::vector<const reco::Candidate*> matchElectron(edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                        std::vector<const reco::Candidate*> isoEle, HTOP4* histo4 = NULL );
+    std::vector<ttCandidate> matchElectron(std::vector<const reco::Candidate*> genCollects,
+                                        std::vector<ttCandidate>& isoEle, HTOP4* histo4 = NULL );
 
     int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution );
-    int matchLeptonicW(edm::Handle<std::vector<reco::GenParticle> > genParticles, std::vector<iReco> wSolution, HTOP6* histo6 );
 
     bool matchingGeneral( LorentzVector p4_1, iTt ttObject, double& dR0, double& ptRes0 );
 
     bool matchingGeneral( LorentzVector aP4, LorentzVector bP4, double& dR0, double& ptRes0 );
-
-    //std::vector<iTt> TtObjects( edm::Handle<std::vector<reco::GenParticle> > genParticles ); 
 
     //std::vector<reco::Candidate> ttPartons( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
     std::vector<const reco::Candidate*> ttDecay( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
@@ -111,21 +110,25 @@ class TtMCMatching {
 
     void CheckGenParticle(  edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
-    template<typename allT>
-    std::vector<const allT* > matchMuon( edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                                                   std::vector<const allT*> isoMuons ,HTOP3* histo3 =NULL) ;
+    //template<typename allT>
+    //std::vector<const allT* > matchMuon( std::vector<const reco::Candidate*>  genCollects,
+    //                                     std::vector<const allT*> isoMuons ,HTOP3* histo3 =NULL) ;
    private:
 
     TtTools*       tools;
 
 };
-
+/*
 template<typename allT>
-std::vector<const allT*> TtMCMatching::matchMuon( edm::Handle<std::vector<reco::GenParticle> > genParticles,
+std::vector<const allT*> TtMCMatching::matchMuon( std::vector<const reco::Candidate*> genCollects,
                           std::vector<const allT*> isoMuons ,HTOP3* histo3 ){
 
    // Accumulate the leptonic dauaghters from W
-   std::vector<const reco::Candidate*> mcMuon = ttDecay(genParticles, 13) ;
+   //std::vector<const reco::Candidate*> mcMuon = ttDecay(genParticles, 13) ;
+   std::vector<const reco::Candidate*> mcMuon; 
+   for (size_t i=0; i< genCollects.size(); i++) {
+       if ( abs( genCollects[i]->pdgId() ) ==  13 ) mcMuon.push_back( genCollects[i] ); 
+   }
 
    // find the matched muon 
    std::vector<int> matchList;
@@ -161,6 +164,6 @@ std::vector<const allT*> TtMCMatching::matchMuon( edm::Handle<std::vector<reco::
 
    return matchedMuon ;
 }
-
+*/
 
 #endif

@@ -35,10 +35,13 @@ class MassAnaInput : public TObject {
 
 private:
 
+   double mL;
+   double mH;
+   bool   weighting;
+
    vector<TTree*> MuJForest ;
    vector<TTree*> mcTtForest ;
 
-   TString channel;
    TString hname;
    TString ch_name;
    TString probName;
@@ -58,15 +61,11 @@ private:
    TString theBG3;  // single top tW-channel
    TString theBG4;  // QCD
 
-   double mL;
-   double mH;
-   bool   weighting;
-
 public:
 
-   MassAnaInput(){ hname ="hadTM", ch_name ="had", n_btag = -1, mL =0, mH = 400; }     
-   MassAnaInput( TString channel, double massL = 0 , double massH = 480 );     
+   MassAnaInput();     
    ~MassAnaInput();     
+   //MassAnaInput(){ hname ="hadTM", ch_name ="had", n_btag = -1, mL =0, mH = 400; }     
  
    void Initialize( TString* hfolder );
 

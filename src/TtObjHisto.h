@@ -442,8 +442,6 @@ public:
    Pt_hdIso = new TH2F("Pt_hdIso", "pt vs iso hdE for all",200,0.,200., 100, 0., 100.);
    Pt_tkIso = new TH2F("Pt_tkIso", "pt vs iso tkP for all",200,0.,200., 100, 0., 100.);
    hPt_sum  = new TH2F("hPt_sum",  "pt vs iso caloE for all",200,0.,200., 100, 0., 100.);
-   hPt_Cal  = new TH2F("hPt_Cal",  "pt vs N of CaloDeposit in isoR3 for all ",200,0.,200., 50, -0.5, 49.5 );
-   hPt_Trk  = new TH2F("hPt_Trk",  "pt vs N of Track in isoR3 for all ",200,0.,200., 50, -0.5, 49.5 );
    hPt_Iso  = new TH2F("hPt_Iso",  "pt vs Iso value for all",200,0.,200., 150, -0.2, 1.3 );
    Iso_EovP = new TH2F("Iso_EovP", "RelIso vs emE/P for all",55,-0.05, 1.05, 150, -0.25, 1.25 );
    Iso_HovE = new TH2F("Iso_HovE", "RelIso vs H/E  for all ",55,-0.05, 1.05, 60, -0.05, 0.25 );
@@ -459,8 +457,6 @@ public:
    delete Pt_hdIso;
    delete Pt_tkIso;
    delete hPt_sum;
-   delete hPt_Cal;
-   delete hPt_Trk;
    delete hPt_Iso;
    delete hEta_Iso;
    delete Iso_EovP;
@@ -470,15 +466,13 @@ public:
 
  }
 
- void Fill_4a(double pt, double eta, double emE, double hdE, double tkP, double sumE, int nCal3, int ntrack3,
+ void Fill_4a(double pt, double eta, double emE, double hdE, double tkP, double sumE,
              double Iso, double HovE, double EovP ){
 
     Pt_emIso->Fill(pt, emE);
     Pt_hdIso->Fill(pt, hdE);
     Pt_tkIso->Fill(pt, tkP);
     hPt_sum->Fill(pt, sumE);
-    hPt_Cal->Fill(pt, nCal3);
-    hPt_Trk->Fill(pt, ntrack3);
     hPt_Iso->Fill(pt, Iso);
     hEta_Iso->Fill(eta, Iso);
     Iso_EovP->Fill(Iso, EovP);
@@ -498,8 +492,6 @@ public:
     Pt_hdIso->Write();
     Pt_tkIso->Write();
     hPt_sum->Write();
-    hPt_Cal->Write();
-    hPt_Trk->Write();
     hPt_Iso->Write();
     hEta_Iso->Write();
     Iso_EovP->Write();
@@ -513,8 +505,6 @@ public:
   TH2F *Pt_hdIso;
   TH2F *Pt_tkIso;
   TH2F *hPt_sum;
-  TH2F *hPt_Cal;
-  TH2F *hPt_Trk;
   TH2F *hPt_Iso;
   TH2F *hEta_Iso;
   TH2F *Iso_EovP;
@@ -530,25 +520,16 @@ public:
  
  HBJet() {
 
-    //dRbMuJ_RelPt  = new TH2F("dRbMuJ_RelPt", " min_dR( MuInJet,bjet), RelPt ", 200, 0., 5., 100, 0., 200 );
-    //dRiMuJ_RelPt  = new TH2F("dRiMuJ_RelPt", " min_dR( Mu ,jet), RelPt ", 200, 0., 5., 100, 0., 200 );
-    //dR_relIso     = new TH2F("dR_relIso", " dR( MuInJet,bjet), RelIso " , 200, 0., 5., 25, -10.5, 14.5 );
-    
     bDis_pt   = new TH2F("bDis_pt","b Discriminator for all jets ", 60,-10.5, 49.5, 500, 0., 500. );
     d0_pt     = new TH2F("d0_pt", " ave. d0 (X) vs jet pt (Y)", 500, -30., 30., 500, 0., 500. );
     bDis_pt1  = new TH2F("bDis_pt1","b Discriminator for all jets ", 60,-10.5, 49.5, 500, 0., 500. );
     d0_pt1    = new TH2F("d0_pt1", " ave. d0 (X) vs jet pt (Y)", 500, -30., 30., 500, 0., 500. );
 
     nJ_nbJ    = new TH2F("nJ_nbJ", "N of b jets vs N of jets", 10, -0.5, 9.5, 25, -0.5, 24.5);
-    nJ_nbJ2   = new TH2F("nJ_nbJ2", "N of cleaned b jets vs N of jets", 10, -0.5, 9.5, 25, -0.5, 24.5);
  } 
 
  /// Destructor
  virtual ~HBJet() {
-
-    //delete dRbMuJ_RelPt;
-    //delete dRiMuJ_RelPt;
-    //delete dR_relIso;
 
     delete bDis_pt;
     delete d0_pt;
@@ -556,19 +537,8 @@ public:
     delete d0_pt1;
 
     delete nJ_nbJ;
-    delete nJ_nbJ2;
  }
 
- /*
- void Fill_b1( double dR, double relPt, double relIso ) {
-     dRbMuJ_RelPt->Fill( dR, relPt );
-     dR_relIso->Fill( dR, relIso );
- }
-
- void Fill_b2( double dR, double relPt ) {
-     dRiMuJ_RelPt->Fill( dR, relPt );
- }
- */
  void Fill_b3( double bdis, double d0Ave, double pt ) {
     bDis_pt->Fill( bdis, pt );
     d0_pt->Fill( bdis, pt );
@@ -579,18 +549,13 @@ public:
     d0_pt1->Fill( bdis, pt );
  }
 
- void Fill_b5( int nBJet, int nJet, int nBJet2 ) {
+ void Fill_b5( int nBJet, int nJet ) {
     nJ_nbJ->Fill(  nBJet, nJet );
-    nJ_nbJ2->Fill(  nBJet2, nJet );
  }
 
  void Write( TString theFolder , TFile* file  ) {
 
     file->cd( theFolder );
-
-    //dRbMuJ_RelPt->Write();
-    //dRiMuJ_RelPt->Write();
-    //dR_relIso->Write();
 
     bDis_pt->Write();
     bDis_pt1->Write();
@@ -599,15 +564,10 @@ public:
     d0_pt1->Write();
 
     nJ_nbJ->Write(); 
-    nJ_nbJ2->Write(); 
 
     file->cd("../");
 
  }
-
-  //TH2F *dRbMuJ_RelPt;
-  //TH2F *dRiMuJ_RelPt;
-  //TH2F *dR_relIso;
 
   TH2F *bDis_pt;
   TH2F *bDis_pt1;
@@ -616,7 +576,6 @@ public:
   TH2F *d0_pt1;
 
   TH2F *nJ_nbJ;
-  TH2F *nJ_nbJ2;
 
 };
 

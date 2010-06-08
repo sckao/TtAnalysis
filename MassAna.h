@@ -62,7 +62,7 @@ private:
 
 public:
 
-   MassAna( TString channel, double massL = 0, double massH = 480 );     
+   MassAna();     
    ~MassAna();     
    
    //void MoreCombinedFitting( TString mName, int rbin, int lowBound, int upBound, Bool_t* comp, int NBTag );

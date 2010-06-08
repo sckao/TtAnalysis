@@ -39,6 +39,7 @@ TtNtupleProd::TtNtupleProd(const edm::ParameterSet& iConfig)
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   genSrc            = iConfig.getParameter<edm::InputTag>   ("genParticles"); 
   evtIt             = iConfig.getUntrackedParameter<int> ("eventId");
+  nJets             = iConfig.getUntrackedParameter<int> ("numberOfJets");
   //triggerSrc        = iConfig.getParameter<edm::InputTag> ("triggerSource");
   
 
@@ -48,21 +49,13 @@ TtNtupleProd::TtNtupleProd(const edm::ParameterSet& iConfig)
   semiSol     = new TtSemiEventSolution( iConfig );
 
   theFile->cd();
-  //ntuples.muTree  = new ObjNtp("selMu");
-  //ntuples.jetTree = new ObjNtp("selJet");
-  //ntuples.neuTree = new ObjNtp("solNeu");
-  //ntuples.solTree = new SolNtp("solTt");
 
-  ntuples.muTree  = 0 ;
-  ntuples.jetTree = 0 ;
-  ntuples.neuTree = 0 ;
-  ntuples.solTree = 0 ;
-  ntuples.mu3Jets = new SolNtp2("mu3Jets");
-  ntuples.mu4Jets = new SolNtp2("mu4Jets");
-  ntuples.mcmTree = 0 ;
-  ntuples.genTree = 0 ;
-  if ( !isData ) ntuples.mcmTree = new SolNtp("mcmTt");
-  if ( !isData ) ntuples.genTree = new ObjNtp("gen");
+  //ntuples.mu3Jets = new SolNtp2("mu3Jets" );
+  ntuples.muJets = new SolNtp2("muJets" );
+  if ( !isData ) ntuples.mcmTree = new mcNtp("mcmTt");
+  if ( !isData ) ntuples.genTree = new mcNtp("genTt");
+  //if ( !isData ) ntuples.mcmTree = new SolNtp("mcmTt");
+  //if ( !isData ) ntuples.genTree = new ObjNtp("gen");
 
 }
 
@@ -73,28 +66,25 @@ TtNtupleProd::~TtNtupleProd()
    // (e.g. close files, deallocate resources etc.)
    if (debug) cout << "[TtNtupleProd Analysis] Destructor called" << endl;
 
-   delete MCMatching;
-   delete semiSol;
-   
    theFile->cd();
-   //ntuples.muTree->Write();
-   //ntuples.jetTree->Write();
-   //ntuples.neuTree->Write();
-   //ntuples.solTree->Write();
-   ntuples.mu3Jets->Write();
-   ntuples.mu4Jets->Write();
+   if (debug) cout << "[Wrote the ntuples]" << endl;
+   
+   ntuples.muJets->Write();
    if ( !isData ) ntuples.mcmTree->Write();
    if ( !isData ) ntuples.genTree->Write();
+   
 
-   if (debug) cout << "[Wrote the ntuples]" << endl;
+   //Close the Root file
+   //theFile->Write();
+   theFile->Close();
+   if (debug) cout << "************* Finished writing ntuples to file" << endl;
 
    //Release the memory
    //delete &ntuples;
+   delete MCMatching;
+   delete semiSol;
+   
    if (debug) cout << "[Release the memory of ntuples]" << endl;
-
-   //Close the Root file
-   theFile->Close();
-   if (debug) cout << "************* Finished writing ntuples to file" << endl;
 
 }
 
@@ -118,15 +108,16 @@ void TtNtupleProd::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
    //cout<<" 1. building "<<endl;
    //semiSol->BuildSemiTt(iEvent, 1, evtIt, &ntuples );
-   semiSol->RecordSolutions(iEvent, 1, evtIt, 3, ntuples.mu3Jets );
-   semiSol->RecordSolutions(iEvent, 1, evtIt, 4, ntuples.mu4Jets );
+   //cout<<" find N jets event "<<endl;
+   semiSol->RecordSolutions(iEvent, 1, evtIt, nJets, ntuples.muJets );
 
    // The Feed the gen Tree 
    if ( !isData ) {
+      //cout<<" the mc matched event "<<endl;
       Handle<std::vector<reco::GenParticle> > genParticles;
       iEvent.getByLabel(genSrc, genParticles);
       //cout<<" 2. GEN "<<endl;
-      MCMatching->MCTreeFeeder( genParticles, ntuples.genTree, evtIt );
+      //MCMatching->MCTreeFeeder( genParticles, ntuples.genTree, evtIt );
       //cout<<" 3. MC Matching "<<endl;
       semiSol->MCBuildSemiTt(iEvent, 1, evtIt, &ntuples );
    }

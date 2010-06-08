@@ -1,15 +1,17 @@
 #include "MassAnaInput.h"
 
-MassAnaInput::MassAnaInput( TString channel, double massL, double massH ) {
+MassAnaInput::MassAnaInput() {
 
-  hname = channel+"TM";
   probName = "probM";
-
-  mL = massL;
-  mH = massH;
-  ch_name = channel;
   weighting = true;
  
+  string decayType ;
+  GetParameters( "DecayType", &decayType );
+  GetParameters( "MassLBound", &mL );
+  GetParameters( "MassLBound", &mH );
+
+  ch_name = decayType;
+  hname = decayType + "TM";
   //n_btag = NBTag;
   GetParameters( "bThreshold", &bTh);
   GetParameters( "n_btag", &n_btag);
@@ -58,9 +60,10 @@ TTree* MassAnaInput::GetTree( string chName, TString treeName, TFile* file  ) {
      string ChainName = chName.substr( 0, chName.size()-1 ) + "Chain"  ;
      vector<string> chainlist;
      GetParameters( ChainName, &chainlist );
+     cout<<" * fileName+ = "<< ChainName <<endl;
      for ( size_t j=0; j< chainlist.size(); j++) {
          theFileName = chainlist[j]+".root" ;
-         cout<<" ** fileName = "<< theFileName <<endl;
+         //cout<<" ** fileName = "<< theFileName <<endl;
          theChain->Add( theFileName );
      }
      tr = theChain ;

@@ -1,17 +1,20 @@
 #include "MassAna.h"
 
-MassAna::MassAna( TString channel, double massL, double massH  ){
+MassAna::MassAna(){
 
   ptype  = ".gif";
 
-  cname = channel;
+  fitInput = new MassAnaInput();
+  fitInput->Initialize( &hfolder  );
 
-  mL = massL ;
-  mH = massH ;
+  string decayType ;
+  fitInput->GetParameters( "DecayType", &decayType);
+  cname = decayType;
+
+  fitInput->GetParameters( "MassLBound", &mL);
+  fitInput->GetParameters( "MassHBound", &mH);
 
   fitFunc  = new MassFitFunction();
-  fitInput = new MassAnaInput( channel, massL, massH );
-  fitInput->Initialize( &hfolder  );
 
   gSystem->mkdir(hfolder);
 
