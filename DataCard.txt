@@ -1,41 +1,114 @@
 #
-# This is the data card for the input of TopMassFit 
+# This is the data card for the input of M2M3 analysis and TopMassFitter 
 # Auther : SCKao - UCRiverside
 #
 
 # Folder to store results
-Path = M2M3Test/NoJESwB/
+Path = M2M3WMt_4JPFA/
 
 # Luminostiy( pb^-1 ) before July
-Lumi = 50
+Lumi = 5
+
+# JES type 0: no JES, 1:JEC, 2:JES
+JESType = 0
+IsMES = OFF
+
+# Number of Jets
+n_Jets = 4
+
+# Number of b tagged
+# -1 : no btagged , 0: 1+2 btagged , 1: 1 btagged , 2: 2 btagged
+# https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagOctober09ExerciseUsePayload
+n_btag = -1
+bThreshold = 5
 
 #  cross-sections for 7 TeV Collision
 #  MuEnriched QCD is x-section*FilterEfficiency
-#         ( tt_in, wj_lj, zj_mm, tq_in, tw_in, ww_in, wz_in, qcd_mux )
+#         ( tt_in, wj_mj, zj_mm, tq_in, tw_in, ww_in, wz_in, qcd_mux )
 channel= (    tt,    wj,    zj,    tq,    tw,    ww,    wz,     qcd )
-xsec   = (   165,  6925, 933.3,    63,  10.6,    43,    18,  109853 )
+xsec   = (   165,  9333.3, 933.3,  63,  10.6,    43,    18,  109853 )
 #xsec10 = (   385, 14266,  1400,   130,    29,    74,    32,  109853 )
-EffHLT = ( 0.204, 0.642, 0.447, 0.247, 0.192,  0.13,   0.1,    0.38 )
-nEvents= (  1571, 483586, 273762, 126345, 89431, 14780, 10940, 1200000 )
+EffHLT = ( 0.198, 0.645, 0.447, 0.247, 0.192,  0.13,   0.1,    0.379 )
+nEvents = ( 23692, 1334526, 933793, 126345, 89431, 14780, 10940, 1949012 )
+
+# set up the module to run,  0 => off , 1=> on
+#          0:ObjectInfo 1:HadTopFitter 2:LepTopFitter 3:EnsembleTest, 4: S/B Ratio 5:MethodTest 6:X-section Measure
+Module = ( 1,           1,             0 ,            0,              0,           0,           0 )
+# Random Number Seed , 0 : using system time for the seed
+RandomSeed = 0
+# ON/OFF for MC matching 
+MCMatching = OFF
+
+# M2M3 window, M2_Min, M2_Max, M3_Min, M3_Max 
+#M2M3Cuts = ( 50, 110, 140, 200 )
+M2M3Cuts = ( 0, 300, 0, 350 )
+LepM2tCutL = 0
+dM3Cut = 999
+
+# number of pseudo experiments
+nPseudoExp = 10
+# input mean for pseudo experiments
+#              tt4J,  wj4J,  QCD4J,    wj2J,   qcd2J
+# InputMean = ( 25.36,  6.52,   8.97,  513.57,  503.29  ) .. old value for pf
+
+# pfA              
+InputMean = ( 24.81,  6.18,   7.90,  494.08,  478.29  )
+#For JES 1.1
+#InputMean = ( 27.34,  9.50,   13.03,  635.37,  609.13  )
+#For JES 0.9
+#InputMean = ( 21.77,  3.72,   4.91,  373.24,  343.07  )
+# caloA
+#InputMean = ( 24.43,  7.10,   7.80,  517.97,  413.42  )
+
+# ON/OFF for phase space smearing
+PhaseSmear = OFF
+# Jet Energy Scale
+JES = 1.
+
 # FileName list for pseudo experiment
-FakeData =    ( tt171_336, wj_336, zj_336, tq_336, tw_336, ww_336, wz_336, qcd1_336 )
-# FileName list for parameterization, or ChainName+ ;  
 # '+' is the flag for TChain 
-Backgrounds = ( wj_336, zj_336, tq_336, tw_336, ww_336, wz_336, QCD+ )
+# FakeData =    ( tt171_336, wj_336, zj_336, tq_336, tw_336, ww_336, wz_336, qcd+ )
+
+#FakeData =    ( tt_356_4jcaloA, wj_356_4jcaloA, qcd+  )
+#qcdChain = ( qcd_356_4jcaloA1, qcd_356_4jcaloA2, qcd_356_4jcaloA3, qcd_356_4jcaloA4, qcd_356_4jcaloA5, qcd_356_4jcaloA6, qcd_356_4jcaloA7 )
+#2JSamples  = ( tt_356_2jcaloA, wj_356_2jcaloA, qcd2J+ )
+#qcd2JChain = ( qcd_356_2jcaloA1, qcd_356_2jcaloA2, qcd_356_2jcaloA3, qcd_356_2jcaloA4, qcd_356_2jcaloA5, qcd_356_2jcaloA6, qcd_356_2jcaloA7 )
+
+FakeData =    ( tt_356_4jpfA, wj_356_4jpfA, qcd+  )
+qcdChain = ( qcd_356_4jpfA1, qcd_356_4jpfA2, qcd_356_4jpfA3, qcd_356_4jpfA4, qcd_356_4jpfA5, qcd_356_4jpfA6, qcd_356_4jpfA7 )
+2JSamples  = ( tt_356_2jpfA, wj_356_2jpfA, qcd2J+ )
+qcd2JChain = ( qcd_356_2jpfA1, qcd_356_2jpfA2, qcd_356_2jpfA3, qcd_356_2jpfA4, qcd_356_2jpfA5, qcd_356_2jpfA6, qcd_356_2jpfA7 )
+
+# JES 1.1
+#FakeData =    ( tt_356_4jpfB, wj_356_4jpfB, qcd+  )
+#qcdChain = ( qcd_356_4jpfB1, qcd_356_4jpfB2, qcd_356_4jpfB3, qcd_356_4jpfB4, qcd_356_4jpfB5, qcd_356_4jpfB6, qcd_356_4jpfB7 )
+#2JSamples  = ( tt_356_2jpfB, wj_356_2jpfB, qcd2J+ )
+#3qcd2JChain = ( qcd_356_2jpfB1, qcd_356_2jpfB2, qcd_356_2jpfB3, qcd_356_2jpfB4, qcd_356_2jpfB5, qcd_356_2jpfB6, qcd_356_2jpfB7 )
+
+# JES 0.9
+#FakeData =    ( tt_356_4jpfC, wj_356_4jpfC, qcd+  )
+#qcdChain = ( qcd_356_4jpfC1, qcd_356_4jpfC2, qcd_356_4jpfC3, qcd_356_4jpfC4, qcd_356_4jpfC5, qcd_356_4jpfC6, qcd_356_4jpfC7 )
+#2JSamples  = ( tt_356_2jpfC, wj_356_2jpfC, qcd2J+ )
+#3qcd2JChain = ( qcd_356_2jpfC1, qcd_356_2jpfC2, qcd_356_2jpfC3, qcd_356_2jpfC4, qcd_356_2jpfC5, qcd_356_2jpfC6, qcd_356_2jpfC7 )
+
+# FileName list for parameterization, or ChainName+ ;  
+Backgrounds = ( wj1_356, zj_336, tq_336, tw_336, ww_336, wz_336, qcd1_356 )
 #  -1: disable, 0: group with tt-wrong,  >= 1: other groups
-BgGroups =    (      0,      0,      0,      0,      0,      0,        1 )
-QCDChain = ( qcd1_336, qcd2_336, qcd3_336, qcd4_336, qcd5_336, qcd7_336 )
+BgGroups =    (      0,      0,      0,      0,      0,      0,     1 )
 # top mass assumption 
-Signals = ( tt163_336, tt165_336, tt167_336, tt169_336, tt171_336, tt173_336, tt175_336, tt177_336 )
+Signals = ( tt_356 )
+
+# range for mass fitting 
+MassLBound = 0
+MassHBound = 450 
+
+# Hadronic(had) or Leptonic(lep)
+DecayType = had
+
+#Signals = ( tt163_336, tt165_336, tt167_336, tt169_336, tt171_336c, tt173_336, tt175_336, tt177_336 )
 TMassAssumption = ( 163.2, 165.2, 167.2, 169.2, 171.2, 173.2, 175.2, 177.2 )
 # color code
 ColorCode = (  2, 4, 3, 5, 7, 6, 9, 8 )
-
-# Number of b tagged
-# -1 : no btagged , 0: 1+2 btagged 
-# https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagOctober09ExerciseUsePayload
-n_btag = 0
-bThreshold = 3.9
 
 # Fitting parameters for AlgoKcon
 #
@@ -46,5 +119,5 @@ L0B0 = ( 41.246,  -1., -6.505,  2.336,   0.0,  31.796, 107.098, -0.886,  151.034
 L0B1 = (  0.092,   1.,  0.196, -0.007,   1.0,  -0.012,   0.316,  0.204,    0.023,  -0.003,  -0.002,  -0.020 )
 #     10 GeV Bin - dM*hadW Constrain for Hadronic Top
 H0B0 = ( 62.167, 4.508, 2.097, -3.413, 161.463, 10.687, 183.757, 37.475,   0.,    0.,  0.919,  0. )
-H0B0 = ( -0.099, 0.969, 0.142,  0.038,   0.205,  0.134,   0.000,  0.000,   0.,    0.,  0.007,  0. )
+H0B1 = ( -0.099, 0.969, 0.142,  0.038,   0.205,  0.134,   0.000,  0.000,   0.,    0.,  0.007,  0. )
 
