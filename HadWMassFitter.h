@@ -39,7 +39,8 @@ class HadWMassFitter : public TObject {
 
 private:
 
-
+   vector<double> jetCuts;
+   vector<double> muonCuts;
    vector<double> M2M3Cut;
    double LepM2tCutL ;
    double dM3Cut ;
@@ -54,16 +55,16 @@ private:
 
    double bTh;
    int    n_btag;
-   int    n_Jets;
    int    JESType;
+
+   string Inclusive ;
+   bool inclu ;
 
    MassAnaInput*    fitInput;
    PseudoExp*       pseudoExp;
 
    TCanvas* c1;
    TCanvas* c2;
-
-   TFile* theFiles[3] ;
 
    string hfolder;
 
@@ -108,7 +109,7 @@ public:
    void ResetCuts( double m2L = -1, double m2H = -1, double m3L = -1, double m3H = -1, double lepM2tL = -1, double lepM2tH = -1, bool GetDefault = false );
 
    // methods for old soltree
-   double ReFitSolution( string mName, recoObj* wObj, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0, bool smearing = false, TTree* theTree = NULL );
+   double ReFitSolution( string mName, recoObj* wObj, int nJets, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0, bool smearing = false );
 
    void MCSolution( string fileName, recoObj* wObj );
 

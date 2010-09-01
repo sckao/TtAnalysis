@@ -33,18 +33,6 @@ Double_t MassFitFunction::fitLG(Double_t *x, Double_t *par) {
      return fitV;
 }
 
-Double_t MassFitFunction::fitTL(Double_t *x, Double_t *par) {
-
-     //Double_t A1 = exp(par[1]*x[0]) + par[3]*log( x[0] + 100. );
-     Double_t A0 = x[0] + 50 ;
-     Double_t A2 = x[0]  ;
-     Double_t A1 = exp(par[1]*x[0]) + par[3]/A0 
-                 + par[4]*A2 + par[5]*A2*A2 + par[6]*A2*A2*A2;
-     Double_t fitV = exp( par[0]/x[0] + par[2] ) * A1 ;
-     return fitV;
-
-}
-
 Double_t MassFitFunction::fitLD(Double_t *x, Double_t *par) {
 
       Double_t ld_Value = TMath::Landau(x[0],par[1],par[2]) ;
@@ -54,7 +42,7 @@ Double_t MassFitFunction::fitLD(Double_t *x, Double_t *par) {
 }
 Double_t MassFitFunction::fitParabola( Double_t *x, Double_t *par ){
 
-     Double_t chi = (x[0] - par[0]) / (par[1]+ 0.001);
+     Double_t chi = (x[0] - par[0]) / ( 1.414*par[1] ) ;
      Double_t fV = chi*chi + par[2] ;
      return fV;
 }
@@ -88,13 +76,6 @@ Double_t MassFitFunction::fitSG1(Double_t *x, Double_t *par) {
 
      Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
      Double_t cb_Val = gs + fitLD( x, &par[3] ) ;
-     return cb_Val = par[0] * cb_Val ;
-}
-
-Double_t MassFitFunction::fitSG2(Double_t *x, Double_t *par) {
-
-     Double_t gs = TMath::Gaus(x[0],par[1],par[2]);
-     Double_t cb_Val = gs + fitPoly( x, &par[3] ) ;
      return cb_Val = par[0] * cb_Val ;
 }
 
@@ -199,7 +180,112 @@ Double_t MassFitFunction::ConvSGGS(Double_t *x, Double_t *par) {
    return step*sum ;
 }
 
-std::vector<bool> MassFitFunction::DataRejection( TF1* fitfunc, Double_t* x, Double_t* y, int N_data ) {
+Double_t MassFitFunction::fJacob(Double_t x, Double_t par0, Double_t par1, Double_t par2, Double_t par3, Double_t par4 ) {
+
+   Double_t jaco  = 0. ;
+   Double_t scale = 1.  ;
+   Double_t wM    = par4 ;
+   Double_t Mt    = par1*x ;
+
+   Double_t jacob = 0.;
+   if ( Mt <= wM && Mt > par2 ) {
+      jaco  = sqrt(  (wM*wM) - ( Mt*Mt )  ) ;
+      scale = ( par0 + Mt  );
+      jacob = scale / jaco ;
+   } else if ( Mt <= wM && Mt <= par2 ) {
+      jaco  = sqrt(  (wM*wM) - ( Mt*Mt )  ) ;
+      scale = (Mt*Mt/wM);
+      jacob = scale / jaco ;
+   } else {
+      jacob =  0. ;
+   }
+   return jacob*par3 ;
+}
+
+Double_t MassFitFunction::fitJacob(Double_t* x, Double_t* par ) {
+
+   Double_t xx = x[0] ;
+   Double_t jacob = fJacob( xx, par[0], par[1], par[2], par[3], par[4] )  ;
+   return jacob ;
+}
+
+Double_t MassFitFunction::fBWJacob(Double_t x, Double_t par0, Double_t par1, Double_t par2, Double_t par3, Double_t par4, Double_t par5 ) {
+
+   Double_t np   = 202 ;
+   Double_t nsg  = 3.0 ;
+   Double_t p4low = par4 - nsg*par5;
+   Double_t p4up  = par4 + nsg*par5;
+   Double_t step = (p4up - p4low) / np ;
+   Double_t sum = 0. ;
+   Double_t p4, fjb; 
+
+   for (double i=1.; i<= np/2; i++  ) {
+       p4 = p4low + (i-.5) * step;
+       fjb = fJacob(x, par0, par1, par2, par3, p4 ) ;
+       sum += fjb * TMath::BreitWigner(par4, p4, par5 ) ;
+
+       p4 = p4up - (i-.5) * step;
+       fjb = fJacob(x, par0, par1, par2, par3, p4 ) ;
+       sum += fjb * TMath::BreitWigner(par4, p4, par5 ) ;
+   } 
+	
+   return step*sum  ;
+}
+
+Double_t MassFitFunction::ConvJacob(Double_t *x, Double_t *par) {
+
+   Double_t np   = 200 ;
+   Double_t sg   = 3.0 ;
+   Double_t width = 1 ;
+   //if ( x[0] >= 0 ) width = 4 + par[6]*sqrt(x[0] );
+   if ( x[0] >= 0 ) width = par[6];
+   Double_t xlow = x[0] - width*sg ;
+   Double_t xup  = x[0] + width*sg ;
+   Double_t step = (xup - xlow) / np ;
+   Double_t sum = 0. ;
+   Double_t xx, fjb; 
+
+   for (double i=1.; i<= np/2; i++  ) {
+       xx = xlow + (i-.5) * step;
+       fjb = fBWJacob(xx,par[0], par[1], par[2], par[3], par[4], par[5] ) ;
+       //fjb = fJacob(xx,par[0], par[1], par[2], par[3], par[4] )*par[5] ;
+       sum += fjb * TMath::Landau(x[0], xx, width, kTRUE );
+       //sum += fjb * TMath::Gaus(x[0], xx, width, kTRUE )  ;
+
+       xx = xup - (i-.5) * step;
+       fjb = fBWJacob(xx,par[0], par[1], par[2] , par[3], par[4], par[5] ) ;
+       //fjb = fJacob(xx,par[0], par[1], par[2] , par[3], par[4] )*par[5] ;
+       sum += fjb * TMath::Landau(x[0], xx, width, kTRUE ) ;
+       //sum += fjb * TMath::Gaus(x[0], xx, width, kTRUE )  ;
+   } 
+	
+   return step*sum  ;
+}
+
+Double_t MassFitFunction::fGSJacob(Double_t* x, Double_t* par) {
+
+   Double_t np   = 202 ;
+   Double_t nsg  = 3.0 ;
+   Double_t p4low = par[4] - nsg*par[5];
+   Double_t p4up  = par[4] + nsg*par[5];
+   Double_t step = (p4up - p4low) / np ;
+   Double_t sum = 0. ;
+   Double_t p4, fjb; 
+
+   for (double i=1.; i<= np/2; i++  ) {
+       p4 = p4low + (i-.5) * step;
+       fjb = fJacob(x[0], par[0], par[1], par[2], par[3], p4 ) ;
+       sum += fjb * TMath::Gaus(par[4], p4, par[5], kTRUE ) ;
+
+       p4 = p4up - (i-.5) * step;
+       fjb = fJacob(x[0], par[0], par[1], par[2], par[3], p4 ) ;
+       sum += fjb * TMath::Gaus(par[4], p4, par[5], kTRUE ) ;
+   } 
+	
+   return step*sum*par[6]  ;
+}
+
+vector<bool> MassFitFunction::DataRejection( TF1* fitfunc, Double_t* x, Double_t* y, int N_data ) {
 
      // calculate sigma of the fit
      double dv=0.;
@@ -244,4 +330,101 @@ bool MassFitFunction::DataRejection(double sigma, double deviation, int N_data )
     if ( nExpected < 0.99 ) reject = true;
 
     return reject;
+}
+
+vector<double>  MassFitFunction::StatErr( double m ){
+
+  vector<double> pErr ;
+  if ( m < 1. ) {
+     pErr.push_back( -1*m ) ;
+     pErr.push_back( m ) ;
+  }
+  else if ( m > 25. ) {
+     pErr.push_back( -1*sqrt(m) ) ;
+     pErr.push_back( sqrt(m) ) ;
+  }
+  else {
+
+     double step = 0.01 ;
+
+     // -34%
+     double k = m ;
+     double lm = 0. ;
+     double pp = 0. ;
+     while (lm <= 0.34 || k < 0 ) {
+          k = k - step ;
+          pp = TMath::Poisson( k, m );
+          lm = lm + (pp*step) ;
+     }
+     // +34%
+     double j = m ;
+     double hm = 0 ;
+     double hp = 0 ;
+     while ( hm <=0.34 || j < 0 ) {
+           j = j + step ;
+           hp = TMath::Poisson( j, m );
+           hm = hm + (hp*step) ;
+           //cout<<" j = "<< j <<" , p = "<< hp <<" int_P = "<< hm <<endl;
+     }
+     pErr.push_back( k - m ); // downward fluctuation
+     pErr.push_back( j - m ); // upward fluctuation
+  }
+  return pErr ;
+
+}
+/*
+vector<double>  MassFitFunction::ErrAovB( double A, double s_A, double B, double s_B ){
+
+    vector<double> sA = StatErr( A ) ;
+    double sAp = ( s_A != -1 ) ? s_A : sA[1];
+    double sAn = ( s_A != -1 ) ? s_A : -1*sA[0];
+    vector<double> sB = StatErr( B ) ;
+    double sBp = ( s_B != -1 ) ? s_B : sB[1];
+    double sBn = ( s_B != -1 ) ? s_B : -1*sB[0];
+
+    double f = A / B ;
+    double s_fp = sqrt( sAp*sAp + f*f*sBp*sBp ) / B ;
+    double s_fn = sqrt( sAn*sAn + f*f*sBn*sBn ) / B ;
+
+    vector<double> sf ;
+    sf.push_back( s_fn );
+    sf.push_back( s_fp );
+    return sf ;
+
+}
+*/
+double MassFitFunction::ErrAovB( double A, double B, double s_A, double s_B, bool upward ){
+
+    vector<double> sA = StatErr( A ) ;
+    double sAp = ( s_A != -1 ) ? s_A : sA[1];
+    double sAn = ( s_A != -1 ) ? s_A : -1*sA[0];
+    vector<double> sB = StatErr( B ) ;
+    double sBp = ( s_B != -1 ) ? s_B : sB[1];
+    double sBn = ( s_B != -1 ) ? s_B : -1*sB[0];
+
+    double f = A / B ;
+    double s_fp = sqrt( sAp*sAp + f*f*sBp*sBp ) / B ;
+    double s_fn = sqrt( sAn*sAn + f*f*sBn*sBn ) / B ;
+
+    double sf = ( upward ) ? s_fp : s_fn ;
+    return sf ;
+
+}
+
+double MassFitFunction::ErrAxB( double A, double B, double s_A, double s_B, bool upward ){
+
+    vector<double> sA = StatErr( A ) ;
+    double sAp = ( s_A != -1 ) ? s_A : sA[1];
+    double sAn = ( s_A != -1 ) ? s_A : -1*sA[0];
+    vector<double> sB = StatErr( B ) ;
+    double sBp = ( s_B != -1 ) ? s_B : sB[1];
+    double sBn = ( s_B != -1 ) ? s_B : -1*sB[0];
+
+    double f = A * B ;
+    double s_fp = sqrt( B*B*sAp*sAp + A*A*sBp*sBp ) ;
+    double s_fn = sqrt( B*B*sAn*sAn + A*A*sBn*sBn ) ;
+
+    double sf = ( upward ) ? s_fp : s_fn ;
+    return sf ;
+
 }

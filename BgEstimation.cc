@@ -1,631 +1,1113 @@
+
 #include "BgEstimation.h"
-#include "WFormat.h"
 
-BgEstimation::BgEstimation(){
+BgEstimation::BgEstimation() {
 
-  fitFunc   = new MassFitFunction();
   fitInput  = new MassAnaInput();
-  wmfitter  = new HadWMassFitter();
-  pseudoExp = new PseudoExp();
+  objInfo   = new ObjectInfo();
+
+  fitInput->GetParameters( "Path", &hfolder );
+  fitInput->GetParameters( "PlotType", &plotType );
 
   string phaseSmear ;
   fitInput->GetParameters( "PhaseSmear", &phaseSmear );
   smearing = ( phaseSmear == "ON" ) ? true : false ;
 
-  fitInput->GetParameters( "Path", &hfolder );
-  theFolder = hfolder ;
-  gSystem->mkdir( theFolder );
-
-  fitInput->GetParameters( "InputMean", &inputMean );
-
 }
 
 BgEstimation::~BgEstimation(){
 
-  delete fitFunc;
   delete fitInput ;
-  delete wmfitter ;
-  delete pseudoExp ;
+  delete objInfo ;
 
 }
 
-// Exercise for background estimation
-vector<double> BgEstimation::Ratio42( int statIdx ){
+// use 1 inclusive file 
+// index : 0->all , 1->nonQCD ,  2->QCD     => using EvtSelector
+// index :          3->nonQCD ,  4->QCD     => using QCDSelector
+vector<double> BgEstimation::RatioXY( int njx, int njy, vector<string>& fNames, int index, bool doPlot, bool inclX, bool inclY, bool normMC ){
 
-  cout<<" ---  Measuring Ratio(4J/2J) --- "<<endl;
-  vector<string> File4J ;
-  fitInput->GetParameters( "FakeData", &File4J );
+      ostringstream nameStr ;
+      nameStr << "R" ;
+      nameStr << index ;
+      nameStr << "_" ;
+      nameStr << "J" ;
+      nameStr << njx ;
+      nameStr << "J" ;
+      nameStr << njy ;
+      if ( fNames[0].substr(0,4) == "data" ) nameStr << "_data" ;
+      cout<<" ===  Measuring Ratio "<< njx <<"/"<<njy<<" === "<< nameStr.str() <<endl;
 
-  vector<string> File2J ;
-  fitInput->GetParameters( "2JSamples", &File2J );
+      if ( index == 3 ) objInfo->ResetBGCuts(0, 50 );
+      if ( index == 3 ) objInfo->ResetBGCuts(1, 30 );
+      if ( index == 4 ) objInfo->ResetBGCuts(0, 35 );
+      if ( index == 4 ) objInfo->ResetBGCuts(1, 20 );
+      if ( normMC ) objInfo->Reset(1,true) ;
+      int scaleMode =  ( normMC ) ? 2 : 0  ;
 
-  vector<double> nEvts ;
-  fitInput->GetParameters( "nEvents" , &nEvts );
+      double theScale = 1 ;
 
-  double scaleTt0  = fitInput->NormalizeComponents( "tt" );
-  double scaleWJ0  = fitInput->NormalizeComponents( "wj" );
-  double scaleQCD0 = fitInput->NormalizeComponents( "qcd" );
-  double scaleTt   = ( statIdx != 0 ) ? scaleTt0*static_cast<double>( statIdx )    : scaleTt0  ;
-  double scaleQCD  = ( statIdx != 0 ) ? scaleQCD0*static_cast<double>( statIdx )   : scaleQCD0 ;
-  double scaleWJ   = ( statIdx != 0 ) ? scaleWJ0*static_cast<double>( statIdx )   : scaleWJ0  ;
-  cout<<" renew scaleTt = "<< scaleTt <<"  scaleWJ = "<< scaleWJ <<"  scaleQCD = "<< scaleQCD <<endl; 
+      objInfo->Reset(0, inclX );
+      objInfo->Reset(0, njx) ;
+      hLepM2* nc_xj = new hLepM2( nameStr.str().substr(3,2) ) ;
+      for ( int i = 0; i < fNames.size(); i++) {
+          if ( index == 1 && i == 2 ) continue ; 
+          if ( index == 2 && i != 2 ) continue ; 
+          if ( fNames[i].substr(0,2) == "tt" ) theScale = fitInput->NormalizeComponents( "tt" )  ;
+          if ( fNames[i].substr(0,2) == "wj" ) theScale = fitInput->NormalizeComponents( "wj" )  ;
+          if ( fNames[i].substr(0,2) == "zj" ) theScale = fitInput->NormalizeComponents( "zj" )  ;
+          if ( fNames[i].substr(0,2) == "qc" ) theScale = fitInput->NormalizeComponents( "qcd" )  ;
+          if ( fNames[i].substr(0,2) == "tq" ) theScale = fitInput->NormalizeComponents( "tq" )  ;
+          if ( fNames[i].substr(0,2) == "tw" ) theScale = fitInput->NormalizeComponents( "tw" )  ;
+          if ( index <= 2 )  objInfo->EvtSelector( fNames[i], nc_xj, smearing, theScale );
+          if ( index == 3 )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, false, scaleMode );
+          if ( index == 4 )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, true,  scaleMode );
+          
+      }
+      vector<double> nData_xj ;
+      nc_xj->CounterVec( nData_xj );
 
-  // reset cuts -- remove m2m3 and leptonic m2t constrains
-  wmfitter->ResetCuts( 0, 300, 0, 350, 0, 999 );
+      if ( doPlot ) {
+         TString chtag = nameStr.str().substr(0,5) ; 
+         vector<TH1D*> hs_xj ;
+	 nc_xj->Fill1DVec( hs_xj );
+	 LepM2Plotter( hs_xj, chtag );
+      }
 
-  // ratio(4J/2J) 
-  bgCounter* count4j = new bgCounter();
-  wmfitter->ReFitSolution( File4J[1], count4j, scaleWJ,  NULL, statIdx, smearing );
-  vector<double> nW4JEvts = count4j->Output();
-  wmfitter->ReFitSolution( File4J[2], count4j, scaleQCD, NULL, statIdx, smearing );
-  vector<double> n4JEvts = count4j->Output();
-  double rW4J = nW4JEvts[0]/n4JEvts[0] ;
-  double rQ4J = 1. - rW4J  ;
-  cout<<" NoCut MC BG4J = "<< n4JEvts[0] <<"  W4J = "<< nW4JEvts[0] <<" QCD4J "<< n4JEvts[0] - nW4JEvts[0] <<endl;
-  cout<<"       Ratio_W4J = "<< rW4J  <<" Ratio_QCD4J = "<< rQ4J <<endl;
+      objInfo->Reset(0, inclY );
+      objInfo->Reset(0, njy) ;
+      hLepM2* nc_yj = new hLepM2( nameStr.str().substr(5,2) ) ;
+      for ( int i = 0; i < fNames.size(); i++) {
+          if ( index == 1 && i == 2 ) continue ; 
+          if ( index == 2 && i != 2 ) continue ; 
+          if ( fNames[i].substr(0,2) == "tt" ) theScale = fitInput->NormalizeComponents( "tt" )  ;
+          if ( fNames[i].substr(0,2) == "wj" ) theScale = fitInput->NormalizeComponents( "wj" )  ;
+          if ( fNames[i].substr(0,2) == "zj" ) theScale = fitInput->NormalizeComponents( "zj" )  ;
+          if ( fNames[i].substr(0,2) == "qc" ) theScale = fitInput->NormalizeComponents( "qcd" )  ;
+          if ( fNames[i].substr(0,2) == "tq" ) theScale = fitInput->NormalizeComponents( "tq" )  ;
+          if ( fNames[i].substr(0,2) == "tw" ) theScale = fitInput->NormalizeComponents( "tw" )  ;
+          if ( index <= 2 )  objInfo->EvtSelector( fNames[i], nc_yj, smearing, theScale );
+          if ( index == 3 )  objInfo->QCDSelector( fNames[i], nc_yj, smearing, theScale, false, scaleMode );
+          if ( index == 4 )  objInfo->QCDSelector( fNames[i], nc_yj, smearing, theScale, true,  scaleMode );
+      }
+      vector<double> nData_yj ;
+      nc_yj->CounterVec( nData_yj );
 
-  bgCounter* count2j = new bgCounter();
-  wmfitter->ReFitSolution( File2J[1], count2j, scaleWJ, NULL,  statIdx, smearing );
-  wmfitter->ReFitSolution( File2J[2], count2j, scaleQCD, NULL, statIdx, smearing );
-  vector<double> n2JEvts = count2j->Output();
-  cout<<" MC BG2J = "<< n2JEvts[0] << endl;
+      if ( doPlot ) {
+         TString chtag = nameStr.str().substr(0,3) + nameStr.str().substr(5,2);
+         vector<TH1D*> hs_yj ;
+	 nc_yj->Fill1DVec( hs_yj );
+	 LepM2Plotter( hs_yj, chtag );
+      }
 
-  /// understand the signal contamination
-  bgCounter* count2jtt = new bgCounter();
-  wmfitter->ReFitSolution( File2J[0], count2jtt, scaleTt, NULL, statIdx, smearing );
-  vector<double> n2JttEvts = count2jtt->Output();
-  cout<<" MC Tt2J  = "<< n2JttEvts[0] << endl;
+      if ( doPlot ) {
+         TString chtag = nameStr.str()  ;
+         RatioPlotter( nData_xj, nData_yj, chtag );
+      }
   
-  // ratio(4/2) without cuts
-  vector<double> ratio42;
-  ratio42.push_back(  n4JEvts[0] / n2JEvts[0]  ) ;
-  double sR = sqrt( n4JEvts[1] + ratio42[0]*ratio42[0]*n2JEvts[1]  ) / n2JEvts[0] ;
-  ratio42.push_back( sR ) ;
-  cout<<" [0,1] MC R4/2 = "<< ratio42[0] <<" +/- "<< ratio42[1]   <<endl;
+      vector<double> Rxy ;
+      for ( int i=0; i< 5; i++) {
+          Rxy.push_back( nData_xj[i]/nData_yj[i] ); 
+      }
+      for ( int i=0; i< 5; i++) {
+          double RxyErr = MassFitFunction::ErrAovB( nData_xj[i], nData_yj[i], nData_xj[i+5], nData_yj[i+5] );
+          Rxy.push_back( RxyErr ); 
+          cout<<" Ratio"<<i<<": "<< nData_xj[i] <<" / "<<nData_yj[i]<<" = "<< nData_xj[i]/nData_yj[i] ;
+          cout<<" +/- "<<RxyErr <<endl;
+      }
 
-  // reset the cuts -- use the default value from DataCard
-  wmfitter->ResetCuts( -1, -1, -1, -1, -1, -1, true );
-
-  // signal efficiency with cuts
-  bgCounter* count4jSg = new bgCounter();
-  wmfitter->ReFitSolution( File4J[0], count4jSg, scaleTt, NULL, statIdx, smearing );
-  vector<double> n4JSg= count4jSg->Output();
-  double  Eff = n4JSg[0] / (scaleTt0* nEvts[0]) ;
-  double sEff = sqrt(  n4JSg[1] +  (Eff*Eff*scaleTt0*nEvts[0]) ) / (scaleTt0*nEvts[0]) ;
-  ratio42.push_back( Eff );
-  ratio42.push_back( sEff );
-  cout<<" [2,3] Signal MC 4J = "<< n4JSg[0] <<" Eff = "<< Eff <<" +/- "<< sEff <<  endl;
-
-  // 4J background cut efficiency 
-  bgCounter* count4jc = new bgCounter();
-  wmfitter->ReFitSolution( File4J[1], count4jc, scaleWJ,  NULL, statIdx, smearing );
-  vector<double> nW4JcEvts = count4jc->Output();
-  wmfitter->ReFitSolution( File4J[2], count4jc, scaleQCD, NULL, statIdx, smearing );
-  vector<double> n4JcEvts = count4jc->Output();
-  double cutEffW4J =  nW4JcEvts[0]/nW4JEvts[0] ;
-  double cutEffQ4J = (n4JcEvts[0] -nW4JcEvts[0])/ (n4JEvts[0] - nW4JEvts[0]) ;
- 
-  cout<<" Cuts BG 4J = "<< n4JcEvts[0] <<"   W4J= "<< nW4JcEvts[0] <<" QCD4J= "<< n4JcEvts[0] - nW4JcEvts[0] <<endl;
-  cout<<"     Cut Eff W4J= "<< cutEffW4J  <<" QCD4J= "<< cutEffQ4J  <<endl;
-
-  // background efficiency => Ratio (4J_cuts/4J_all)
-  double cutEff = n4JcEvts[0]/n4JEvts[0] ;
-  vector<double> sEffBg = ErrAovB( n4JcEvts[0], -1, n4JEvts[0], -1 );
-
-  //double cutEff1 = (rW4J*cutEffW4J) + (rQ4J*cutEffQ4J) ;
-  //cout<<" cutEff1 = "<< cutEff1 <<endl ;
-  ratio42.push_back( cutEff );
-  ratio42.push_back( sEffBg[0] );
-  ratio42.push_back( sEffBg[1] );
-
-  cout<<" [4,5,6] CutEff(4J_cuts/4J_all) ="<< n4JcEvts[0]/n4JEvts[0] ;
-  cout<<" - "<< sEffBg[0] <<" + "<< sEffBg[1] <<endl;
-
-  delete count4j;
-  delete count2j;
-  delete count4jSg;
-  delete count4jc;
-
-  cout<<" Ratio Measured !! "<<endl;
-  
-  return ratio42 ;  
+      delete nc_xj ;
+      delete nc_yj ;
+      return Rxy ;
 }
 
-void BgEstimation::MethodTest(){
+// use 2 file lists which already have differnt jet multiplicity
+vector<double> BgEstimation::RatioXY( vector<string>& fNameX, vector<string>& fNameY, int index, bool includeTt, bool doPlot ){
 
-  // 0:Ratio42 , 1: sigma_Ratio42 , 2 : Signal Eff , 3: sigma of Signal Eff
-  vector<double> R42 = Ratio42( 0 ) ; 
+      cout<<" =====  Measuring Ratio from 2 Sets of files ===== "<<endl;
+      double theScale = 1 ;
+      //objInfo->Reset(0,true) ;
+      string chtag = "R42" ; 
 
-  vector<string> File4J ;
-  fitInput->GetParameters( "FakeData", &File4J );
+      objInfo->Reset(0, 4) ;
+      hLepM2* nc_xj = new hLepM2( "Nxj", 20. ) ;
+      for ( int i = 0; i < fNameX.size(); i++) {
+          if ( i > 3 ) continue ; 
+          if ( !includeTt && i == 0 && index <  0 ) continue; 
+          if ( index > -1 && i != index ) continue ; 
+          if ( fNameX[i].substr(0,2) == "tt" ) theScale = fitInput->NormalizeComponents( "tt" )  ;
+          if ( fNameX[i].substr(0,2) == "wj" ) theScale = fitInput->NormalizeComponents( "wj" )  ;
+          if ( fNameX[i].substr(0,2) == "zj" ) theScale = fitInput->NormalizeComponents( "zj" )  ;
+          if ( fNameX[i].substr(0,2) == "qc" ) theScale = fitInput->NormalizeComponents( "qcd" ) ;
+          if ( fNameX[i].substr(0,2) == "tq" ) theScale = fitInput->NormalizeComponents( "tq" )  ;
+          if ( fNameX[i].substr(0,2) == "tw" ) theScale = fitInput->NormalizeComponents( "tw" )  ;
+          objInfo->EvtSelector( fNameX[i], nc_xj, smearing, theScale );
 
-  vector<string> File2J ;
-  fitInput->GetParameters( "2JSamples", &File2J );
+      }
+      vector<double> nData_xj ;
+      nc_xj->CounterVec( nData_xj );
 
-  string phaseSmear ;
-  fitInput->GetParameters( "PhaseSmear", &phaseSmear );
-  bool smearing = ( phaseSmear == "ON" ) ? true : false ;
+      if ( doPlot ) {
+         vector<TH1D*> hs_xj ;
+	 nc_xj->Fill1DVec( hs_xj );
+	 LepM2Plotter( hs_xj, chtag );
+      }
 
-  double scaleTt0  = fitInput->NormalizeComponents( "tt" );
-  double scaleQCD0 = fitInput->NormalizeComponents( "qcd" );
-  double scaleWJ0  = fitInput->NormalizeComponents( "wj" );
-  double scaleQCD  = scaleQCD0* 3.  ;
-  double scaleWJ   = scaleWJ0* 3. ;
-  double scaleTt   = scaleTt0* 3.;
-  cout<<" renew scaleWJ = "<< scaleWJ <<"  scaleQCD = "<< scaleQCD <<endl; 
+      objInfo->Reset(0, 2) ;
+      hLepM2* nc_yj = new hLepM2( "Nyj", 20. ) ;
+      for ( int i = 0; i < fNameY.size(); i++) {
+          if ( i > 3 ) continue ; 
+          if ( !includeTt && i == 0 ) continue; 
+          if ( index > -1 && i != index ) continue ; 
+          if ( fNameY[i].substr(0,2) == "tt" ) theScale = fitInput->NormalizeComponents( "tt" )  ;
+          if ( fNameY[i].substr(0,2) == "wj" ) theScale = fitInput->NormalizeComponents( "wj" )  ;
+          if ( fNameY[i].substr(0,2) == "zj" ) theScale = fitInput->NormalizeComponents( "zj" )  ;
+          if ( fNameY[i].substr(0,2) == "qc" ) theScale = fitInput->NormalizeComponents( "qcd" )  ;
+          if ( fNameY[i].substr(0,2) == "tq" ) theScale = fitInput->NormalizeComponents( "tq" )  ;
+          if ( fNameY[i].substr(0,2) == "tw" ) theScale = fitInput->NormalizeComponents( "tw" )  ;
+          objInfo->EvtSelector( fNameY[i], nc_yj, smearing, theScale );
+      }
+      vector<double> nData_yj ;
+      nc_yj->CounterVec( nData_yj );
 
-  // run the execise - use the cuts in DataCard
-  wmfitter->ResetCuts( -1, -1, -1, -1, -1, -1, true );
-  bgCounter* count4jdata = new bgCounter();
-  wmfitter->ReFitSolution( File4J[1], count4jdata, scaleWJ, NULL,  -3, smearing );
-  vector<double> nW4JData= count4jdata->Output();
-  wmfitter->ReFitSolution( File4J[2], count4jdata, scaleQCD, NULL, -3, smearing );
-  vector<double> n4JData= count4jdata->Output();
+      if ( doPlot ) {
+         vector<TH1D*> hs_yj ;
+	 nc_yj->Fill1DVec( hs_yj );
+	 LepM2Plotter( hs_yj, chtag );
+      }
 
-  bgCounter* count4jSgData = new bgCounter();
-  wmfitter->ReFitSolution( File4J[0], count4jSgData, scaleTt, NULL, -3, smearing );
-  vector<double> n4JSgData= count4jSgData->Output();
+      chtag = "" ;
+      if ( doPlot ) RatioPlotter( nData_xj, nData_yj, chtag );
 
-  wmfitter->ResetCuts( 0, 300, 0, 350, 0, 999 );
-  bgCounter* count2jdata = new bgCounter();
-  wmfitter->ReFitSolution( File2J[1], count2jdata, scaleWJ,  NULL, -3, smearing );
-  wmfitter->ReFitSolution( File2J[2], count2jdata, scaleQCD, NULL, -3, smearing );
-  vector<double> n2JData = count2jdata->Output();
- 
-  cout<<" ========== M2M3 =============== "<<endl;
-  cout<<" Data Background 4J M2M3 = "<< n4JData[0] <<" WJ= "<< nW4JData[0] <<" QCD= "<< n4JData[0] - nW4JData[0]<< endl;
-  cout<<" Signal 4J M2M3 = "<< n4JSgData[0] << endl;
-  cout<<" Data Background 2J = "<< n2JData[0] << endl;
-  XSection( R42, n2JData[0], n4JData[0]+n4JSgData[0] ) ;
+      vector<double> R42 ;
+      for ( int i=0; i< 5; i++) {
+          R42.push_back( nData_xj[i]/nData_yj[i] ); 
+      }
+      for ( int i=0; i< 5; i++) {
+          double R42Err = MassFitFunction::ErrAovB( nData_xj[i], nData_yj[i], nData_xj[i+5], nData_yj[i+5] );
+          R42.push_back( R42Err ); 
+          cout<<" Ratio"<<i<<": "<< nData_xj[i] <<" / "<<nData_yj[i]<<" = "<< nData_xj[i]/nData_yj[i] ;
+          cout<<" +/- "<<R42Err <<endl;
+      }
 
-  cout<<" =============================== "<<endl;
-
-  delete count4jdata;
-  delete count2jdata;
-  delete count4jSgData;
-
-  cout<<" Count !! "<<endl;
+      delete nc_xj ;
+      delete nc_yj ;
+      return R42 ;
 }
 
-vector<double> BgEstimation::XSection( vector<double>& R42, double n2J, double n4J ){
 
-  vector<double> EffHLT ;
-  fitInput->GetParameters( "EffHLT" , &EffHLT );
-  double lumi ;
-  fitInput->GetParameters( "Lumi" , &lumi );
+vector<double> BgEstimation::BgEstimate( vector<double>& R42, vector<double>& nData_2j ){
 
-  cout<<" ========== Cross-Section Calculation =============== "<<endl;
-  cout<<" MC R4/2      = "<< R42[0] <<" +/- "<< R42[1]   <<endl;
-  cout<<" Data 2J M2M3 = "<< n2J <<" +/- "<< sqrt( n2J ) <<endl;
+     //vector<string> fNames ;
+     //fitInput->GetParameters( "FakeData", &fNames );
+     //vector<double> R42 = RatioXY( 4, 2, fNames, -1, false, false ) ;
 
-  double  Exp4JBG_noCut = R42[0]*n2J ;
-  vector<double> sExp4JBG_noCut = ErrAxB( R42[0], R42[1], n2J, -1 );
-  cout<<" Expected 4J Background w/o cuts = "<< Exp4JBG_noCut <<" - "<<  sExp4JBG_noCut[0] <<" + "<< sExp4JBG_noCut[1] << endl;
+     // 2. Calculate the 4Jets background and the uncertainty 
+     double bg4J = 0 ; 
+     double sbg4J[2] = {0,0} ;
+     double bg4JinPt[4] = { 0. } ;
 
-  double  Exp4JBG = ( R42[4] < 1. ) ? Exp4JBG_noCut*R42[4] : Exp4JBG_noCut ; 
-  vector<double> sExp4JBG ;
+     cout<<" BG Estimated : ( ";
+     for(int i=1; i<5; i++) {
 
-  if ( R42[4] < 1. ) {
-     vector<double> sExp4JBG_n = ErrAxB( Exp4JBG_noCut, sExp4JBG_noCut[0], R42[4], R42[5] );
-     vector<double> sExp4JBG_p = ErrAxB( Exp4JBG_noCut, sExp4JBG_noCut[1], R42[4], R42[6] );
-     sExp4JBG.push_back( sExp4JBG_n[0] );
-     sExp4JBG.push_back( sExp4JBG_p[0] );
-  } else {
-     sExp4JBG = sExp4JBG_noCut ;
-  }
-  cout<<" Expected 4J Background w/  cuts = "<< Exp4JBG <<" - "<<  sExp4JBG[0] <<" + "<< sExp4JBG[1] << endl;
+        bg4JinPt[i-1] = R42[i]*nData_2j[i] ;
 
-  double xsecTt = ( n4J - Exp4JBG ) / ( R42[2]*lumi*EffHLT[0] );
+        bg4J += R42[i]*nData_2j[i] ;
+        cout<<R42[i]*nData_2j[i] <<" , " ;
+        double pErr4J = MassFitFunction::ErrAxB( R42[i], nData_2j[i], R42[i+5], -1, true );
+        double nErr4J = MassFitFunction::ErrAxB( R42[i], nData_2j[i], R42[i+5], -1, false );
 
-  vector<double> s_n4J = StatErr( n4J );
-  double s2_Ttn = (s_n4J[0]*s_n4J[0]) + (sExp4JBG[0]*sExp4JBG[0]);
-  double s2_Ttp = (s_n4J[1]*s_n4J[1]) + (sExp4JBG[1]*sExp4JBG[1]);
-  double nExp  = ( n4J - Exp4JBG ) / R42[2] ;
-  double s_xsec_n = sqrt( s2_Ttn + nExp*nExp*R42[3]*R42[3] ) / ( R42[2]*lumi*EffHLT[0] );
-  double s_xsec_p = sqrt( s2_Ttp + nExp*nExp*R42[3]*R42[3] ) / ( R42[2]*lumi*EffHLT[0] );
+        sbg4J[0] += pErr4J*pErr4J ;
+        sbg4J[1] += nErr4J*nErr4J ;
+     }
+     cout<<" ) == "<< bg4J <<endl;
+     vector<double> bg4Jv ;
+     bg4Jv.push_back( bg4J ); 
+     bg4Jv.push_back( sqrt( sbg4J[0] ) ); // upward 
+     bg4Jv.push_back( sqrt( sbg4J[1] ) ); // downward
+     for ( int i=0; i<4; i++){
+         bg4Jv.push_back( bg4JinPt[i]  );
+     }
 
-  cout<<" Expected 4J Signal M2M3     = "<< n4J - Exp4JBG <<" - "<< sqrt( s2_Ttn )<<" + "<< sqrt( s2_Ttp ) << endl;
-
-  cout<<" *** Final XSection of Tt = "<< xsecTt <<" - "<< s_xsec_n <<" + "<< s_xsec_p <<endl ;
-  cout<<" =============================== "<<endl;
-
-  vector<double> xVs ;
-  xVs.push_back( xsecTt );
-  xVs.push_back( s_xsec_n );
-  xVs.push_back( s_xsec_p );
-  xVs.push_back( Exp4JBG );
-  return xVs ;
-
+     return bg4Jv ;
 }
 
-void BgEstimation::EnsembleTest( int randomSeed ){
+vector<double> BgEstimation::BgEstimate( vector<double>& R42, double nData_2j ){
 
-  cout<<" @@ Ensemble Test Start @@ "<<endl;
+     //vector<string> fNames ;
+     //fitInput->GetParameters( "FakeData", &fNames );
+     //vector<double> R42 = RatioXY( 4, 2, fNames, -1, false, false ) ;
 
-  TString treeName = "muJets";
+     // 2. Calculate the 4Jets background and the uncertainty 
+     double bg4J = R42[0]*nData_2j ;
 
-  // 4J Samples
-  vector<string> flist;
-  fitInput->GetParameters( "FakeData", &flist );
+     double pErr4J = MassFitFunction::ErrAxB( R42[0], nData_2j, R42[5], -1, true );
+     double nErr4J = MassFitFunction::ErrAxB( R42[0], nData_2j, R42[5], -1, false );
 
-  bgCounter* sg = new bgCounter();
-  vector<int> sglist = pseudoExp->GetEnsemble( flist[0], treeName, inputMean[0], randomSeed );
-  wmfitter->ReFitSolution( flist[0], sg,  1, &sglist );
-  vector<double> n4JTt = sg->Output();
+     cout<<" BG Estimated = "<< bg4J <<endl;
 
-  bgCounter* bg = new bgCounter();
-  vector<int> bg1list = pseudoExp->GetEnsemble( flist[1], treeName, inputMean[1], randomSeed );
-  wmfitter->ReFitSolution( flist[1], bg , 1, &bg1list );
-
-  vector<int> bg2list = pseudoExp->GetEnsemble( flist[2], treeName, inputMean[2], randomSeed );
-  wmfitter->ReFitSolution( flist[2], bg , 1, &bg2list );
-  vector<double> n4JBg = bg->Output();
-
-  // 2J Samples
-  vector<string> File2J ;
-  fitInput->GetParameters( "2JSamples", &File2J );
-
-  bgCounter* bg2j = new bgCounter();
-
-  vector<int> w2jlist = pseudoExp->GetEnsemble( File2J[1], treeName, inputMean[3], randomSeed );
-  wmfitter->ReFitSolution( File2J[1], bg2j , 1, &w2jlist );
-
-  vector<int> qcd2jlist = pseudoExp->GetEnsemble( File2J[2], treeName, inputMean[4], randomSeed );
-  wmfitter->ReFitSolution( File2J[2], bg2j , 1, &qcd2jlist );
-
-  vector<double> n2J = bg2j->Output();
-
-  double n4J = n4JTt[0] + n4JBg[0] ;
-
-  // get the ration42 and measure the cross-secton
-  cout<<" Ntt = "<<n4JTt[0] <<" Nbg = "<< n4JBg[0] << endl;
-  vector<double> R42 = Ratio42( 0 ) ;
-  XSection( R42, n2J[0], n4J ) ;
-
-  delete sg ;
-  delete bg ;
-  delete bg2j ;
-
-  cout<<" Ensemble Test Done !!! "<<endl;
+     vector<double> bg4Jv ;
+     bg4Jv.push_back( bg4J ); 
+     bg4Jv.push_back( pErr4J ); // upward 
+     bg4Jv.push_back( nErr4J ); // downward
+     return bg4Jv ;
 }
 
-void BgEstimation::EnsembleTest( int nRun, int randomSeed ){
+void BgEstimation::LepM2Plotter( vector<TH1D*>& h1Ds, TString Tag  ){
 
-  cout<<" @@@@ Ensemble Test Start @@@@ "<<endl;
+  TString theFolder = hfolder ;
+  gSystem->mkdir( theFolder );
+  gSystem->cd( theFolder );
+  TString theSubFolder = "hLepM2Info/"+Tag ;
+  gSystem->mkdir( "hLepM2Info" );
+  gSystem->cd( "hLepM2Info/" );
+  gSystem->mkdir( Tag );
+  gSystem->cd( "../../" );
 
-  // 4J Samples
-  vector<TTree*> Tr4J = fitInput->GetForest( "FakeData", "muJets" );
-
-  int tsz0 = Tr4J[0]->GetEntries() ;
-  int tsz1 = Tr4J[1]->GetEntries() ;
-  int tsz2 = Tr4J[2]->GetEntries() ;
-
-  TH1D* gT4J = new TH1D("gT4J", " Tt+4J (mean ~ 25 )", 25, 0, 50 );
-  TH1D* gW4J = new TH1D("gW4J", " W+4J (mean ~ 7 ) ",  15, 0, 30 );
-  TH1D* gQ4J = new TH1D("gQ4J", " QCD4J (mean ~ 9 )",  15, 0, 30 );
-
-  vector<double> n4JTt = RunEnsembles( tsz0, "", inputMean[0],  nRun, randomSeed, Tr4J[0], gT4J );
-  vector<double> nWj   = RunEnsembles( tsz1, "", inputMean[1],  nRun, randomSeed, Tr4J[1], gW4J );
-  vector<double> nQCD  = RunEnsembles( tsz2, "", inputMean[2], nRun, randomSeed, Tr4J[2], gQ4J );
-  cout<<"  size of 4J tt:"<< tsz0 <<"  WJ:"<< tsz1 <<"  QCD:"<< tsz2 <<endl;
-
-  // 2J Samples
-  vector<TTree*> Tr2J = fitInput->GetForest( "2JSamples", "muJets" );
-
-  int t2sz0 = Tr2J[0]->GetEntries() ;
-  int t2sz1 = Tr2J[1]->GetEntries() ;
-  int t2sz2 = Tr2J[2]->GetEntries() ;
-
-  TH1D* gW2J = new TH1D("gW2J", " W+2J (mean = 513 ) ", 80, 300, 700 );
-  TH1D* gQ2J = new TH1D("gQ2J", " QCD2J (mean = 503 )", 80, 300, 700 );
-
-  wmfitter->ResetCuts( 0, 300, 0, 350, 0, 999 );
-  
-  vector<double> nW2j   = RunEnsembles( t2sz1, "", inputMean[3], nRun, randomSeed, Tr2J[1], gW2J );
-  vector<double> nQCD2j = RunEnsembles( t2sz2, "", inputMean[4], nRun, randomSeed, Tr2J[2], gQ2J );
-  
-  /*
-  double scaleWJ  = fitInput->NormalizeComponents( "wj" );
-  double scaleQCD = fitInput->NormalizeComponents( "qcd" );
-  bgCounter* bg2j = new bgCounter();
-  wmfitter->ReFitSolution( "", bg2j, scaleWJ*2, NULL,  -1, false, Tr2J[1] );
-  vector<double> nW2J = bg2j->Output();
-  wmfitter->ReFitSolution( "", bg2j, scaleQCD*2, NULL, -1, false, Tr2J[2] );
-  vector<double> n2JEvts = bg2j->Output();
-  double nQCD2J = n2JEvts[0] - nW2J[0] ;
-  */
-
-  wmfitter->ResetCuts( -1, -1, -1, -1, -1, -1, true );
-  cout<<"  size of 2J tt:"<< t2sz0 <<"  WJ:"<< t2sz1 <<"  QCD:"<< t2sz2 <<endl;
-
-  // get the ration42 and measure the cross-secton
-  vector<double> R42 = Ratio42( 0 ) ;
-  double n4JBg = 0; 
-  double n2J   = 0;
-  double n4J   = 0;
-
-  TH1D* hXtt = new TH1D("hXtt", " tt cross-section @ 5/pb ", 24, 0, 360 );
-  TH1D* hsXn = new TH1D("hsXn", " -Error of tt x-section @ 5/pb ", 20, 0, 100 );
-  TH1D* hsXp = new TH1D("hsXp", " +Error of tt x-section @ 5/pb ", 20, 0, 100 );
-
-  TH1D* hW2J = new TH1D("hW2J", " W+2J after cuts ", 40,  0, 200 );
-  TH1D* hQ2J = new TH1D("hQ2J", " QCD2J after cuts ", 40,  0, 200 );
-  TH1D* hW4J = new TH1D("hW4J", " W+4J after cuts ",  15, 0, 30 );
-  TH1D* hQ4J = new TH1D("hQ4J", " QCD4J after cuts ",  15, 0, 30 );
-
-  TH1D* hT4J = new TH1D("hT4J", " Tt+4J after cuts ", 25, 0, 50 );
-  TH1D* eT4J = new TH1D("eT4J", " Expected Tt+4J ", 25, 0, 50 );
-
-  TH1D* hB4J = new TH1D("hB4J", " BG+4J after cuts ", 50, 0, 50 );
-  TH1D* eB4J = new TH1D("eB4J", " Expected BG+4J ", 50, 0, 50 );
+  TString hNames[7] = { "W_Pt",  "W_Mt",   "SumJetPt",
+                         "Mt_SumJetPt1", "Mt_SumJetPt2", "Mt_SumJetPt3", "Mt_SumJetPt4" };
 
 
-  for ( size_t i=0; i< nRun ; i++) {
-      n4JBg = nWj[i]   + nQCD[i]   ;
-      n2J   = nW2j[i]  + nQCD2j[i] ;
-      //n2J   = n2JEvts[0]  ;
-      n4J   = n4JTt[i] + n4JBg     ;
-      cout<<" ********** Run "<< i <<" ******************"<<endl;
-      cout<<"  Ntt = "<<n4JTt[i] <<" Nbg = "<< n4JBg <<"   2JBg = "<< n2J << endl;
-      cout<<"   ensembles 4J tt:"<< n4JTt[i] <<"  WJ:"<< nWj[i] <<"  QCD:"<< nQCD[i] <<endl;
-      cout<<"   ensembles 2J wj:"<< nW2j[i] <<"  QCD:"<< nQCD2j[i] <<endl;
-      //cout<<"   ensembles 2J wj:"<< nW2J[0] <<"  QCD:"<< nQCD2J <<endl;
-      vector<double> xtt = XSection( R42, n2J, n4J ) ;
-      hXtt->Fill( xtt[0] );
-      hsXn->Fill( xtt[1] );
-      hsXp->Fill( xtt[2] );
+  gStyle->SetOptStat("io");
+  gStyle->SetLabelSize( 0.05, "X");
+  gStyle->SetLabelSize( 0.05, "Y");
+  gStyle->SetStatFontSize( 0.08);
+  for (int i=0; i< 3 ; i++) {
 
-      eB4J->Fill( xtt[3] );
-      eT4J->Fill( n4J - xtt[3] );
-      hW2J->Fill( nW2j[i] );
-      hQ2J->Fill( nQCD2j[i] );
-      //hW2J->Fill( nW2J[0] );
-      //hQ2J->Fill( nQCD2J );
-      hW4J->Fill( nWj[i] );
-      hQ4J->Fill( nQCD[i] );
-      hT4J->Fill( n4JTt[i] );
-      hB4J->Fill( n4JBg  );
+      gStyle->SetStatFontSize( 0.08);
+      TCanvas* c1 = new TCanvas("c1","", 800, 600);
+      c1->SetGrid();
+      c1->SetFillColor(10);
+      c1->SetFillColor(10);
+      c1->cd();
+
+      h1Ds[i]->Draw();
+      c1->Update();
+
+      TString plotname = hfolder + theSubFolder +"/"+ hNames[i]+ Tag + "."+ plotType ;
+      c1->Print( plotname );
+      delete c1;
   }
 
-  gStyle->SetOptStat("neiruom");
-  gStyle->SetOptFit(111);
+  for (int i=0; i< 4 ; i++) {
+
+      int j = i*2 + 3 ;
+      gStyle->SetStatFontSize( 0.08);
+      gStyle->SetStatFontSize( 0.08);
+      TCanvas* c1 = new TCanvas("c1","", 800, 600);
+      c1->SetGrid();
+      c1->SetFillColor(10);
+      c1->SetFillColor(10);
+      c1->Divide(1,2);
+
+      c1->cd(1);
+      h1Ds[j]->Draw();
+      c1->Update();
+      c1->cd(2);
+      h1Ds[j+1]->Draw();
+      c1->Update();
+
+      TString plotname = hfolder + theSubFolder +"/"+ hNames[i+3]+ "."+ plotType ;
+      c1->Print( plotname );
+      delete c1;
+  }
+
+}
+
+void BgEstimation::RatioPlotter( vector<double>&  nW1, vector<double>&  nW2, TString Tag, double scale  ){
+
+  TCanvas* c1 = new TCanvas("c1","", 750, 600);
+  c1->SetGrid();
+  c1->SetFillColor(10);
+  c1->SetFillColor(10);
+  c1->cd();
+
+  TF1 *func = new TF1("func", MassFitFunction::fitPoly, 0, 200, 2);
+  func->FixParameter(0, nW1[0]/nW2[0] ) ;
+  func->FixParameter(1,    0  ) ;
+  func->SetLineColor(2);
+
+  double ratio[4] = { nW1[1]/nW2[1], nW1[2]/nW2[2], nW1[3]/nW2[3], nW1[4]/nW2[4]  };
+  double ptcut[4] = {            10,            30,            50,            70  };
+  double rErr[4] = {0.};
+  double ptRange[4] = {0.};
+  for (int i=0; i<4; i++) {
+      rErr[i] = MassFitFunction::ErrAovB( nW1[i+1], nW2[i+1], nW1[i+6], nW2[i+6] );
+      ptRange[i] = 10. ;
+      //if (i==4) ptRange[i] = 60. ;
+  }
+
+  TGraphErrors* hRatio = new TGraphErrors( 4, ptcut, ratio, ptRange, rErr );
+  hRatio->SetMaximum( 0.6 );
+  hRatio->SetMinimum( 0.05 );
+  hRatio->GetXaxis()->SetLimits(0,80);
+  hRatio->SetMarkerColor(4);
+  hRatio->SetMarkerStyle(20);
+  hRatio->SetMarkerSize(2.0);
+  hRatio->SetLineWidth(2);
+  hRatio->SetTitle("Ratio vs Pt of Mt");
+
+  hRatio->Draw("AP");
+  func->Draw("SAME");
+
+  c1->Update();
+
+  TString plotname = hfolder + "hLepM2Info/"+ Tag + "."+plotType ;
+  c1->Print( plotname );
+
+  delete hRatio ;
+  delete func ;
+  delete c1 ;
+}
+
+/*
+void BgEstimation::CombinedRatio( int nx, int ny, bool inclX, bool inclY ){
+
+      char rchar[5];
+      sprintf( rchar, "R%d%d", nx, ny) ;
+      string rTag = rchar ;
+
+     vector<string> theFiles ;
+     fitInput->GetParameters( "FakeData", &theFiles );
+
+     bool doPlots = false ;
+     vector< vector<double> > Rxy_V ;
+     //vector<double> Rxy_tt  = RatioXY( nx, ny, theFiles,  0, true, doPlots,  inclX, inclY ) ;
+     vector<double> Rxy_qcd = RatioXY( nx, ny, theFiles,  2, false,  doPlots,  inclX, inclY ) ;
+     vector<double> Rxy_wj  = RatioXY( nx, ny, theFiles,  1, false,  doPlots,  inclX, inclY ) ;
+     vector<double> Rxy_zj  = RatioXY( nx, ny, theFiles,  3, false,  doPlots,  inclX, inclY ) ;
+     vector<double> Rxy_all = RatioXY( nx, ny, theFiles, -1, withTt, doPlots,  inclX, inclY ) ;
+     //Rxy_V.push_back( Rxy_tt );
+     Rxy_V.push_back( Rxy_qcd );
+     Rxy_V.push_back( Rxy_wj );
+     Rxy_V.push_back( Rxy_zj );
+     Rxy_V.push_back( Rxy_all );
+
+     TF1 *func = new TF1("func", MassFitFunction::fitPoly, 0, 200, 2);
+
+     TCanvas* c1 = new TCanvas("c1","", 800, 600);
+     c1->SetGrid();
+     c1->SetFillColor(10);
+     c1->SetFillColor(10);
+     c1->cd();
+
+     //TString nametag[5] = { "tt", "wj", "zj", "qcd", "all" } ;
+     //int mcolor[5] = { 2, 3, 4, 5, 1 };
+     TString nametag[4] = { "qcd", "wj", "zj", "all" } ;
+     int mcolor[4]      = {     5,    3,    4,     1 };
+
+     double aPt[4] = { 3, 23, 43, 63 } ;
+     //double aPt[4] = { 10, 30, 50, 70 } ;
+     double ePt[4] = { 0. } ;
+     double aRxy[4] ={ 0. } ;
+     double eRxy[4] ={ 0. } ;
+     for ( size_t i=0; i< Rxy_V.size() ; i++) {
+         for ( int j=1; j< 5; j++ ) {
+             aPt[j-1]  = aPt[j-1] + 3 ;
+             aRxy[j-1] = Rxy_V[i][j] ;
+             eRxy[j-1] = Rxy_V[i][j+5] ;
+         }
+
+         TGraphErrors* hRatio = new TGraphErrors( 4, aPt, aRxy, ePt, eRxy );
+	 //hRatio->SetMaximum( 16 );
+	 hRatio->GetXaxis()->SetLimits(0,100);
+	 hRatio->SetMarkerColor( mcolor[i] );
+	 hRatio->SetMarkerStyle(20);
+	 hRatio->SetMarkerSize(1.5);
+	 hRatio->SetLineWidth(2);
+	 hRatio->SetTitle("Ratio vs M2 Pt");
+
+	 //hRatio->Draw("AP");
+         //func->Draw("SAME");
+	 if (i == 0) {
+            hRatio->Draw("AP");
+            func->FixParameter(0, Rxy_V[3][0] ) ;
+            func->FixParameter(1,    0  ) ;
+            func->SetLineColor( 2 );
+            func->Draw("SAME");
+         }
+	 if (i  > 0) hRatio->Draw("P");
+     
+	 c1->Update();
+         //TString plotname = hfolder + "hLepM2Info/Ratio_"+ nametag[i] +"."+plotType ;
+         //c1->Print( plotname );
+         //delete hRatio ;
+         //delete c1;
+     }
+     TString plotname = hfolder + "hLepM2Info/" + rTag + "_bgCombined."+plotType ;
+     c1->Print( plotname );
+     delete func ;
+     delete c1;
+}
+*/
+
+vector<double> BgEstimation::MtFitter( string& DataName, vector<string>& fNames, int phaseIdx ){
+
+     int k = 1 + phaseIdx*2 ;
+
+     // Get Data
+     hLepM2* hs_data = new hLepM2( "hs_data" ) ;
+     objInfo->EvtSelector( DataName, hs_data, false, 1 );
+     vector<TH1D*> hData_v ;
+     hs_data->Fill1DVec( hData_v );
+     double N_Data = hData_v[k]->Integral() ;
+   
+     int nbin = 30 ;
+     if ( hData_v[k]->Integral() < 500. && phaseIdx < 3) {
+        nbin = 15 ;
+        hData_v[k]->Rebin(2);
+     }
+
+     vector<TH1D*> hTemplates ;
+
+
+     // template 1 : W + Z + Tt
+     double scaleWj = fitInput->NormalizeComponents( "wj" )  ;
+     double scaleZj = fitInput->NormalizeComponents( "zj" )  ;
+     double scaleTt = fitInput->NormalizeComponents( "tt" )  ;
+     double scaleQCD = fitInput->NormalizeComponents( "qcd" )  ;
+
+     //objInfo->Reset(0, true );
+     //objInfo->Reset(0, 0 ) ;
+     hLepM2* h_wj = new hLepM2( "h_wj", nbin ) ;
+     objInfo->EvtSelector( fNames[1], h_wj, false, scaleWj );
+     vector<TH1D*> hW_xj ;
+     h_wj->Fill1DVec( hW_xj );
+   
+     hLepM2* h_zj = new hLepM2( "h_zj", nbin ) ;
+     objInfo->EvtSelector( fNames[3], h_zj, false, scaleZj );
+     vector<TH1D*> hZ_xj ;
+     h_zj->Fill1DVec( hZ_xj );
+
+     hLepM2* h_tt = new hLepM2( "h_tt", nbin ) ;
+     objInfo->EvtSelector( fNames[0], h_tt, false, scaleTt );
+     vector<TH1D*> hT_xj ;
+     h_tt->Fill1DVec( hT_xj );
+
+     hW_xj[k]->Add( hT_xj[k], 1 );
+     hW_xj[k]->Add( hZ_xj[k], 1 );
+     double N_VJ = hW_xj[k]->Integral() ;
+
+     hW_xj[k]->Scale(  150000./hW_xj[k]->Integral()  );
+
+    // template 2 : QCD
+     hLepM2* h_qcd = new hLepM2( "h_qcd", nbin ) ;
+     objInfo->EvtSelector( fNames[2], h_qcd, false, scaleQCD );
+     vector<TH1D*> hQ_xj ;
+     h_qcd->Fill1DVec( hQ_xj );
+
+     double N_QCD = hQ_xj[k]->Integral() ;
+
+     hQ_xj[k]->Scale(  150000./hQ_xj[k]->Integral()  );
+
+     hTemplates.push_back( hQ_xj[k] );
+     hTemplates.push_back( hW_xj[k] );
+
+     // Fit 
+     int fbin =  ( nbin != 30 || phaseIdx > 2 ) ? 11 : 22 ;
+     vector<double> fRatio = JacobianFitter( hData_v[k], hTemplates, phaseIdx, 1, fbin );
+     vector<double> fracN ;
+     for ( size_t i=0; i< fRatio.size(); i++){
+         fracN.push_back( N_Data*fRatio[i] ) ;
+     }
+     cout <<" QCD     scale = "<< N_Data*fRatio[0]/N_QCD <<endl;
+     cout <<" Non-QCD scale = "<< N_Data*fRatio[1]/N_VJ  <<endl;
+
+     delete h_wj ;
+     delete h_zj ;
+     delete h_tt ;
+     delete h_qcd ;
+     delete hs_data ;
+     return fracN ;
+}
+
+vector<double> BgEstimation::JacobianFitter( TH1D* hData, vector<TH1D*>& hTemplates, int phaseIdx, int fbin1, int fbin2 ){
+
+  TString theFolder = hfolder ;
+  TString theSubFolder = "JbFitter/" ;
+  gSystem->mkdir( theFolder );
+  gSystem->cd( theFolder );
+  gSystem->mkdir( theSubFolder );
+  gSystem->cd( "../" );   
+
+   gStyle->SetOptFit(111);
+   gStyle->SetOptStat("ieo");
+   TCanvas* c1 = new TCanvas("c1","", 900, 700);
+   c1->SetGrid();
+   c1->SetFillColor(10);
+   c1->SetFillColor(10);
+   c1->cd();
+
+   int nTemp = hTemplates.size() ;
+   TObjArray* temps = new TObjArray( nTemp );
+   for ( int i=0; i< nTemp; i++ ) {
+      temps->Add( hTemplates[i] ) ;
+   }
+
+   TFractionFitter* jbfit = new TFractionFitter( hData, temps );  
+   jbfit->SetRangeX( fbin1, fbin2 ) ;
+   Int_t status = jbfit->Fit();
+   cout<<" fit status = "<< status <<endl;
+
+   vector<double> fRatio ;
+   if ( status == 0 || status == 4 ) {         
+      double ratio[10];
+      double err[10];
+      for ( int i=0; i< nTemp; i++ ) {
+          jbfit->GetResult( i, ratio[i], err[i] );
+          fRatio.push_back( ratio[i] );
+      }
+     
+      double theScale = hData->Integral() / hTemplates[0]->Integral() ;
+
+      THStack* hStk = new THStack("hStk", "LepM2T_Fit" );
+      hTemplates[0]->SetFillColor(kYellow);
+      hTemplates[1]->SetFillColor(kGreen);
+
+      hTemplates[0]->Scale( ratio[0]*theScale );
+      hTemplates[1]->Scale( ratio[1]*theScale );
+      hStk->Add( hTemplates[1] );
+      hStk->Add( hTemplates[0] );
+      hData->SetMarkerSize(1);
+      hData->SetMarkerStyle(21);
+      hData->Draw("PE");
+      c1->Update();
+      hStk->Draw("same");
+      c1->Update();
+
+      hData->Draw("PE SAME");
+      c1->Update();
+   }
+   
+   char xchar[2];
+   sprintf( xchar, "%d", phaseIdx ) ;
+   string xtag = xchar ;
+
+   TString plotname = hfolder + theSubFolder + "LepWFit_" + xtag + "." +plotType ;
+   c1->Print( plotname );
+   
+
+   delete jbfit ;
+   //delete temps ;
+   delete c1 ;
+   return fRatio ;
+}
+
+vector<double> BgEstimation::MeasureScale( string& dataFile, vector<string>& fNames  ){
+
+   cout<<" ---  MC Scaling Measuring --- "<<endl;
+       
+   double scale1 = fitInput->NormalizeComponents( "wj" );
+   double scale2 = fitInput->NormalizeComponents( "qcd" );
+   double scale3 = fitInput->NormalizeComponents( "zj" );
+
+   bgCounter* hwj = new bgCounter("wj_") ;
+   objInfo->EvtSelector( fNames[1], hwj, false, scale1 );
+   vector<double> h_wj ;
+   hwj->CounterVec( h_wj );
+
+   bgCounter* hzj = new bgCounter("zj_") ;
+   objInfo->EvtSelector( fNames[3], hzj, false, scale3 );
+   vector<double> h_zj ;
+   hzj->CounterVec( h_zj );
+
+   bgCounter* hqcd = new bgCounter("qcd_") ;
+   objInfo->EvtSelector( fNames[2], hqcd, false, scale2 );
+   vector<double> h_qcd ;
+   hqcd->CounterVec( h_qcd );
+
+   vector<double> mcScale ;
+   for ( int i=0; i< 5; i++) {
+       double nqcd0 = h_qcd[i] ;
+       double nV0   = h_wj[i] + h_zj[i] ;
+       vector<double> fitR = MtFitter( dataFile, fNames, i );
+       cout<<" Phase "<<i<<" QCDNorm = "<< fitR[0]/ nqcd0 <<"  VNorm = "<< fitR[1]/nV0 <<endl ;
+       mcScale.push_back( fitR[0]/ nqcd0 );
+       mcScale.push_back( fitR[1]/ nV0 );
+   }
+
+   delete hwj;
+   delete hzj;
+   delete hqcd;
+   return mcScale ;
+}
+
+double BgEstimation::MeasureScale2D( string& DataName, vector<string>& fakeData, double MtCut, double METCut, bool doQCD, bool isVjNorm ){
+
+  objInfo->ResetBGCuts(0, MtCut);
+  objInfo->ResetBGCuts(1, METCut);
+  objInfo->Reset(1, isVjNorm );  
+
+  int nbin_ = 30 ;
+
+  hObjs* hdt = new hObjs("data", nbin_ ) ;
+  objInfo->QCDSelector( DataName, hdt, false, 1, doQCD );
+  vector<TH2D*> h_dt ;
+  hdt->Fill2DVec( h_dt );
+
+  if ( h_dt[0]->Integral() < 500. ) {
+     nbin_ = 15 ;
+     h_dt[0]->RebinY(2);
+  }
+
+  double scale0 = fitInput->NormalizeComponents( "tt" );
+  double scale1 = fitInput->NormalizeComponents( "wj" );
+  double scale2 = fitInput->NormalizeComponents( "qcd" );
+  double scale3 = fitInput->NormalizeComponents( "zj" );
+  double scale4 = fitInput->NormalizeComponents( "tq" );
+  double scale5 = fitInput->NormalizeComponents( "tw" );
+
+  hObjs* htt = new hObjs("tt", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[0], htt, false, scale0, doQCD );
+  vector<TH2D*> h_tt ;
+  htt->Fill2DVec( h_tt );
+
+  hObjs* hwj = new hObjs("wj", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[1], hwj, false, scale1, doQCD );
+  vector<TH2D*> h_wj ;
+  hwj->Fill2DVec( h_wj );
+
+  hObjs* hqcd = new hObjs("qcd", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[2], hqcd, false, scale2, doQCD );
+  vector<TH2D*> h_qcd ;
+  hqcd->Fill2DVec( h_qcd );
+
+  hObjs* hzj = new hObjs("zj", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[3], hzj, false, scale3, doQCD );
+  vector<TH2D*> h_zj ;
+  hzj->Fill2DVec( h_zj );
+
+  hObjs* htq = new hObjs("tq", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[4], htq, false, scale4, doQCD );
+  vector<TH2D*> h_tq ;
+  htq->Fill2DVec( h_tq );
+
+  hObjs* htw = new hObjs("tw", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[5], htw, false, scale5, doQCD );
+  vector<TH2D*> h_tw ;
+  htw->Fill2DVec( h_tw );
+
+  TH2D* hMC   = new TH2D("hMC", " MET(X) vs lep Mt(Y) ",   30, 0, 150,  nbin_, 0, 150 );
+  TH2D* hMC_A = new TH2D("hMC_A", " MET(X) vs lep Mt(Y) ", 30, 0, 150,  nbin_, 0, 150 );
+  TH2D* hData = new TH2D("hData", " MET(X) vs lep Mt(Y) ", 30, 0, 150,  nbin_, 0, 150 );
+
+  hMC_A->Add( h_qcd[0] );
+  hMC_A->Add( h_wj[0] );
+  hMC_A->Add( h_zj[0] );
+  hMC_A->Add( h_tt[0] );
+  hMC_A->Add( h_tq[0] );
+  hMC_A->Add( h_tw[0] );
+
+  if ( doQCD ) { 
+     hMC->Add( h_qcd[0] );
+     hData->Add( h_dt[0],  1. );
+     hData->Add( h_tt[0], -1. );
+     hData->Add( h_wj[0], -1. );
+     hData->Add( h_zj[0], -1. );
+     hData->Add( h_tq[0], -1. );
+     hData->Add( h_tw[0], -1. );
+  }
+  if ( !doQCD ) { 
+     hMC->Add( h_wj[0] );
+     hMC->Add( h_zj[0] );
+     hMC->Add( h_tt[0] );
+     hMC->Add( h_tq[0] );
+     hMC->Add( h_tw[0] );
+     hData->Add( h_dt[0],  1. );
+     hData->Add( h_qcd[0], -1. );
+  }
+  cout<<" N of MC QCD = "<< h_qcd[0]->Integral() <<endl;
+  cout<<" N of MC WJ  = "<< h_wj[0]->Integral() <<endl;
+  cout<<" N of MC zJ  = "<< h_zj[0]->Integral() <<endl;
+  cout<<" N of MC tt  = "<< h_tt[0]->Integral() <<endl;
+  cout<<" N of MC tq  = "<< h_tq[0]->Integral() <<endl;
+  cout<<" N of MC tw  = "<< h_tw[0]->Integral() <<endl;
+  cout<<" N of Data = "<< h_dt[0]->Integral() <<" -> "<< hData->Integral() <<endl ;
+
+  cout<<" Event # normalization = "<< hData->Integral()/hMC->Integral() <<endl ;
+ 
+  int wbin = 150/nbin_ ;
+  int bx1 = ( doQCD ) ?        1 :  METCut/5 ;
+  int bx2 = ( doQCD ) ? METCut/5 :        20 ;
+  int by1 = ( doQCD ) ?        1 :  MtCut/wbin ;
+  int by2 = ( doQCD ) ?  MtCut/5 :    100/wbin ;
+  double bestNorm =  Chi2Normalization( hData, hMC, bx1, bx2, by1, by2, 1, scale2 );
+  cout<<" The best QCD Normalization  = "<< bestNorm <<endl;
+
+  TString theFolder = hfolder ;
+  TString theSubFolder = "hQCDMu18_Ex/" ;
+  if ( !doQCD ) theSubFolder = "hSGMu18/" ;
+  gSystem->mkdir( theFolder );
+  gSystem->cd( theFolder );
+  gSystem->mkdir( theSubFolder );
+  gSystem->cd( "../" );
+  gStyle->SetOptStat("nieuo");
+  gStyle->SetPalette(1);
+  gStyle->SetStatX(0.85);
 
   TCanvas* c1 = new TCanvas("c1","", 800, 600);
   c1->SetGrid();
   c1->SetFillColor(10);
   c1->SetFillColor(10);
-  c1->cd();
-  hXtt->Draw();
+  c1->Divide(2,2);
+  double xR = 120. ;
+  double yR = 120. ;
 
-  TF1* func0 = new TF1("func0", MassFitFunction::fitGS , 0, 300, 3);
-  func0->SetParLimits(1, 50, 200);
-  func0->SetParLimits(2, 20, 80);
-
-  hXtt->Fit( func0, "R", "", 50., 300. );
+  c1->cd(1);
+  gStyle->SetNumberContours(10);
+  h_dt[0]->SetName("Data");
+  h_dt[0]->SetAxisRange(0,xR,"X") ;
+  h_dt[0]->SetAxisRange(0,yR,"Y") ;
+  h_dt[0]->Draw("COLZ");
   c1->Update();
-  c1->Print(  theFolder+"ttXsection.gif"  );
 
-  TCanvas* c2 = new TCanvas("c2","", 800, 600);
-  c2->SetGrid();
-  c2->SetFillColor(10);
-  c2->SetFillColor(10);
-  c2->Divide(1,2);
-  c2->cd(1);
-  hsXn->Draw();
-  c2->Update();
-  c2->cd(2);
-  hsXp->Draw();
-  c2->Update();
-  c2->Print(  theFolder+"ttXsectionErr.gif"  );
+  c1->cd(2);
+  gStyle->SetNumberContours(4);
+  h_qcd[0]->SetName("QCD");
+  h_qcd[0]->SetAxisRange(0,xR,"X") ;
+  h_qcd[0]->SetAxisRange(0,yR,"Y") ;
+  h_qcd[0]->Draw("COLZ");
+  c1->Update();
 
-  TCanvas* c3 = new TCanvas("c3","", 800, 600);
-  c3->SetGrid();
-  c3->SetFillColor(10);
-  c3->SetFillColor(10);
-  c3->Divide(2,2);
-  c3->cd(1);
-  hW2J->Draw();
-  c3->Update();
-  c3->cd(2);
-  hQ2J->Draw();
-  c3->Update();
-  c3->cd(3);
-  hW4J->Draw();
-  c3->Update();
-  c3->cd(4);
-  hQ4J->Draw();
-  c3->Update();
-  c3->Print(  theFolder+"BGPoisson.gif"  );
+  c1->cd(3);
+  gStyle->SetNumberContours(10);
+  h_wj[0]->SetName("WJets");
+  h_wj[0]->SetAxisRange(0,xR,"X") ;
+  h_wj[0]->SetAxisRange(0,yR,"Y") ;
+  h_wj[0]->Draw("COLZ");
+  c1->Update();
 
-  TCanvas* c4 = new TCanvas("c4","", 800, 600);
-  c4->SetGrid();
-  c4->SetFillColor(10);
-  c4->SetFillColor(10);
-  c4->Divide(2,2);
-  c4->cd(1);
-  hT4J->Draw();
-  c4->Update();
-  c4->cd(2);
-  hB4J->Draw();
-  c4->Update();
-  c4->cd(3);
-  eT4J->Draw();
-  c4->Update();
-  c4->cd(4);
-  eB4J->Draw();
-  c4->Update();
-  c4->Print(  theFolder+"4JPoisson.gif"  );
+  c1->cd(4);
+  gStyle->SetNumberContours(10);
+  hMC_A->SetName("MC");
+  hMC_A->SetAxisRange(0,xR,"X") ;
+  hMC_A->SetAxisRange(0,yR,"Y") ;
+  hMC_A->Draw("COLZ");
+  c1->Update();
 
-  TCanvas* c5 = new TCanvas("c5","", 800, 600);
-  c5->SetGrid();
-  c5->SetFillColor(10);
-  c5->SetFillColor(10);
-  c5->Divide(2,2);
-  c5->cd(1);
-  gT4J->Draw();
-  c5->Update();
+  gStyle->SetStatX(0.95);
 
-  c5->cd(2);
-  gW4J->SetLineColor(2);
-  gW4J->Draw();
-  c5->Update();
-  gStyle->SetStatY(0.60);
-  gQ4J->SetLineColor(4);
-  gQ4J->DrawCopy("sames");
-  c5->Update();
+  ostringstream pNameStr ;
+  pNameStr << "_" ;
+  pNameStr << MtCut ;
+  pNameStr << "-" ;
+  pNameStr << METCut ;
+  TString pNameTStr = pNameStr.str() ;
+  TString plotname1 = theFolder + theSubFolder +  "ScaleCheck" + pNameTStr + "." + plotType ;
+  c1->Print( plotname1 );
 
-  c5->cd(3);
-  gStyle->SetStatY(0.95);
-  gW2J->Draw();
-  c5->Update();
+  delete c1;
+  delete hdt;
+  delete htt;
+  delete htq;
+  delete htw;
+  delete hwj;
+  delete hzj;
+  delete hqcd;
+  delete hMC_A ;  
+  delete hMC ;  
+  delete hData ;
+  return bestNorm ;
+
+}
+
+double BgEstimation::Chi2Normalization( TH2D* hData, TH2D* hMC, int Bx1, int Bx2, int By1, int By2, double s1, double s2, bool doFit ){
+
+   // 
+   double Itgr1 = hData->Integral() ;
+   double Itgr2 = hMC->Integral() ;
+
+   double d_norm = Itgr1/Itgr2 ;
+   double norm = d_norm - (0.34*d_norm) ;
+   double step = (d_norm*0.34)/25. ;
+   double bestNorm = d_norm ;
+ 
+   cout<<" delta Norm = "<< d_norm*0.34 <<"  Norm start from = "<< norm <<endl ;
+
+   double minX2 = 99999. ;
+
+   double nm[50];
+   double chi2[50];
+   for( int k=0; k<50; k++ ) {
+      norm = norm + step ;
+      // chi2 sum
+      double X2 = 0 ;
+      for (int i= Bx1; i<= Bx2; i++){
+          for (int j= By1; j<= By2; j++){
+              double N1 = hData->GetBinContent(i,j);
+              double N2 = hMC->GetBinContent(i,j);
+              if ( N1 < 0 ) N1 = 0 ;
+              if ( N2 <= 0. ) continue;
+              double x2_ij = (N1 - (N2*norm) )*(N1 - (N2*norm) ) / (s1*N1 + s2*N2*norm*norm ) ;
+              X2 += x2_ij ;
+          }
+      }
+      nm[k] = norm ;
+      chi2[k] = X2 ;
+      //cout<<" Norm =  "<<norm <<"   X2 = "<< X2 <<"   step : "<< step <<endl; ;
+
+      if ( k==0 ) minX2 = X2 ;
+      if ( X2 < minX2 && k > 0 ) { 
+         minX2 = X2 ;
+         bestNorm = norm ;
+      }
+   }
+
+   if ( doFit ) {
+      gStyle->SetOptFit(111);
+      TCanvas* c1 = new TCanvas("c1","", 800, 600);
+      c1->SetGrid();
+      c1->SetFillColor(10);
+      c1->SetFillColor(10);
+      c1->cd();
+
+      TString theFolder = hfolder ;
+      TString theSubFolder = "hQCDBG/" ;
+      gSystem->mkdir( theFolder );
+      gSystem->cd( theFolder );
+      gSystem->mkdir( theSubFolder );
+      gSystem->cd( "../" );
+
+      TGraph* hNormX2 = new TGraph(50, nm, chi2 );
+
+      double fitMin = ( nm[0] < nm[49] ) ? nm[0] : nm[49] ;
+      double fitMax = ( fitMin == nm[0] ) ? nm[49] : nm[0] ;
+      TF1 *func1 = new TF1("func1",MassFitFunction::fitParabola, fitMin, fitMax, 3 );
+      func1->SetParLimits(0, fitMin, fitMax );
+
+      hNormX2->SetMarkerSize(1);
+      hNormX2->SetMarkerColor(4);
+      hNormX2->SetMarkerStyle(21);
+      hNormX2->Draw("AP");
+      c1->Update();
+
+      hNormX2->Fit( func1, "R", "sames", fitMin, fitMax );
+      double fitNorm = func1->GetParameter(0);
+      double fChi2 = func1->GetChisquare();
+      int fNDF  = func1->GetNDF() ;
+      double nChi2 = fChi2 / static_cast<double>( fNDF ) ;
+      cout<<" The Fitted Normalization = "<< fitNorm <<" the best norm = "<< bestNorm <<endl;
+      if ( nChi2 < 2 ) bestNorm = fitNorm ;
+      c1->Update();
+
+      TString plotname1 = theFolder + theSubFolder +  "X2Fit2D."+plotType ;
+      c1->Print( plotname1 );
+
+      delete hNormX2;
+      delete func1 ;
+      delete c1;
+   }
+   cout<<"  Final Normalization = "<< bestNorm << endl;
+
+   return bestNorm ;
+}
+
+double BgEstimation::MeasureScale1D( string& DataName, vector<string>& fakeData, int hID, double MtCut, double METCut, bool doQCD, bool isVjNorm ){
+
+  objInfo->ResetBGCuts(0, MtCut);
+  objInfo->ResetBGCuts(1, METCut);
+  objInfo->Reset(1, isVjNorm );  
+  int scaleMode =  ( isVjNorm ) ? 1 : 0 ;
+
+  int nbin_ = 30 ;
+
+  hObjs* hdt = new hObjs("data", nbin_ ) ;
+  objInfo->QCDSelector( DataName, hdt, false, 1., doQCD );
+  vector<TH1D*> h_dt ;
+  hdt->Fill1DVec( h_dt );
+
+  if ( h_dt[13]->Integral() < 500. ) {
+     nbin_ = 15 ;
+     h_dt[13]->Rebin(2);
+     h_dt[14]->Rebin(2);
+     h_dt[15]->Rebin(2);
+     cout<<" bin width changes -> "<< h_dt[13]->GetBinWidth(1) << endl;
+  }
+
+  double scale0 = fitInput->NormalizeComponents( "tt" );
+  double scale1 = fitInput->NormalizeComponents( "wj" );
+  double scale2 = fitInput->NormalizeComponents( "qcd" );
+  double scale3 = fitInput->NormalizeComponents( "zj" );
+  double scale4 = fitInput->NormalizeComponents( "tq" );
+  double scale5 = fitInput->NormalizeComponents( "tw" );
+
+  hObjs* htt = new hObjs("tt", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[0], htt, false, scale0, doQCD, scaleMode );
+  vector<TH1D*> h_tt ;
+  htt->Fill1DVec( h_tt );
+
+  hObjs* hwj = new hObjs("wj", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[1], hwj, false, scale1, doQCD, scaleMode );
+  vector<TH1D*> h_wj ;
+  hwj->Fill1DVec( h_wj );
+
+  hObjs* hqcd = new hObjs("qcd", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[2], hqcd, false, scale2, doQCD, scaleMode );
+  vector<TH1D*> h_qcd ;
+  hqcd->Fill1DVec( h_qcd );
+
+  hObjs* hzj = new hObjs("zj", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[3], hzj, false, scale3, doQCD, scaleMode );
+  vector<TH1D*> h_zj ;
+  hzj->Fill1DVec( h_zj );
+
+  hObjs* htq = new hObjs("tq", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[4], htq, false, scale4, doQCD, scaleMode );
+  vector<TH1D*> h_tq ;
+  htq->Fill1DVec( h_tq );
+
+  hObjs* htw = new hObjs("tw", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[5], htw, false, scale5, doQCD, scaleMode );
+  vector<TH1D*> h_tw ;
+  htw->Fill1DVec( h_tw );
+
+  int nBin = h_dt[hID]->GetNbinsX() ;
+  cout<<" N bin set = "<< nBin <<endl;
+  TH1D* hMC   = new TH1D("hMC",   "MC   lep Mt ", nBin, 0, 150 );
+  TH1D* hData = new TH1D("hData", "Data lep Mt ", nBin, 0, 150 );
+  if ( doQCD ) { 
+     hMC->Add( h_qcd[hID] );
+     hData->Add( h_dt[hID],  1. );
+     hData->Add( h_tt[hID], -1. );
+     hData->Add( h_wj[hID], -1. );
+     hData->Add( h_zj[hID], -1. );
+     hData->Add( h_tq[hID], -1. );
+     hData->Add( h_tw[hID], -1. );
+  }
+  if ( !doQCD ) { 
+     hMC->Add( h_wj[hID] );
+     hMC->Add( h_zj[hID] );
+     hMC->Add( h_tt[hID] );
+     hMC->Add( h_tq[hID] );
+     hMC->Add( h_tw[hID] );
+     hData->Add( h_dt[hID],  1. );
+     hData->Add( h_qcd[hID], -1. );
+  }
+
+  cout<<" N of MC QCD = "<< h_qcd[hID]->Integral() <<endl;
+  cout<<" N of MC WJ  = "<< h_wj[hID]->Integral() <<endl;
+  cout<<" N of MC zJ  = "<< h_zj[hID]->Integral() <<endl;
+  cout<<" N of MC tt  = "<< h_tt[hID]->Integral() <<endl;
+  cout<<" N of MC tq  = "<< h_tq[hID]->Integral() <<endl;
+  cout<<" N of MC tw  = "<< h_tw[hID]->Integral() <<endl;
+  cout<<" N of Data = "<< h_dt[hID]->Integral() <<" -> "<< hData->Integral() <<endl ;
+
+  cout<<" Event # normalization = "<< hData->Integral()/hMC->Integral() <<endl ;
+  int wbin = 150/nBin ;
+  int bin1 = ( doQCD ) ?         1    : (MtCut/wbin) + 1 ;
+  int bin2 = ( doQCD ) ? (MtCut/wbin) :         100/wbin ;
+  cout<<" bin1 = "<< bin1 <<"   bin2 = "<<bin2<<endl;
+  char pNameChar[10];
+
+  ostringstream pNameStr ;
+  pNameStr << MtCut ;
+  pNameStr << hID ;
+  TString pNameTStr = pNameStr.str() ;
+  double bestNorm =  Chi2Normalization( hData, hMC, bin1, bin2, 1, scale2, pNameTStr, true );
+
+  delete hdt;
+  delete htt;
+  delete htq;
+  delete htw;
+  delete hwj;
+  delete hzj;
+  delete hqcd;
+  delete hMC ;  
+  delete hData ;
+
+  return bestNorm ;
+}
+
+double BgEstimation::Chi2Normalization( TH1D* hData, TH1D* hMC, int Bx1, int Bx2, double s1, double s2, TString plotname, bool doFit ){
+
+   // 
+   double Itgr1 = hData->Integral() ;
+   double Itgr2 = hMC->Integral() ;
   
-  c5->cd(4);
-  gQ2J->Draw();
-  c5->Update();
+   double d_norm = Itgr1/Itgr2 ;
+   double norm = d_norm - (0.34*d_norm) ;
+   double step = (d_norm*0.34)/25 ;
 
-  c5->Print(  theFolder+"NGenInfo.gif"  );
+   double minX2 = 99999. ;
+   double bestNorm = d_norm ;
 
-  cout<<" !!! Ensemble Test Done !!! "<<endl;
-}
+   cout<<" delta Norm = "<< d_norm*0.34 <<"  Norm start from = "<< norm <<endl ;
 
+   double nm[50];
+   double chi2[50];
+   for( int k=0; k<50; k++ ) {
+      norm = norm + step ;
+      // chi2 sum
+      double X2 = 0 ;
+      for (int i= Bx1; i<= Bx2; i++){
+          double N1 = hData->GetBinContent(i);
+	  double N2 = hMC->GetBinContent(i);
+          if ( N1 < 0 ) N1 = 0 ;
+	  if ( N2 <= 0. ) continue;
+	  double x2_i = (N1 - (N2*norm) )*(N1 - (N2*norm) ) / (s1*N1 + s2*N2*norm*norm ) ;
+          //cout<<"   N1:"<<N1<<" N2: "<<N2<<" x2i:"<<x2_i<<" X2:"<<X2<<endl;
+	  X2 += x2_i ;
+      }
+      nm[k]   = norm ;
+      chi2[k] = X2 ;
+      //cout<<" Norm =  "<<nm[k] <<"   X2 = "<< chi2[k] <<"   step : "<< step <<endl; ;
 
-vector<double> BgEstimation::RunEnsembles( int tsz, string fileName, double pMean, int nRun, int RandomSeed, TTree* theTree, TH1D* hGen ){
+      if ( k==0 ) minX2 = X2 ;
+      if ( X2 < minX2 && k > 0 ) { 
+         minX2 = X2 ;
+         bestNorm = norm ;
+      }
+   }
 
-  cout<<"  <<< Getting Ensembles for "<< nRun <<" >>> "<<endl;
+   if ( doFit ) { 
+      gStyle->SetOptFit(111);
+      TCanvas* c1 = new TCanvas("c1","", 800, 600);
+      c1->SetGrid();
+      c1->SetFillColor(10);
+      c1->SetFillColor(10);
+      c1->cd();
 
-  // set up the random number function
-  TRandom3* tRan = new TRandom3();
-  tRan->SetSeed( RandomSeed );
+      TString theFolder = hfolder ;
+      TString theSubFolder = "hFitting/" ;
+      gSystem->mkdir( theFolder );
+      gSystem->cd( theFolder );
+      gSystem->mkdir( theSubFolder );
+      gSystem->cd( "../" );
 
-  int  nRun_ = 0 ;
-  vector<double> nCountV ;
-  vector<int> ensembles ;
-  int nRepeat = 0 ;
-  while ( nRun_ < nRun) {
+      TGraph* hNormX2 = new TGraph(50, nm, chi2 );
 
-       // shuffle the events
-       vector<int> evtline = pseudoExp->EventShuffle( tsz, RandomSeed );
-       //if ( nRepeat > 0 ) cout<<"   smearing samples "<<endl;
-       bool smearing = ( nRepeat >= 0 ) ? true : false ;
-       bool nextRun = true ;
-       int  RunStop = 0 ;
-       int  NEvts   = 0 ;
-       for (int k=0; k < evtline.size(); k++) {
- 
-           if ( nRun_ == nRun ) break; 
-           if ( nextRun ) {
-              //int PoiSeed = tRan->Integer( 1000+k );
-	      //tRan->SetSeed( PoiSeed );
-	      NEvts = tRan->Poisson( pMean );
-	      nextRun = false ;
-	      RunStop = k + NEvts ;
-	      ensembles.clear() ;
-              if ( RunStop >= evtline.size() ) break ;
-	      cout<<"  Run["<<nRun_<<"] " ; 
-              hGen->Fill( NEvts );
-           }
-           if ( k < RunStop ) {
-              ensembles.push_back( evtline[k] );
-           }
-           if ( k == (RunStop - 1) ) {
-              bgCounter* counter = new bgCounter();
-	      wmfitter->ReFitSolution( fileName, counter , 1, &ensembles, 0, smearing, theTree );
-	      vector<double> nCount = counter->Output();
-	      nCountV.push_back( nCount[0] );
-	      nextRun = true ;
-	      nRun_++ ;
-	      cout<<" ("<<k<<") N of Evts needed For this Run = "<< NEvts <<" passed # = "<< nCount[0] <<endl ;
-              delete counter;
-           }
-       }
-       nRepeat++ ;
-  }
-  cout<<" Number of Repeat = "<< nRepeat <<endl ;
+      double fitMin = ( nm[0] < nm[49] ) ? nm[0] : nm[49] ;
+      double fitMax = ( fitMin == nm[0] ) ? nm[49] : nm[0] ;
+      TF1 *func1 = new TF1("func1",MassFitFunction::fitParabola, fitMin, fitMax, 3 );
+      double nL = bestNorm - (bestNorm*0.1) ;
+      double nH = bestNorm + (bestNorm*0.1) ;
+      func1->SetParLimits(0, nL, nH );
+      func1->SetParLimits(1, 0.00001, 100. );
+      func1->SetParLimits(2, minX2*0.8 , minX2*1.2 );
 
-  delete tRan ;
-  return nCountV ;
+      hNormX2->SetMarkerSize(1);
+      hNormX2->SetMarkerColor(4);
+      hNormX2->SetMarkerStyle(21);
+      hNormX2->Draw("AP");
+      c1->Update();
 
-}
+      hNormX2->Fit( func1, "R", "sames", fitMin, fitMax );
+      double fitNorm = func1->GetParameter(0);
+      double fChi2 = func1->GetChisquare();
+      int fNDF  = func1->GetNDF() ;
+      double nChi2 = fChi2 / static_cast<double>( fNDF ) ;
+      cout<<" The Fitted Normalization = "<< fitNorm <<" the best norm = "<< bestNorm <<endl;
+      if ( nChi2 < 2 ) bestNorm = fitNorm ;
 
-vector<double> BgEstimation::StatErr( double m ){
+      c1->Update();
 
-  vector<double> pErr ;
-  if ( m < 1. ) {
-     pErr.push_back( -1*m ) ;
-     pErr.push_back( m ) ;
-  }
-  else if ( m > 25. ) {
-     pErr.push_back( -1*sqrt(m) ) ;
-     pErr.push_back( sqrt(m) ) ;
-  } 
-  else {
-
-     double step = 0.01 ;
-
-     // -34%
-     double k = m ;
-     double lm = 0. ;
-     double pp = 0. ;
-     while (lm <= 0.34 || k < 0 ) {
-          k = k - step ;
-	  pp = TMath::Poisson( k, m );
-	  lm = lm + (pp*step) ;
-	  //cout<<" k = "<< k <<" , p = "<< pp <<" int_P = "<< lm <<endl;
-     } 
-     // +34%
-     double j = m ;
-     double hm = 0 ;
-     double hp = 0 ;
-     while ( hm <=0.34 || j < 0 ) {
-           j = j + step ;
-	   hp = TMath::Poisson( j, m );
-	   hm = hm + (hp*step) ;
-	   //cout<<" j = "<< j <<" , p = "<< hp <<" int_P = "<< hm <<endl;
-     }
-     pErr.push_back( k - m );
-     pErr.push_back( j - m );
-  }
-  return pErr ;
+      TString plotname1 = theFolder + theSubFolder +  "X2Fit" + plotname + "." + plotType ;
+      c1->Print( plotname1 );
+      delete c1;
+      delete hNormX2 ;
+      delete func1 ;
+   }
+   cout<<"  Final Normalization = "<< bestNorm << endl;
+   return bestNorm ;
 
 }
-
-vector<double> BgEstimation::ErrAovB( double A, double s_A, double B, double s_B ){
-
-    vector<double> sA = StatErr( A ) ;
-    double sAp = ( s_A != -1 ) ? s_A : sA[1]; 
-    double sAn = ( s_A != -1 ) ? s_A : -1*sA[0]; 
-    vector<double> sB = StatErr( B ) ;
-    double sBp = ( s_B != -1 ) ? s_B : sB[1]; 
-    double sBn = ( s_B != -1 ) ? s_B : -1*sB[0]; 
-
-    double f = A / B ;
-    double s_fp = sqrt( sAp*sAp + f*f*sBp*sBp ) / B ;
-    double s_fn = sqrt( sAn*sAn + f*f*sBn*sBn ) / B ;
- 
-    vector<double> sf ;
-    sf.push_back( s_fn );
-    sf.push_back( s_fp );
-    return sf ;
-
-}
-
-vector<double> BgEstimation::ErrAxB( double A, double s_A, double B, double s_B ){
-
-    vector<double> sA = StatErr( A ) ;
-    double sAp = ( s_A != -1 ) ? s_A : sA[1]; 
-    double sAn = ( s_A != -1 ) ? s_A : -1*sA[0]; 
-    vector<double> sB = StatErr( B ) ;
-    double sBp = ( s_B != -1 ) ? s_B : sB[1]; 
-    double sBn = ( s_B != -1 ) ? s_B : -1*sB[0]; 
-
-    double f = A * B ;
-    double s_fp = sqrt( B*B*sAp*sAp + A*A*sBp*sBp ) ;
-    double s_fn = sqrt( B*B*sAn*sAn + A*A*sBn*sBn ) ;
- 
-    vector<double> sf ;
-    sf.push_back( s_fn );
-    sf.push_back( s_fp );
-    return sf ;
-
-}
-

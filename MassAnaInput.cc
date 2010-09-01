@@ -16,8 +16,8 @@ MassAnaInput::MassAnaInput() {
   GetParameters( "bThreshold", &bTh);
   GetParameters( "n_btag", &n_btag);
   //N_tt = 8720;  // for OctX, MET_Workshop
-
   neu_str = 0;
+
 
 }
 
@@ -26,6 +26,11 @@ MassAnaInput::~MassAnaInput(){
 
 }
 
+vector<TTree*> forest2J ;
+vector<TTree*> forest4J ;
+vector<TTree*> forestXJ ;
+vector<TTree*> forestData ;
+
 void MassAnaInput::Initialize( TString* hfolder ) {
 
    if ( n_btag == -1 ) *hfolder = "WFitter_"+ch_name+"/";
@@ -33,6 +38,93 @@ void MassAnaInput::Initialize( TString* hfolder ) {
    if ( n_btag == 1 )  *hfolder = "AllTags1_"+ch_name+"/";
    if ( n_btag == 2 )  *hfolder = "AllTags2_"+ch_name+"_10/";
 
+}
+
+void MassAnaInput::LinkForests( TString treeName ){
+
+  cout<<" Linking all trees !!!"<<endl;
+  vector<string> fNames2J ;
+  GetParameters( "2JSamples", &fNames2J );
+  for ( size_t i =0 ; i< fNames2J.size(); i++ ) {
+      TTree* tr = GetTree( fNames2J[i], treeName ) ;
+      forest2J.push_back( tr );
+  }
+
+  vector<string> fNames4J ;
+  GetParameters( "4JSamples", &fNames4J );
+  for ( size_t i =0 ; i< fNames4J.size(); i++ ) {
+      TTree* tr = GetTree( fNames4J[i], treeName ) ;
+      forest4J.push_back( tr );
+  }
+
+  vector<string> fNamesData ;
+  GetParameters( "TheData", &fNamesData );
+  for ( size_t i =0 ; i< fNamesData.size(); i++ ) {
+      TTree* tr = GetTree( fNamesData[i], treeName ) ;
+      forestData.push_back( tr );
+  }
+
+  vector<string> fNamesXJ ;
+  GetParameters( "FakeData", &fNamesXJ );
+  for ( size_t i =0 ; i< fNamesXJ.size(); i++ ) {
+      TTree* tr = GetTree( fNamesXJ[i], treeName ) ;
+      forestXJ.push_back( tr );
+  }
+}
+
+TTree* MassAnaInput::TreeMap( string fileName ){
+ 
+    vector<string> f0Names ;
+    GetParameters( "TheData", &f0Names );
+    vector<string> f1Names ;
+    GetParameters( "FakeData", &f1Names );
+    vector<string> fNames2J ;
+    GetParameters( "2JSamples", &fNames2J );
+    vector<string> fNames4J ;
+    GetParameters( "4JSamples", &fNames4J );
+
+    TTree* theTr = 0;
+    for ( int i=0; i< f0Names.size(); i++ ) {
+        if ( f0Names[i] == fileName ) theTr = forestData[i] ;
+    }
+    for ( int i=0; i< f1Names.size(); i++ ) {
+        if ( f1Names[i] == fileName ) theTr = forestXJ[i] ;
+    }
+    for ( int i=0; i< fNames2J.size(); i++ ) {
+        if ( fNames2J[i] == fileName ) theTr = forest2J[i] ;
+    }
+    for ( int i=0; i< fNames4J.size(); i++ ) {
+        if ( fNames4J[i] == fileName ) theTr = forest4J[i] ;
+    }
+    return theTr ;
+}
+
+int MassAnaInput::TreeSize( string fileName ){
+ 
+    vector<string> f0Names ;
+    GetParameters( "TheData", &f0Names );
+    vector<string> f1Names ;
+    GetParameters( "FakeData", &f1Names );
+    vector<string> fNames2J ;
+    GetParameters( "2JSamples", &fNames2J );
+    vector<string> fNames4J ;
+    GetParameters( "4JSamples", &fNames4J );
+
+    int treeSize = 0;
+    for ( int i=0; i< f0Names.size(); i++ ) {
+        if ( f0Names[i] == fileName ) treeSize = forestData[i]->GetEntries() ;
+    }
+    for ( int i=0; i< f1Names.size(); i++ ) {
+        if ( f1Names[i] == fileName ) treeSize = forestXJ[i]->GetEntries() ;
+    }
+    for ( int i=0; i< fNames2J.size(); i++ ) {
+        if ( fNames2J[i] == fileName ) treeSize = forest2J[i]->GetEntries() ;
+    }
+    for ( int i=0; i< fNames4J.size(); i++ ) {
+        if ( fNames4J[i] == fileName ) treeSize = forest4J[i]->GetEntries() ;
+    }
+
+    return treeSize ;
 }
 
 vector<TTree*> MassAnaInput::GetForest( string DataSet, TString treeName ) {
@@ -53,6 +145,9 @@ TTree* MassAnaInput::GetTree( string chName, TString treeName, TFile* file  ) {
   
   TTree* tr = 0;
 
+  string filePath ;
+  GetParameters( "RootFiles", &filePath );
+
   TString theFileName ;
   TChain* theChain = new TChain( treeName ) ;
 
@@ -62,13 +157,13 @@ TTree* MassAnaInput::GetTree( string chName, TString treeName, TFile* file  ) {
      GetParameters( ChainName, &chainlist );
      cout<<" * fileName+ = "<< ChainName <<endl;
      for ( size_t j=0; j< chainlist.size(); j++) {
-         theFileName = chainlist[j]+".root" ;
+         theFileName = filePath + chainlist[j]+".root" ;
          //cout<<" ** fileName = "<< theFileName <<endl;
          theChain->Add( theFileName );
      }
      tr = theChain ;
   } else {
-    theFileName = chName+".root" ;
+    theFileName = filePath + chName+".root" ;
     cout<<" * fileName = "<< theFileName <<endl;
     if ( file == NULL ) file = TFile::Open( theFileName );
     tr = (TTree*) file->Get( treeName );
@@ -77,7 +172,26 @@ TTree* MassAnaInput::GetTree( string chName, TString treeName, TFile* file  ) {
   }
 
   return tr ;
+}
 
+TTree* MassAnaInput::GetTree( string chName, TString treeName, string fSuffix ) {
+  
+  TTree* tr = 0;
+
+  TString theFileName ;
+  TChain* theChain = new TChain( treeName ) ;
+
+  string ChainName = chName + fSuffix + "Chain"  ;
+  vector<string> chainlist;
+  GetParameters( ChainName, &chainlist );
+  cout<<" * fileName+ = "<< ChainName <<endl;
+  for ( size_t j=0; j< chainlist.size(); j++) {
+      theFileName = chainlist[j]+".root" ;
+      theChain->Add( theFileName );
+  }
+  tr = theChain ;
+
+  return tr ;
 }
 
 // general method

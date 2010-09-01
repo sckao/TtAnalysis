@@ -9,12 +9,15 @@ HadWMassFitter::HadWMassFitter() {
   fitInput->GetParameters( "Path",       &hfolder );
   fitInput->GetParameters( "bThreshold", &bTh );
   fitInput->GetParameters( "n_btag",     &n_btag );
-  fitInput->GetParameters( "n_Jets",     &n_Jets );
   fitInput->GetParameters( "JESType",    &JESType );
   fitInput->GetParameters( "JES",        &JES );
   fitInput->GetParameters( "M2M3Cuts",   &M2M3Cut );
   fitInput->GetParameters( "LepM2tCutL", &LepM2tCutL );
   fitInput->GetParameters( "dM3Cut",     &dM3Cut );
+  fitInput->GetParameters( "JetCuts",  &jetCuts );
+  fitInput->GetParameters( "MuonCuts", &muonCuts );
+  fitInput->GetParameters( "Inclusive", &Inclusive );
+  inclu = ( Inclusive == "YES" ) ? true : false ;
 
 }
 
@@ -451,11 +454,15 @@ vector<TLorentzVector> HadWMassFitter::GetEventObjects( int nj, double jpx[], do
 
     for ( int i=0; i< nj; i++) {
         TLorentzVector jet_i( jpx[i], jpy[i], jpz[i], jE[i] );
-        if ( fabs(jet_i.Eta()) > 2.4 ) continue;
+        //if ( fabs(jet_i.Pt() ) < jetCuts[0] ) continue;
+        //if ( fabs(jet_i.Eta()) > jetCuts[1] ) continue;
         objs.push_back( jet_i ) ;
     }
+
     TLorentzVector mp( mpx, mpy, mpz, mE );
+  
     objs.push_back( mp ) ;
+ 
     
     return objs ;
 }
@@ -483,24 +490,20 @@ void HadWMassFitter::ResetCuts( double m2L, double m2H, double m3L, double m3H, 
 // For New SolTree Format, with JES/JEC, 
 // JEC : type = 1 , JES : type = 2 ;  return the efficiency
 // evtSplit:  0 = no splitting , negative value = the odd event number, positive value = the even event number
-double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, double scale, vector<int>* evtlist, int evtSplit, bool smearing, TTree* theTree ) {
+double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, int nJets, double scale, vector<int>* evtlist, int evtSplit, bool smearing ) {
 
   // get files and trees
-  TTree* tr1 ;
-  if ( theTree ==  NULL ) { 
-     tr1 = fitInput->GetTree( fileName, "muJets" );
-  } else {
-     tr1 = theTree ;
-  }
+  TTree* tr1 = fitInput->TreeMap( fileName );
 
   bool isJES = ( JESType == 2 ) ? true : false ;
 
   // event solution tree
-  const static int sz = n_Jets + 1;
+  const static int sz = 15;
   int evtId, nJ, nM, nN;
+  int n90[7] ;
   double jpx[sz], jpy[sz], jpz[sz], jE[sz], bCut[sz] ;
-  double npx[sz], npy[sz], npz[sz], nE[sz] ;
-  double mpx[sz], mpy[sz], mpz[sz], mE[sz] ;
+  double npx[2], npy[2], npz[2], nE[2] ;
+  double mpx[2], mpy[2], mpz[2], mE[2], X2[2], mIso[2] ;
   tr1->SetBranchAddress("evtId"    ,&evtId);
   tr1->SetBranchAddress("nJ"       ,&nJ);
   tr1->SetBranchAddress("nNu"      ,&nN);
@@ -511,6 +514,7 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, double sca
   tr1->SetBranchAddress("jpy"      ,&jpy);
   tr1->SetBranchAddress("jpz"      ,&jpz);
   tr1->SetBranchAddress("jE"       ,&jE);
+  tr1->SetBranchAddress("n90"    ,&n90);
 
   tr1->SetBranchAddress("npx"      ,&npx);
   tr1->SetBranchAddress("npy"      ,&npy);
@@ -521,6 +525,8 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, double sca
   tr1->SetBranchAddress("mpy"      ,&mpy);
   tr1->SetBranchAddress("mpz"      ,&mpz);
   tr1->SetBranchAddress("mE"       ,&mE);
+  tr1->SetBranchAddress("X2"       ,&X2);
+  tr1->SetBranchAddress("mIso"     ,&mIso);
 
   vector<TLorentzVector> vlist0;
   vector<TLorentzVector> vlist1;
@@ -537,26 +543,48 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, double sca
   int n2sol = 0;
   for ( int j= 0 ; j< loopEnd; j++ ) {
       if ( evtlist != NULL && evtlist->size() == 0 ) break;
-      if ( evtlist != NULL ) idx = (*evtlist)[j] ;
-      if ( evtlist == NULL ) idx = j ;
+      idx = ( evtlist == NULL ) ? j : (*evtlist)[j] ;
 
       if ( evtSplit == -1 && (j%2) == 0 ) continue ;
       if ( evtSplit ==  1 && (j%2) == 1 ) continue ;
-      if ( evtSplit >  1 && (j%evtSplit ) != 2 ) continue ;
+      if ( evtSplit >  1 && (j%evtSplit ) != 0 ) continue ;
       if ( evtSplit < -1 && (j%evtSplit ) != 1 ) continue ;
 
       tr1->GetEntry(idx);
+      if ( nJ < nJets ) continue ;
 
-      // 0 ~ 3(4) jets, 4(5): muon, 5(6):MET
-      //cout<<" ----- "<<endl;
-      vector<TLorentzVector> objlist = GetEventObjects( nJ, jpx, jpy, jpz, jE, mpx[0], mpy[0], mpz[0], mE[0] );
+      // muon selection
+      TLorentzVector m0( mpx[0], mpy[0], mpz[0], mE[0] );
+      if ( m0.Pt()  < muonCuts[0] ) continue ;
+      if ( m0.Eta() > muonCuts[1] ) continue ;
+      if ( mIso[0]  > muonCuts[2] ) continue ;
+
+      // jet selection
+      vector<TLorentzVector> objlist;
+      int NCountedJets = 0;
+      for ( int i = 0; i< nJ ; i ++) {
+          TLorentzVector jn( jpx[i], jpy[i], jpz[i], jE[i] );
+          // sync cuts , n90 only works for calo jets
+          if ( jn.Pt()          < jetCuts[0] ) continue ;
+          if ( fabs( jn.Eta() ) > jetCuts[1] ) continue ;
+          //if ( n90[i]           <         2  ) continue ;
+          objlist.push_back( jn );
+          NCountedJets++ ;
+      }
+      if ( NCountedJets != nJets && !inclu ) continue ;      
+      if ( NCountedJets < nJets ) continue ;
+      if ( NCountedJets > 6 ) continue ;
+ 
+      //vector<TLorentzVector> objlist = GetEventObjects( nJ, jpx, jpy, jpz, jE, mpx[0], mpy[0], mpz[0], mE[0] );
+      objlist.push_back( m0 );
       TLorentzVector neuP4( npx[0], npy[0], 0., sqrt( npx[0]*npx[0] +  npy[0]*npy[0] ) );
       objlist.push_back( neuP4 ) ;
 
       size_t obsz = objlist.size() ;
-      if ( fabs( objlist[ obsz-2 ].Eta() ) > 2.1 ) continue ;
-      if ( obsz > 6 && objlist[4].Pt() > 30. ) continue ;
-      //cout<<" obj size 0 = "<< obsz <<endl;
+
+      // selection for 2 jets samples
+      //if ( nJets == 2 && obsz != 5 ) continue ;
+      //if ( nJets == 2 && objlist[2].Pt() > 30. ) continue ;
 
       if ( smearing ) pseudoExp->PhaseSmearing( objlist, j );
       TLorentzVector muP4           = objlist[obsz-2] ;
@@ -570,16 +598,9 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, double sca
       vlist4.clear();   
       vlist5.clear();   
 
-      // Eta cuts
-      if ( nJ >= 4 && obsz < 6 ) continue ;
-      if ( nJ <= 3 && obsz < 5 ) continue ;
-
       // clean the permutation lists and fill them
       vector<jlist> jlistV ;
       fitInput->GetPermutes( obsz-2 , jlistV );
-      //if ( nJ < 3 ) continue;
-      //fitInput->GetPermutes( nJ, jlistV );
-      //cout<<" nJ = "<< nJ <<" =>"<< obsz-2 << endl;
 
       // number of b tagged 
       int NofB = 0;
@@ -610,7 +631,7 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, double sca
           // M2 M3 window 
           TLorentzVector vM2 = newJs[0] + newJs[1] ;
           TLorentzVector vM3 = newJs[0] + newJs[1] + newJs[2] ;
-          if ( vM2.M() > 300. || vM3.M() > 350. ) continue;
+          //if ( vM2.M() > 300. || vM3.M() > 350. ) continue;
           bool goodM2 =  ( vM2.M() > M2M3Cut[0] && vM2.M() < M2M3Cut[1] ) ;
           bool goodM3 =  ( vM3.M() > M2M3Cut[2] && vM3.M() < M2M3Cut[3] ) ;
 
@@ -642,7 +663,6 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, double sca
               vlist5.push_back( neuP4s[k] );
           }
       }
-
       if ( vlist0.size() ==  0 || goodPermu < 1 ) continue; 
       n2sol++ ;
 

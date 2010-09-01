@@ -34,6 +34,7 @@ private:
    bool smearing ;
    vector<double> inputMean ;
 
+   string plotType;
    string phaseSmear;
    string hfolder;
 
@@ -61,7 +62,7 @@ public:
 
    void MixBG( TString DrawOpt = "COLZ" );
 
-   void MixAll( TString DrawOpt = "COLZ" );
+   void MixAll( vector<string>& flist, TString DrawOpt = "COLZ" );
 
    void M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt = "COLZ", bool isMCMatched = false );
    void LepTopPlotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt = "COLZ", bool isMCMatched = false );

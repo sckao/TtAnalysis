@@ -29,8 +29,9 @@ g++ HadWMassFitter.cc -c -o HadWMassFitter.o $libs $cflags $cxx $cxxflags $glibs
 g++ LepTopMassFitter.cc -c -o LepTopMassFitter.o $libs $cflags $cxx $cxxflags $glibs -lMinuit
 g++ PseudoExp.cc -c -o PseudoExp.o $libs $cflags $cxx $cxxflags $glibs
 g++ WAnalysis.cc -c -o WAnalysis.o $libs -lMinuit $cflags $cxx $cxxflags $glibs 
-g++ JetSpectrum.cc -c -o JetSpectrum.o $libs -lMinuit $cflags $cxx $cxxflags $glibs 
+g++ ObjectInfo.cc -c -o ObjectInfo.o $libs -lMinuit $cflags $cxx $cxxflags $glibs 
+g++ XSection.cc -c -o XSection.o $libs -lMinuit $cflags $cxx $cxxflags $glibs 
 g++ BgEstimation.cc -c -o BgEstimation.o $libs -lMinuit $cflags $cxx $cxxflags $glibs 
 
-g++ $input -o $output MassFitFunction.o MassAnaInput.o MassAna.o AlgoZero.o AlgoKcon.o JES.o MassAnaOutput.o HadWMassFitter.o LepTopMassFitter.o PseudoExp.o WAnalysis.o JetSpectrum.o BgEstimation.o $libs $cflags $cxx $cxxflags $glibs -lMinuit
+g++ $input -o $output MassFitFunction.o MassAnaInput.o MassAna.o AlgoZero.o AlgoKcon.o JES.o MassAnaOutput.o HadWMassFitter.o LepTopMassFitter.o PseudoExp.o WAnalysis.o ObjectInfo.o XSection.o BgEstimation.o $libs $cflags $cxx $cxxflags $glibs -lMinuit
 #g++ $input -o $output MassFitFunction.o MassAnaInput.o MassAna.o AlgoZero.o AlgoKcon.o JES.o MassAnaOutput.o PseudoExp.o $libs $cflags $cxx $cxxflags

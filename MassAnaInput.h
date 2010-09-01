@@ -72,6 +72,7 @@ public:
    vector<TTree*> GetForest( string DataSet, TString treeName );
 
    TTree* GetTree( string chName, TString treeName, TFile* file = NULL );
+   TTree* GetTree( string chName, TString treeName, string fsuffix );
 
    void get_h1Obj(TString fName, TString TName, TString BName, TH1D* h1, double theScale = 1., bool weight = false );
    void get_h1Obj(TChain* tChain, TString BName, TH1D* h1, double theScale = 1., bool weight = false );
@@ -110,6 +111,10 @@ public:
    void GetParameters( string paraName, vector<double>* thePara );
    void GetParameters( string paraName, vector<string>* thePara );
    void GetParameters( string paraName, vector<int>* thePara );
+
+   void LinkForests( TString treeName );
+   TTree* TreeMap( string fileName );
+   int TreeSize( string fileName );
 
    /*
    void combineBG( TString mName, TH1D* allbg, int rbin );

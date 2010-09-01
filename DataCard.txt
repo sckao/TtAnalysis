@@ -1,20 +1,31 @@
-#
+
 # This is the data card for the input of M2M3 analysis and TopMassFitter 
 # Auther : SCKao - UCRiverside
 #
 
+#
+RootFiles = rootfiles/
+
 # Folder to store results
-Path = M2M3WMt_4JPFA/
+Path = PF_1J/
 
 # Luminostiy( pb^-1 ) before July
-Lumi = 5
+Lumi = 1.93
+
+# Number of Jets
+n_Jets = 1
+# inclusive=>   YES: >= n_Jets, NO: == n_Jets
+Inclusive = YES
+
+# jacobian test parameters 
+# p3 : scale , must > 0 , p0,p1,p2 : shape parameters for Mt < 80
+# p4: mass of W , p5: width of W , p6: Gassian Convolution, only stable when p6 < 10 
+PJacob  = (  15.4, 1., -20., 23.54,  80.4,  19.1,   1 )
+PSwitch = (   1,    0,    0,     1,    0,     0,    0 )
 
 # JES type 0: no JES, 1:JEC, 2:JES
 JESType = 0
 IsMES = OFF
-
-# Number of Jets
-n_Jets = 4
 
 # Number of b tagged
 # -1 : no btagged , 0: 1+2 btagged , 1: 1 btagged , 2: 2 btagged
@@ -22,23 +33,29 @@ n_Jets = 4
 n_btag = -1
 bThreshold = 5
 
+# plot type : png / gif / eps
+PlotType = png
+
 #  cross-sections for 7 TeV Collision
 #  MuEnriched QCD is x-section*FilterEfficiency
-#         ( tt_in, wj_mj, zj_mm, tq_in, tw_in, ww_in, wz_in, qcd_mux )
-channel= (    tt,    wj,    zj,    tq,    tw,    ww,    wz,     qcd )
-xsec   = (   165,  9333.3, 933.3,  63,  10.6,    43,    18,  109853 )
-#xsec10 = (   385, 14266,  1400,   130,    29,    74,    32,  109853 )
-EffHLT = ( 0.198, 0.645, 0.447, 0.247, 0.192,  0.13,   0.1,    0.379 )
-nEvents = ( 23692, 1334526, 933793, 126345, 89431, 14780, 10940, 1949012 )
+#        (   tt_in,   wj_lv,  zj_ll,  tq_in,  tw_in, ww_in, wz_in, qcd_mux )
+channel= (      tt,      wj,     zj,     tq,     tw,    ww,    wz,     qcd )
+xsec   = (     165,   28049,   2907,  20.48,   10.6,    43,    18,   79688 )
+EffHLT = (  0.2991,  0.2063, 0.2968,  0.327, 0.2629,  0.13,   0.1,  0.7970 )
+nEvents = ( 443764, 2077337, 321975, 172830, 122617, 14780, 10940, 3488649 )
 
 # set up the module to run,  0 => off , 1=> on
 #          0:ObjectInfo 1:HadTopFitter 2:LepTopFitter 3:EnsembleTest, 4: S/B Ratio 5:MethodTest 6:X-section Measure
-Module = ( 1,           1,             0 ,            0,              0,           0,           0 )
+Module = ( 6,           0,             0 ,            0,              0,           0,           0 )
 # Random Number Seed , 0 : using system time for the seed
 RandomSeed = 0
 # ON/OFF for MC matching 
 MCMatching = OFF
 
+#Cuts        Et,  Eta
+JetCuts = (  30., 2.4 )
+#Cuts        Et,  Eta, Iso
+MuonCuts = ( 18., 2.1, 0.1)
 # M2M3 window, M2_Min, M2_Max, M3_Min, M3_Max 
 #M2M3Cuts = ( 50, 110, 140, 200 )
 M2M3Cuts = ( 0, 300, 0, 350 )
@@ -46,19 +63,24 @@ LepM2tCutL = 0
 dM3Cut = 999
 
 # number of pseudo experiments
-nPseudoExp = 10
+nPseudoExp = 1000
 # input mean for pseudo experiments
 #              tt4J,  wj4J,  QCD4J,    wj2J,   qcd2J
 # InputMean = ( 25.36,  6.52,   8.97,  513.57,  503.29  ) .. old value for pf
 
 # pfA              
-InputMean = ( 24.81,  6.18,   7.90,  494.08,  478.29  )
+#InputMean = ( 24.81,  6.18,   7.90,  494.08,  478.29  )
 #For JES 1.1
 #InputMean = ( 27.34,  9.50,   13.03,  635.37,  609.13  )
 #For JES 0.9
 #InputMean = ( 21.77,  3.72,   4.91,  373.24,  343.07  )
 # caloA
-#InputMean = ( 24.43,  7.10,   7.80,  517.97,  413.42  )
+#InputMean = ( 41.18,  19.53,   8.37,  578.2,  446.8  )
+#              tt4J,  wj4J,  QCD4J,  z4J   wj2J,   qcd2J, z2J
+# Calo
+#InputMean = ( 26.52,  15.89,  6.82, 1.45 ,479.4,  394.1, 41.7 )
+# PF
+InputMean = ( 30.74,  13.79,  2.36,  1.47, 374.8,  175.7, 40.3 )
 
 # ON/OFF for phase space smearing
 PhaseSmear = OFF
@@ -67,29 +89,32 @@ JES = 1.
 
 # FileName list for pseudo experiment
 # '+' is the flag for TChain 
-# FakeData =    ( tt171_336, wj_336, zj_336, tq_336, tw_336, ww_336, wz_336, qcd+ )
+#TheData = ( data250nb_0J )
+TheData = ( data+ )
+#dataChain = ( data_mbias, data1_0716, data2_pv4_1, data2_pv4_2, data2_pv4_3 )
+dataChain = ( data_mbiaspf, data1_0716pf, data2_pv4_1pf, data2_pv4_2pf, data2_pv4_3pf )
 
-#FakeData =    ( tt_356_4jcaloA, wj_356_4jcaloA, qcd+  )
-#qcdChain = ( qcd_356_4jcaloA1, qcd_356_4jcaloA2, qcd_356_4jcaloA3, qcd_356_4jcaloA4, qcd_356_4jcaloA5, qcd_356_4jcaloA6, qcd_356_4jcaloA7 )
-#2JSamples  = ( tt_356_2jcaloA, wj_356_2jcaloA, qcd2J+ )
-#qcd2JChain = ( qcd_356_2jcaloA1, qcd_356_2jcaloA2, qcd_356_2jcaloA3, qcd_356_2jcaloA4, qcd_356_2jcaloA5, qcd_356_2jcaloA6, qcd_356_2jcaloA7 )
+FakeData = ( tt_361_0jpf,  wj0+,  qcd0+,  zj_361_0jpf1, tq_361_0jpf1, tw_361_0jpf1 )
+wj0Chain = ( wj_361_0jpf1, wj_361_0jpf2, wj_361_0jpf3, wj_361_0jpf4, wj_361_0jpf5, wj_361_0jpf6, wj_361_0jpf7 )
+qcd0Chain = ( qcd_361_0jpf1, qcd_361_0jpf2, qcd_361_0jpf3, qcd_361_0jpf4, qcd_361_0jpf5, qcd_361_0jpf6, qcd_361_0jpf7 )
 
-FakeData =    ( tt_356_4jpfA, wj_356_4jpfA, qcd+  )
-qcdChain = ( qcd_356_4jpfA1, qcd_356_4jpfA2, qcd_356_4jpfA3, qcd_356_4jpfA4, qcd_356_4jpfA5, qcd_356_4jpfA6, qcd_356_4jpfA7 )
-2JSamples  = ( tt_356_2jpfA, wj_356_2jpfA, qcd2J+ )
-qcd2JChain = ( qcd_356_2jpfA1, qcd_356_2jpfA2, qcd_356_2jpfA3, qcd_356_2jpfA4, qcd_356_2jpfA5, qcd_356_2jpfA6, qcd_356_2jpfA7 )
+4JSamples = ( tt_361_4jpf,  wj+,  qcd+,  zj_361_4jpf1, tq_361_4jpf1, tw_361_4jpf1 )
+wjChain = ( wj_361_4jpf1, wj_361_4jpf2, wj_361_4jpf3, wj_361_4jpf4, wj_361_4jpf5, wj_361_4jpf6, wj_361_4jpf7 )
+qcdChain = ( qcd_361_4jpf1, qcd_361_4jpf2, qcd_361_4jpf3, qcd_361_4jpf4, qcd_361_4jpf5, qcd_361_4jpf6, qcd_361_4jpf7 )
+
+2JSamples  = ( tt_361_2jpf, wj2+, qcd2J+, zj_361_2jpf1, tq_361_2jpf1, tw_361_2jpf1 )
+wj2Chain = ( wj_361_2jpf1, wj_361_2jpf2, wj_361_2jpf3, wj_361_2jpf4, wj_361_2jpf5, wj_361_2jpf6, wj_361_2jpf7 )
+qcd2JChain = ( qcd_361_2jpf1, qcd_361_2jpf2, qcd_361_2jpf3, qcd_361_2jpf4, qcd_361_2jpf5, qcd_361_2jpf6, qcd_361_2jpf7 )
 
 # JES 1.1
-#FakeData =    ( tt_356_4jpfB, wj_356_4jpfB, qcd+  )
-#qcdChain = ( qcd_356_4jpfB1, qcd_356_4jpfB2, qcd_356_4jpfB3, qcd_356_4jpfB4, qcd_356_4jpfB5, qcd_356_4jpfB6, qcd_356_4jpfB7 )
-#2JSamples  = ( tt_356_2jpfB, wj_356_2jpfB, qcd2J+ )
-#3qcd2JChain = ( qcd_356_2jpfB1, qcd_356_2jpfB2, qcd_356_2jpfB3, qcd_356_2jpfB4, qcd_356_2jpfB5, qcd_356_2jpfB6, qcd_356_2jpfB7 )
+#FakeData =    ( tt_361_0jcaloA, wj0+, qcd0+, zj_361_0jcaloA1, tq_361_0jcaloA1, tw_361_0jcaloA1  )
+#wj0Chain = ( wj_361_0jcaloA1, wj_361_0jcaloA2, wj_361_0jcaloA3, wj_361_0jcaloA4, wj_361_0jcaloA5, wj_361_0jcaloA6, wj_361_0jcaloA7 )
+#qcd0Chain = ( qcd_361_0jcaloA1, qcd_361_0jcaloA2, qcd_361_0jcaloA3, qcd_361_0jcaloA4, qcd_361_0jcaloA5, qcd_361_0jcaloA6, qcd_361_0jcaloA7 )
 
 # JES 0.9
-#FakeData =    ( tt_356_4jpfC, wj_356_4jpfC, qcd+  )
-#qcdChain = ( qcd_356_4jpfC1, qcd_356_4jpfC2, qcd_356_4jpfC3, qcd_356_4jpfC4, qcd_356_4jpfC5, qcd_356_4jpfC6, qcd_356_4jpfC7 )
-#2JSamples  = ( tt_356_2jpfC, wj_356_2jpfC, qcd2J+ )
-#3qcd2JChain = ( qcd_356_2jpfC1, qcd_356_2jpfC2, qcd_356_2jpfC3, qcd_356_2jpfC4, qcd_356_2jpfC5, qcd_356_2jpfC6, qcd_356_2jpfC7 )
+#FakeData =    ( tt_361_0jcaloB, wj0+, qcd0+, zj_361_0jcaloB1, tq_361_0jcaloB1, tw_361_0jcaloB1  )
+#wj0Chain = ( wj_361_0jcaloB1, wj_361_0jcaloB2, wj_361_0jcaloB3, wj_361_0jcaloB4, wj_361_0jcaloB5, wj_361_0jcaloB6, wj_361_0jcaloB7 )
+#qcd0Chain = ( qcd_361_0jcaloB1, qcd_361_0jcaloB2, qcd_361_0jcaloB3, qcd_361_0jcaloB4, qcd_361_0jcaloB5, qcd_361_0jcaloB6, qcd_361_0jcaloB7 )
 
 # FileName list for parameterization, or ChainName+ ;  
 Backgrounds = ( wj1_356, zj_336, tq_336, tw_336, ww_336, wz_336, qcd1_356 )

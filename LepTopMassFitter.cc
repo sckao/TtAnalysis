@@ -256,12 +256,16 @@ double LepTopMassFitter::BTagProbability( double bCut[], int NofB, int jid[] ){
 void LepTopMassFitter::ReFitLepTopSolution( string fileName, recoObj* wObj, double scale, vector<int>* evtlist, bool smearing, TTree* theTree ) {
 
   // get files and trees
+  /*
   TTree* tr1 ;
   if ( theTree ==  NULL ) {
      tr1 = fitInput->GetTree( fileName, "muJets" );
   } else {
      tr1 = theTree ;
   }
+  */
+  TTree* tr1 = fitInput->TreeMap( fileName );
+  if ( theTree ==  NULL )  tr1 = theTree ;
 
   bool isMES = ( IsMES == "ON" ) ? true : false ;
 
