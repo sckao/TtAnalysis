@@ -58,10 +58,11 @@ public:
    void ObjHistoPlotter( string fileName, bool smearing = false, bool doWMtfit = false );
 
    void DataPlotter( string DataName, vector<string>& fakeData, bool doScale = false );
+   void Data2DPlotter( string DataName, vector<string>& fakeData, bool doScale = false );
 
    void JacobTester();
 
-   void CombinedMCPlotter( vector<string>& fakeData, bool doWMtFit = false );
+   void CombinedMCPlotter( vector<string>& fakeData, bool doWMtFit = false, bool doScale = false );
 
    void MCPlotter1( vector<string>& fakeData, double norm = 1000. );
 
@@ -74,13 +75,16 @@ public:
 
    double EvtScaling( double w_pt , string fileName ) ;
    double EvtScaling( int NJets , string fileName ) ;
-   double EvtScaling( string fileName ) ;
 
-   void QCDSelector( string fileName, recoObj* histos, bool smearing = false, double scale = 1., bool doQCD = true, int mode = 0 );
+   void QCDSelector( string fileName, recoObj* histos, bool smearing = false, double scale = 1., bool doQCD = true, int mode = 0, int evtSplit = 0 );
    double QCDScaling( double w_pt ) ;
    double QCDScaling( int NJets, string fileName ) ;
    void QCDBGPlotter( string DataName, vector<string>& fakeData, bool doQCD, double MtCut, double METCut, double scale = 1 );
+   void QCDBG2DPlotter( string DataName, vector<string>& fakeData, bool doQCD, double MtCut, double METCut, double scale = 1 );
 
+   void WScaleStudy( vector<string>& fakeData ) ;
+
+   double PtRel (TLorentzVector v1, TLorentzVector v2 );
    //ClassDef(ObjectInfo, 1);
 
 };

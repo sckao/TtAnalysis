@@ -8,6 +8,8 @@
 #include <string>
 #include <TMath.h>
 #include <TF1.h>
+//#include <TLorentzVector.h>
+
 using namespace std; 
 
 class MassFitFunction : public TObject {
@@ -48,7 +50,7 @@ public:
    //static vector<double> ErrAovB( double A, double s_A, double B, double s_B );
    static double ErrAovB( double A, double B, double s_A = -1, double s_B = -1, bool upward = true );
    static double ErrAxB( double A, double B, double s_A = -1, double s_B = -1, bool upward = true );
- 
+   //static double PtRel( TLorentzVector v1, TLorentzVector v2 ) ;
 
    //ClassDef(MassFitFunction, 1);
 

@@ -23,8 +23,8 @@ BgEstimation::~BgEstimation(){
 }
 
 // use 1 inclusive file 
-// index : 0->all , 1->nonQCD ,  2->QCD     => using EvtSelector
-// index :          3->nonQCD ,  4->QCD     => using QCDSelector
+// index : 0->all , 1->nonQCD ,  2->QCD     => using EvtSelector, MC truth selection
+// index :          3->nonQCD ,  4->QCD     => using QCDSelector, control region selection
 vector<double> BgEstimation::RatioXY( int njx, int njy, vector<string>& fNames, int index, bool doPlot, bool inclX, bool inclY, bool normMC ){
 
       ostringstream nameStr ;
@@ -37,9 +37,11 @@ vector<double> BgEstimation::RatioXY( int njx, int njy, vector<string>& fNames, 
       nameStr << njy ;
       if ( fNames[0].substr(0,4) == "data" ) nameStr << "_data" ;
       cout<<" ===  Measuring Ratio "<< njx <<"/"<<njy<<" === "<< nameStr.str() <<endl;
+      if ( index == 3 || index == 1 )  cout<<" **** non-QCD Region **** "<<endl;
+      if ( index == 4 || index == 2 )  cout<<" ****   QCD Region   **** "<<endl;
 
       if ( index == 3 ) objInfo->ResetBGCuts(0, 50 );
-      if ( index == 3 ) objInfo->ResetBGCuts(1, 30 );
+      if ( index == 3 ) objInfo->ResetBGCuts(1, 20 );
       if ( index == 4 ) objInfo->ResetBGCuts(0, 35 );
       if ( index == 4 ) objInfo->ResetBGCuts(1, 20 );
       if ( normMC ) objInfo->Reset(1,true) ;
@@ -50,7 +52,7 @@ vector<double> BgEstimation::RatioXY( int njx, int njy, vector<string>& fNames, 
       objInfo->Reset(0, inclX );
       objInfo->Reset(0, njx) ;
       hLepM2* nc_xj = new hLepM2( nameStr.str().substr(3,2) ) ;
-      for ( int i = 0; i < fNames.size(); i++) {
+      for ( size_t i = 0; i < fNames.size(); i++) {
           if ( index == 1 && i == 2 ) continue ; 
           if ( index == 2 && i != 2 ) continue ; 
           if ( fNames[i].substr(0,2) == "tt" ) theScale = fitInput->NormalizeComponents( "tt" )  ;
@@ -59,10 +61,10 @@ vector<double> BgEstimation::RatioXY( int njx, int njy, vector<string>& fNames, 
           if ( fNames[i].substr(0,2) == "qc" ) theScale = fitInput->NormalizeComponents( "qcd" )  ;
           if ( fNames[i].substr(0,2) == "tq" ) theScale = fitInput->NormalizeComponents( "tq" )  ;
           if ( fNames[i].substr(0,2) == "tw" ) theScale = fitInput->NormalizeComponents( "tw" )  ;
-          if ( index <= 2 )  objInfo->EvtSelector( fNames[i], nc_xj, smearing, theScale );
-          if ( index == 3 )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, false, scaleMode );
-          if ( index == 4 )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, true,  scaleMode );
-          
+          if ( index <= 2 && njx  > 2 && i != 0 )  objInfo->EvtSelector( fNames[i], nc_xj, smearing, theScale );
+          if ( index <= 2 && njx <= 2 && i != 0 )  objInfo->EvtSelector( fNames[i], nc_xj, smearing, theScale );
+          if ( index == 3  )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, false, scaleMode );
+          if ( index == 4  )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, true,  scaleMode );
       }
       vector<double> nData_xj ;
       nc_xj->CounterVec( nData_xj );
@@ -77,18 +79,18 @@ vector<double> BgEstimation::RatioXY( int njx, int njy, vector<string>& fNames, 
       objInfo->Reset(0, inclY );
       objInfo->Reset(0, njy) ;
       hLepM2* nc_yj = new hLepM2( nameStr.str().substr(5,2) ) ;
-      for ( int i = 0; i < fNames.size(); i++) {
+      for ( size_t i = 0; i < fNames.size(); i++) {
           if ( index == 1 && i == 2 ) continue ; 
           if ( index == 2 && i != 2 ) continue ; 
           if ( fNames[i].substr(0,2) == "tt" ) theScale = fitInput->NormalizeComponents( "tt" )  ;
           if ( fNames[i].substr(0,2) == "wj" ) theScale = fitInput->NormalizeComponents( "wj" )  ;
-          if ( fNames[i].substr(0,2) == "zj" ) theScale = fitInput->NormalizeComponents( "zj" )  ;
           if ( fNames[i].substr(0,2) == "qc" ) theScale = fitInput->NormalizeComponents( "qcd" )  ;
+          if ( fNames[i].substr(0,2) == "zj" ) theScale = fitInput->NormalizeComponents( "zj" )  ;
           if ( fNames[i].substr(0,2) == "tq" ) theScale = fitInput->NormalizeComponents( "tq" )  ;
           if ( fNames[i].substr(0,2) == "tw" ) theScale = fitInput->NormalizeComponents( "tw" )  ;
-          if ( index <= 2 )  objInfo->EvtSelector( fNames[i], nc_yj, smearing, theScale );
-          if ( index == 3 )  objInfo->QCDSelector( fNames[i], nc_yj, smearing, theScale, false, scaleMode );
-          if ( index == 4 )  objInfo->QCDSelector( fNames[i], nc_yj, smearing, theScale, true,  scaleMode );
+          if ( index <= 2 && i != 0 )  objInfo->EvtSelector( fNames[i], nc_yj, smearing, theScale );
+          if ( index == 3  )  objInfo->QCDSelector( fNames[i], nc_yj, smearing, theScale, false, scaleMode );
+          if ( index == 4  )  objInfo->QCDSelector( fNames[i], nc_yj, smearing, theScale, true,  scaleMode );
       }
       vector<double> nData_yj ;
       nc_yj->CounterVec( nData_yj );
@@ -116,9 +118,138 @@ vector<double> BgEstimation::RatioXY( int njx, int njy, vector<string>& fNames, 
           cout<<" +/- "<<RxyErr <<endl;
       }
 
+
       delete nc_xj ;
       delete nc_yj ;
       return Rxy ;
+}
+
+// index : 0->all , 1->nonQCD ,  2->QCD    => using EvtSelector, MC truth selection
+// index :          3->nonQCD ,  4->QCD    => using QCDSelector, control region selection
+// index :          5->nonQCD ,            => using different W sample 
+vector<double> BgEstimation::NEvtCounting( int njx, vector<string>& fNames, int index, bool inclX, bool normMC, int mcIdx ){
+
+      cout<<" ===  Getting N of Event from "<< njx <<" jet bin === " <<endl;
+      if ( index == 3 || index == 1 )  cout<<" **** non-QCD Region **** "<<endl;
+      if ( index == 4 || index == 2 )  cout<<" ****   QCD Region   **** "<<endl;
+
+      if ( index == 3 ) objInfo->ResetBGCuts(0, 50 );
+      if ( index == 3 ) objInfo->ResetBGCuts(1, 30 );
+      if ( index == 4 ) objInfo->ResetBGCuts(0, 35 );
+      if ( index == 4 ) objInfo->ResetBGCuts(1, 20 );
+      if ( normMC ) objInfo->Reset(1,true) ;
+      int scaleMode =  ( normMC ) ? 2 : 0  ;
+
+      double theScale = 1. ;
+
+      // for the damn systematic studies
+      vector<string> SysSample ;
+      fitInput->GetParameters( "OtherSamples", &SysSample );
+      double uScaleW  = (3.1*28049*0.2177) /  348887;
+      double dScaleW  = (3.1*28049*0.2177) / 1234550;
+      double scaleW = 1. ;
+      if ( SysSample[0].substr(3,1) == "+" ) {
+         scaleW = fitInput->NormalizeComponents( "wj" ) ;
+      } else {
+         scaleW  = ( SysSample[0].substr(7,2) == "up" ) ? uScaleW : dScaleW ;
+      }
+
+      objInfo->Reset(0, inclX );
+      objInfo->Reset(0, njx) ;
+      hLepM2* nc_xj = new hLepM2("njbin") ;
+      for ( size_t i = 0; i < fNames.size(); i++) {
+          if ( index == 1 && i == 2 ) continue ; 
+          if ( index == 2 && i != 2 ) continue ;
+          if ( fNames[i].substr(0,2) == "tt" ) theScale = fitInput->NormalizeComponents( "tt" )  ;
+          if ( fNames[i].substr(0,2) == "wj" ) theScale = fitInput->NormalizeComponents( "wj" )  ;
+          if ( fNames[i].substr(0,2) == "zj" ) theScale = fitInput->NormalizeComponents( "zj" )  ;
+          if ( fNames[i].substr(0,2) == "qc" ) theScale = fitInput->NormalizeComponents( "qcd" )  ;
+          if ( fNames[i].substr(0,2) == "tq" ) theScale = fitInput->NormalizeComponents( "tq" )  ;
+          if ( fNames[i].substr(0,2) == "tw" ) theScale = fitInput->NormalizeComponents( "tw" )  ;
+          if ( mcIdx != 0 ) theScale = theScale*mcIdx ;
+          if ( index <= 2 && i != 0 )  objInfo->EvtSelector( fNames[i], nc_xj, smearing, theScale );
+
+          if ( index == 3 )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, false, scaleMode, mcIdx );
+          if ( index == 4 )  objInfo->QCDSelector( fNames[i], nc_xj, smearing, theScale, true,  scaleMode, mcIdx );
+
+          if ( index == 5 && i == 1  )  objInfo->EvtSelector( SysSample[0], nc_xj, smearing, scaleW    );
+          if ( index == 5 && i  > 3  )  objInfo->EvtSelector( fNames[i],    nc_xj, smearing, theScale  );
+      }
+      vector<double> nData_xj ;
+      nc_xj->CounterVec( nData_xj );
+      delete nc_xj ;
+      return nData_xj ;
+}
+
+// calculate the ratio by using the alpha_s
+vector<double> BgEstimation::RatioX2( int nxj, int nyj, vector<string>& DataFiles, vector<string>& MCFiles, bool normMC, bool isReal ){
+     
+      vector<double> V1    ;
+      vector<double> V2    ;
+      vector<double> mcV2  ;
+
+      vector<double> Q1    ;
+      vector<double> Q2    ;
+      vector<double> mcQ2  ;
+
+      if ( isReal ) {
+          V1  = NEvtCounting( 1, DataFiles, 3,  false,  normMC ) ;
+          V2  = NEvtCounting( 2, DataFiles, 3,  false,  normMC ) ;
+          Q1  = NEvtCounting( 1, DataFiles, 4,  false,  normMC ) ;
+          Q2  = NEvtCounting( 2, DataFiles, 4,  false,  normMC ) ;
+          mcV2 = NEvtCounting( 2, MCFiles, 1,  false,  normMC ) ;
+          mcQ2 = NEvtCounting( 2, MCFiles, 2,  false,  normMC ) ;
+      } else {
+          V1  = NEvtCounting( 1, MCFiles, 3,  false,  false, 2 ) ;
+          V2  = NEvtCounting( 2, MCFiles, 3,  false,  false, 2 ) ;
+          Q1  = NEvtCounting( 1, MCFiles, 4,  false,  false, 2 ) ;
+          Q2  = NEvtCounting( 2, MCFiles, 4,  false,  false, 2 ) ;
+          mcV2 = NEvtCounting( 2, MCFiles, 5,  false,  normMC ) ;
+          //mcV2 = NEvtCounting( 2, MCFiles, 1,  false,  normMC ) ;  
+          mcQ2 = NEvtCounting( 2, MCFiles, 2,  false,  normMC ) ;
+          cout<<" V R2/1 = "<< V2[0]/V1[0] <<" Q R2/1 = "<< Q2[0]/Q1[0] << endl;
+          cout<<" MC V2 = "<< mcV2[0] <<"   MC Q2 = "<< mcQ2[0] << endl;
+      }
+
+      vector<double> Rxy ;
+      vector<double> sRxy ;
+      for ( int i=0; i< 5; i++) {
+          double Nx  = 0. ;
+          double sNx = 0. ;
+          for ( int j=nxj; j<= nyj; j++) {
+	      vector<double> Vx = NEvtFromAlphaS(j,2, V2[i], V1[i], mcV2[i] );
+              vector<double> Qx = NEvtFromAlphaS(j,2, Q2[i], Q1[i], mcQ2[i] );
+	      Nx  +=  (Qx[0] + Vx[0]) ; 
+	      sNx += ( (Qx[1]*Qx[1]) + (Vx[1]*Vx[1]) ) ;
+          }
+          double sR =  MassFitFunction::ErrAovB( Nx, mcQ2[i] + mcV2[i], sqrt(sNx), sqrt( mcQ2[i] + mcV2[i] ) );
+          Rxy.push_back( Nx / ( mcQ2[i] + mcV2[i] ) ) ;
+          sRxy.push_back( sR ) ;
+          cout<<" Ratio = "<< Nx / ( mcQ2[i] + mcV2[i] ) <<"  +/-" << sR <<endl;
+      }
+      for (size_t k=0; k< sRxy.size(); k++ ) {  
+          Rxy.push_back( sRxy[k] );  
+      }
+      return Rxy ;
+}
+
+vector<double> BgEstimation::NEvtFromAlphaS( int nxj, int nyj, double N2, double N1, double N_mc ){
+
+       int dj = nxj-nyj ;
+       double alpha = N2/N1 ;
+       double Nx = N_mc * pow( alpha, dj );
+       //cout<<"  alpha_s = "<< alpha <<" N2:"<< N2 <<" / N1:"<< N1 <<" N_mc = "<<N_mc <<" Nx = "<< Nx <<endl; 
+
+       double sA =  ( pow( alpha, dj )*dj ) / sqrt(N2)  ; 
+       double sB =  ( pow( alpha, dj )*dj ) / sqrt(N1)  ; 
+       double sR = sqrt( (sA*sA) + (sB*sB) )  ;
+       double sNx = MassFitFunction::ErrAxB( N_mc, pow( alpha, dj ), sqrt(N_mc), sR );
+
+       vector<double> Nexp ;
+       Nexp.push_back(Nx);
+       Nexp.push_back(sNx);
+       return Nexp ;
+
 }
 
 // use 2 file lists which already have differnt jet multiplicity
@@ -131,7 +262,8 @@ vector<double> BgEstimation::RatioXY( vector<string>& fNameX, vector<string>& fN
 
       objInfo->Reset(0, 4) ;
       hLepM2* nc_xj = new hLepM2( "Nxj", 20. ) ;
-      for ( int i = 0; i < fNameX.size(); i++) {
+      int fNameXSize = static_cast<int>( fNameX.size() ) ;
+      for ( int i = 0; i < fNameXSize; i++) {
           if ( i > 3 ) continue ; 
           if ( !includeTt && i == 0 && index <  0 ) continue; 
           if ( index > -1 && i != index ) continue ; 
@@ -155,7 +287,8 @@ vector<double> BgEstimation::RatioXY( vector<string>& fNameX, vector<string>& fN
 
       objInfo->Reset(0, 2) ;
       hLepM2* nc_yj = new hLepM2( "Nyj", 20. ) ;
-      for ( int i = 0; i < fNameY.size(); i++) {
+      int fNameYSize = static_cast<int>( fNameY.size() ) ;
+      for ( int i = 0; i < fNameYSize ; i++) {
           if ( i > 3 ) continue ; 
           if ( !includeTt && i == 0 ) continue; 
           if ( index > -1 && i != index ) continue ; 
@@ -195,7 +328,7 @@ vector<double> BgEstimation::RatioXY( vector<string>& fNameX, vector<string>& fN
       return R42 ;
 }
 
-
+// estimate background in different W pt regions
 vector<double> BgEstimation::BgEstimate( vector<double>& R42, vector<double>& nData_2j ){
 
      //vector<string> fNames ;
@@ -232,13 +365,10 @@ vector<double> BgEstimation::BgEstimate( vector<double>& R42, vector<double>& nD
      return bg4Jv ;
 }
 
+// estimate background using overall ratio4/2
 vector<double> BgEstimation::BgEstimate( vector<double>& R42, double nData_2j ){
 
-     //vector<string> fNames ;
-     //fitInput->GetParameters( "FakeData", &fNames );
-     //vector<double> R42 = RatioXY( 4, 2, fNames, -1, false, false ) ;
-
-     // 2. Calculate the 4Jets background and the uncertainty 
+     //  Calculate the 4Jets background and the uncertainty 
      double bg4J = R42[0]*nData_2j ;
 
      double pErr4J = MassFitFunction::ErrAxB( R42[0], nData_2j, R42[5], -1, true );
@@ -326,6 +456,7 @@ void BgEstimation::RatioPlotter( vector<double>&  nW1, vector<double>&  nW2, TSt
   func->FixParameter(0, nW1[0]/nW2[0] ) ;
   func->FixParameter(1,    0  ) ;
   func->SetLineColor(2);
+  func->SetLineWidth(2);
 
   double ratio[4] = { nW1[1]/nW2[1], nW1[2]/nW2[2], nW1[3]/nW2[3], nW1[4]/nW2[4]  };
   double ptcut[4] = {            10,            30,            50,            70  };
@@ -741,9 +872,18 @@ double BgEstimation::MeasureScale2D( string& DataName, vector<string>& fakeData,
   gSystem->cd( theFolder );
   gSystem->mkdir( theSubFolder );
   gSystem->cd( "../" );
-  gStyle->SetOptStat("nieuo");
+
+  //gStyle->SetOptStat("nieuo");
+  //gStyle->SetPalette(1);
+  //gStyle->SetStatX(0.85);
+
+  gStyle->SetOptStat("");
+  //gStyle->SetOptTitle(0);
+  gStyle->SetPadRightMargin(0.15);
+  gStyle->SetPadLeftMargin(0.15);
+  gStyle->SetPadBottomMargin(0.15);
   gStyle->SetPalette(1);
-  gStyle->SetStatX(0.85);
+  gStyle->SetTitleFontSize(0.08);
 
   TCanvas* c1 = new TCanvas("c1","", 800, 600);
   c1->SetGrid();
@@ -755,7 +895,11 @@ double BgEstimation::MeasureScale2D( string& DataName, vector<string>& fakeData,
 
   c1->cd(1);
   gStyle->SetNumberContours(10);
-  h_dt[0]->SetName("Data");
+  //h_dt[0]->SetName("Data");
+  h_dt[0]->SetTitle("Data");
+  h_dt[0]->SetLabelSize( 0.08, "X");  
+  h_dt[0]->SetLabelSize( 0.08, "Y");  
+  h_dt[0]->SetLabelSize( 0.08, "Z");  
   h_dt[0]->SetAxisRange(0,xR,"X") ;
   h_dt[0]->SetAxisRange(0,yR,"Y") ;
   h_dt[0]->Draw("COLZ");
@@ -763,7 +907,11 @@ double BgEstimation::MeasureScale2D( string& DataName, vector<string>& fakeData,
 
   c1->cd(2);
   gStyle->SetNumberContours(4);
-  h_qcd[0]->SetName("QCD");
+  //h_qcd[0]->SetName("QCD");
+  h_qcd[0]->SetTitle("QCD MC");
+  h_qcd[0]->SetLabelSize( 0.08, "X");
+  h_qcd[0]->SetLabelSize( 0.08, "Y");  
+  h_qcd[0]->SetLabelSize( 0.08, "Z");  
   h_qcd[0]->SetAxisRange(0,xR,"X") ;
   h_qcd[0]->SetAxisRange(0,yR,"Y") ;
   h_qcd[0]->Draw("COLZ");
@@ -771,7 +919,11 @@ double BgEstimation::MeasureScale2D( string& DataName, vector<string>& fakeData,
 
   c1->cd(3);
   gStyle->SetNumberContours(10);
-  h_wj[0]->SetName("WJets");
+  //h_wj[0]->SetName("WJets");
+  h_wj[0]->SetTitle("WJets MC");
+  h_wj[0]->SetLabelSize( 0.08, "X");
+  h_wj[0]->SetLabelSize( 0.08, "Y");  
+  h_wj[0]->SetLabelSize( 0.08, "Z");  
   h_wj[0]->SetAxisRange(0,xR,"X") ;
   h_wj[0]->SetAxisRange(0,yR,"Y") ;
   h_wj[0]->Draw("COLZ");
@@ -779,7 +931,11 @@ double BgEstimation::MeasureScale2D( string& DataName, vector<string>& fakeData,
 
   c1->cd(4);
   gStyle->SetNumberContours(10);
-  hMC_A->SetName("MC");
+  //hMC_A->SetName("MC");
+  hMC_A->SetTitle("Mix MC");
+  hMC_A->SetLabelSize( 0.08, "X");
+  hMC_A->SetLabelSize( 0.08, "Y");  
+  hMC_A->SetLabelSize( 0.08, "Z");  
   hMC_A->SetAxisRange(0,xR,"X") ;
   hMC_A->SetAxisRange(0,yR,"Y") ;
   hMC_A->Draw("COLZ");
@@ -997,7 +1153,146 @@ double BgEstimation::MeasureScale1D( string& DataName, vector<string>& fakeData,
   int bin1 = ( doQCD ) ?         1    : (MtCut/wbin) + 1 ;
   int bin2 = ( doQCD ) ? (MtCut/wbin) :         100/wbin ;
   cout<<" bin1 = "<< bin1 <<"   bin2 = "<<bin2<<endl;
-  char pNameChar[10];
+
+  ostringstream pNameStr ;
+  pNameStr << MtCut ;
+  pNameStr << hID ;
+  TString pNameTStr = pNameStr.str() ;
+  double bestNorm =  Chi2Normalization( hData, hMC, bin1, bin2, 1, scale2, pNameTStr, true );
+
+  delete hdt;
+  delete htt;
+  delete htq;
+  delete htw;
+  delete hwj;
+  delete hzj;
+  delete hqcd;
+  delete hMC ;  
+  delete hData ;
+
+  return bestNorm ;
+}
+
+double BgEstimation::MeasureScale1D( vector<string>& fakeData, int hID, double MtCut, double METCut, bool doQCD, bool isVjNorm ){
+
+  objInfo->ResetBGCuts(0, MtCut);
+  objInfo->ResetBGCuts(1, METCut);
+
+  int nbin_ = 30 ;
+
+  double scale0 = fitInput->NormalizeComponents( "tt" );
+  double scale1 = fitInput->NormalizeComponents( "wj" );
+  double scale2 = fitInput->NormalizeComponents( "qcd" );
+  double scale3 = fitInput->NormalizeComponents( "zj" );
+  double scale4 = fitInput->NormalizeComponents( "tq" );
+  double scale5 = fitInput->NormalizeComponents( "tw" );
+
+  // get the damn pseduo-data
+  int idx = 2 ;
+  double ddx = fabs( idx*1.0 ) ;
+  // change the W sample for systematic study
+  vector<string> SysSample ;
+  fitInput->GetParameters( "OtherSamples", &SysSample );
+  double uScaleW = (3.1*28049*0.2177) / 348887 ;
+  double dScaleW = (3.1*28049*0.2177) / 1234550 ;
+  double scaleW  = 1.;
+  if ( SysSample[0].substr(3,1) == "+" ) {
+      scaleW = fitInput->NormalizeComponents( "wj" ) ;
+  } else {
+      scaleW  = ( SysSample[0].substr(7,2) == "up" ) ? uScaleW : dScaleW ;
+  }
+  // create the pseudo data
+  hObjs* hdt = new hObjs("dt", nbin_ ) ;
+
+  objInfo->QCDSelector( fakeData[0], hdt, false, ddx*scale0, doQCD, 0, idx );
+  objInfo->QCDSelector( fakeData[1], hdt, false, ddx*scale1, doQCD, 0, idx );
+  objInfo->QCDSelector( fakeData[2], hdt, false, ddx*scale2, doQCD, 0, idx );
+  objInfo->QCDSelector( fakeData[3], hdt, false, ddx*scale3, doQCD, 0, idx );
+  objInfo->QCDSelector( fakeData[4], hdt, false, ddx*scale4, doQCD, 0, idx );
+  objInfo->QCDSelector( fakeData[5], hdt, false, ddx*scale5, doQCD, 0, idx );
+
+  vector<TH1D*> h_dt ;
+  hdt->Fill1DVec( h_dt );
+
+  if ( h_dt[13]->Integral() < 500. ) {
+     nbin_ = 15 ;
+     h_dt[13]->Rebin(2);
+     h_dt[14]->Rebin(2);
+     h_dt[15]->Rebin(2);
+     cout<<" bin width changes -> "<< h_dt[13]->GetBinWidth(1) << endl;
+  }
+
+  objInfo->Reset(1, isVjNorm );  
+  int scaleMode =  ( isVjNorm ) ? 1 : 0 ;
+
+  // Get the MC distribution
+  hObjs* htt = new hObjs("tt", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[0], htt, false, scale0, doQCD, scaleMode );
+  vector<TH1D*> h_tt ;
+  htt->Fill1DVec( h_tt );
+
+  hObjs* hwj = new hObjs("wj", nbin_ ) ;
+  //objInfo->QCDSelector( fakeData[1], hwj, false, scale1, doQCD, scaleMode );
+  objInfo->QCDSelector( SysSample[0], hwj, false, scaleW, doQCD, scaleMode );
+  vector<TH1D*> h_wj ;
+  hwj->Fill1DVec( h_wj );
+
+  hObjs* hqcd = new hObjs("qcd", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[2], hqcd, false, scale2, doQCD, scaleMode );
+  vector<TH1D*> h_qcd ;
+  hqcd->Fill1DVec( h_qcd );
+
+  hObjs* hzj = new hObjs("zj", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[3], hzj, false, scale3, doQCD, scaleMode );
+  vector<TH1D*> h_zj ;
+  hzj->Fill1DVec( h_zj );
+
+  hObjs* htq = new hObjs("tq", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[4], htq, false, scale4, doQCD, scaleMode );
+  vector<TH1D*> h_tq ;
+  htq->Fill1DVec( h_tq );
+
+  hObjs* htw = new hObjs("tw", nbin_ ) ;
+  objInfo->QCDSelector( fakeData[5], htw, false, scale5, doQCD, scaleMode );
+  vector<TH1D*> h_tw ;
+  htw->Fill1DVec( h_tw );
+
+  int nBin = h_dt[hID]->GetNbinsX() ;
+  cout<<" N bin set = "<< nBin <<endl;
+  TH1D* hMC   = new TH1D("hMC",   "MC   lep Mt ", nBin, 0, 150 );
+  TH1D* hData = new TH1D("hData", "Data lep Mt ", nBin, 0, 150 );
+  if ( doQCD ) { 
+     hMC->Add( h_qcd[hID] );
+     hData->Add( h_dt[hID],  1. );
+     hData->Add( h_tt[hID], -1. );
+     hData->Add( h_wj[hID], -1. );
+     hData->Add( h_zj[hID], -1. );
+     hData->Add( h_tq[hID], -1. );
+     hData->Add( h_tw[hID], -1. );
+  }
+  if ( !doQCD ) { 
+     hMC->Add( h_wj[hID] );
+     hMC->Add( h_zj[hID] );
+     hMC->Add( h_tt[hID] );
+     hMC->Add( h_tq[hID] );
+     hMC->Add( h_tw[hID] );
+     hData->Add( h_dt[hID],  1. );
+     hData->Add( h_qcd[hID], -1. );
+  }
+
+  cout<<" N of MC QCD = "<< h_qcd[hID]->Integral() <<endl;
+  cout<<" N of MC WJ  = "<< h_wj[hID]->Integral() <<endl;
+  cout<<" N of MC zJ  = "<< h_zj[hID]->Integral() <<endl;
+  cout<<" N of MC tt  = "<< h_tt[hID]->Integral() <<endl;
+  cout<<" N of MC tq  = "<< h_tq[hID]->Integral() <<endl;
+  cout<<" N of MC tw  = "<< h_tw[hID]->Integral() <<endl;
+  cout<<" N of Data = "<< h_dt[hID]->Integral() <<" -> "<< hData->Integral() <<endl ;
+
+  cout<<" Event # normalization = "<< hData->Integral()/hMC->Integral() <<endl ;
+  int wbin = 150/nBin ;
+  int bin1 = ( doQCD ) ?         1    : (MtCut/wbin) + 1 ;
+  int bin2 = ( doQCD ) ? (MtCut/wbin) :         100/wbin ;
+  cout<<" bin1 = "<< bin1 <<"   bin2 = "<<bin2<<endl;
 
   ostringstream pNameStr ;
   pNameStr << MtCut ;
@@ -1082,8 +1377,8 @@ double BgEstimation::Chi2Normalization( TH1D* hData, TH1D* hMC, int Bx1, int Bx2
       double nL = bestNorm - (bestNorm*0.1) ;
       double nH = bestNorm + (bestNorm*0.1) ;
       func1->SetParLimits(0, nL, nH );
-      func1->SetParLimits(1, 0.00001, 100. );
-      func1->SetParLimits(2, minX2*0.8 , minX2*1.2 );
+      func1->SetParLimits(1, 0.00001, 10. );
+      func1->SetParLimits(2, minX2*0.1 , minX2*1.1 );
 
       hNormX2->SetMarkerSize(1);
       hNormX2->SetMarkerColor(4);
@@ -1099,6 +1394,7 @@ double BgEstimation::Chi2Normalization( TH1D* hData, TH1D* hMC, int Bx1, int Bx2
       cout<<" The Fitted Normalization = "<< fitNorm <<" the best norm = "<< bestNorm <<endl;
       if ( nChi2 < 2 ) bestNorm = fitNorm ;
 
+
       c1->Update();
 
       TString plotname1 = theFolder + theSubFolder +  "X2Fit" + plotname + "." + plotType ;
@@ -1110,4 +1406,146 @@ double BgEstimation::Chi2Normalization( TH1D* hData, TH1D* hMC, int Bx1, int Bx2
    cout<<"  Final Normalization = "<< bestNorm << endl;
    return bestNorm ;
 
+}
+
+
+void BgEstimation::RatioScan( vector<string>& DataFiles, vector<string>& fNames, bool normMC ){
+
+       // V+Jets
+       vector<double> v10 = RatioXY( 1, 0, fNames,  1, false, false, false, normMC ) ;
+       vector<double> v21 = RatioXY( 2, 1, fNames,  1, false, false, false, normMC ) ;
+       vector<double> v32 = RatioXY( 3, 2, fNames,  1, false, false, false, normMC ) ;
+       vector<double> v43 = RatioXY( 4, 3, fNames,  1, false, false, false, normMC ) ;
+       vector<double> v54 = RatioXY( 5, 4, fNames,  1, false, false, false, normMC ) ;
+
+       double vR[5] = { v10[0], v21[0], v32[0], v43[0], v54[0] }; 
+       double evR[5] = { v10[5], v21[5], v32[5], v43[5], v54[5] }; 
+       vector<double> v21c = RatioXY( 2, 1, fNames,  3, false, false, false, normMC ) ;
+       vector<double> v21d = RatioXY( 2, 1, DataFiles,  3, false, false, false, normMC ) ;
+
+       // QCD
+       /*
+       vector<double> q10 = RatioXY( 1, 0, fNames,  2, false, false, false, normMC ) ;
+       vector<double> q21 = RatioXY( 2, 1, fNames,  2, false, false, false, normMC ) ;
+       vector<double> q32 = RatioXY( 3, 2, fNames,  2, false, false, false, normMC ) ;
+       vector<double> q43 = RatioXY( 4, 3, fNames,  2, false, false, false, normMC ) ;
+       vector<double> q54 = RatioXY( 5, 4, fNames,  2, false, false, false, normMC ) ;
+
+       double qR[5] = { q10[0], q21[0], q32[0], q43[0], q54[0] }; 
+       double eqR[5] = { q10[5], q21[5], q32[5], q43[5], q54[5] }; 
+
+       vector<double> q21c = RatioXY( 2, 1, fNames,  4, false, false, false, normMC ) ;
+       vector<double> q21d = RatioXY( 2, 1, DataFiles, 4, false, false, false, normMC ) ;
+       */
+
+       //double x[5] = { 1, 2, 3, 4, 5} ;
+       //double ex[5] = { 0. } ;
+
+       gStyle->SetOptStat("");
+       gStyle->SetOptTitle(0);
+       gStyle->SetPadLeftMargin(0.15);
+       gStyle->SetPadBottomMargin(0.15);
+       gStyle->SetErrorX(0) ;
+
+       TCanvas* c1 = new TCanvas("c1","", 800, 700);
+       c1->SetGrid();
+       c1->SetFillColor(10);
+       c1->SetFillColor(10);
+       c1->cd();
+
+       TH1D* vjR = new TH1D("vjR"," VJets ratio", 5, 0.5, 5.5 );
+       //TH1D* qjR = new TH1D("qjR"," QCD ratio  ", 5, 0.5, 5.5 );
+       for ( int i=0; i<5; i++){
+           vjR->Fill( i+1. , vR[i] );
+           vjR->SetBinError( i+1, evR[i] );
+           //qjR->Fill( i+1. , qR[i] );
+           //qjR->SetBinError( i+1, eqR[i] );
+       }
+       
+       vjR->SetAxisRange(0.01, 0.26, "Y");
+       vjR->SetXTitle(" Ratio between different jet multiplicity");
+       vjR->SetYTitle(" #frac{Number of N jets}{Number of N-1 jets} " );
+       vjR->SetTitleOffset(2.0, "Y") ;
+       vjR->SetTitleOffset(1.5, "X") ;
+
+       vjR->SetLabelSize(0.05, "X");
+       vjR->GetXaxis()->SetBinLabel(1, "R(1/0)");
+       vjR->GetXaxis()->SetBinLabel(2, "R(2/1)");
+       vjR->GetXaxis()->SetBinLabel(3, "R(3/2)");
+       vjR->GetXaxis()->SetBinLabel(4, "R(4/3)");
+       vjR->GetXaxis()->SetBinLabel(5, "R(5/4)");
+
+       vjR->SetMarkerColor(4);
+       vjR->SetMarkerSize(2);
+       vjR->SetMarkerStyle(20);
+
+       vjR->Draw("PE1");
+       c1->Update();
+       
+       TF1 *fvR = new TF1("fvR", MassFitFunction::fitPoly, 0, 6, 1);
+       fvR->FixParameter(0, v21c[0] ) ;
+       fvR->SetLineColor(4);
+       fvR->SetLineWidth(3);
+
+       TF1 *dvR = new TF1("dvR", MassFitFunction::fitPoly, 0, 6, 1);
+       dvR->FixParameter(0, v21d[0] ) ;
+       dvR->SetLineColor(4);
+       dvR->SetLineWidth(3);
+       dvR->SetLineStyle(2);
+
+       fvR->Draw("same");
+       dvR->Draw("same");
+        
+       /*
+       qjR->SetAxisRange(0.01, 0.26, "Y");
+       qjR->SetXTitle(" Ratio between different jet multiplicity");
+       qjR->SetYTitle(" #frac{Number of N jets}{Number of N-1 jets} " );
+       qjR->SetTitleOffset(1.5, "Y") ;
+       qjR->SetTitleOffset(1.5, "X") ;
+
+       qjR->SetLabelSize(0.05, "X");
+       qjR->GetXaxis()->SetBinLabel(1, "R(1/0)");
+       qjR->GetXaxis()->SetBinLabel(2, "R(2/1)");
+       qjR->GetXaxis()->SetBinLabel(3, "R(3/2)");
+       qjR->GetXaxis()->SetBinLabel(4, "R(4/3)");
+       qjR->GetXaxis()->SetBinLabel(5, "R(5/4)");
+
+       qjR->SetMarkerColor(6);
+       qjR->SetMarkerSize(2);
+       qjR->SetMarkerStyle(21);
+
+       TF1 *fqR = new TF1("fqR", MassFitFunction::fitPoly, 0, 6, 1);
+       fqR->FixParameter(0, q21c[0] ) ;
+       fqR->SetLineColor(6);
+       fqR->SetLineWidth(3);
+
+       TF1 *dqR = new TF1("dqR", MassFitFunction::fitPoly, 0, 6, 1);
+       dqR->FixParameter(0, q21d[0] ) ;
+       dqR->SetLineColor(2);
+       dqR->SetLineWidth(3);
+       dqR->SetLineStyle(2);
+       
+       qjR->Draw("PE1");       
+       c1->Update();
+
+       fqR->Draw("same");
+       dqR->Draw("same");
+       */
+
+       TLegend *leg = new TLegend(.18, .16, .65, .50 );
+       leg->AddEntry(vjR,  "V+Jets , single top",  "P");
+       leg->AddEntry(fvR,  "R2/1 from control region - MC", "L");
+       leg->AddEntry(dvR,  "R2/1 from contral region - Data", "L");
+       /*
+       leg->AddEntry(qjR,  "QCD",     "P");
+       leg->AddEntry(fqR,  "R2/1 from contral region - MC", "L");
+       leg->AddEntry(dqR,  "R2/1 from contral region - Data", "L");
+        */
+       leg->Draw("same");
+
+       c1->Update();
+
+       TString plotname = hfolder +"Ratios."+ plotType ;
+       c1->Print(plotname);
+       delete c1;
 }

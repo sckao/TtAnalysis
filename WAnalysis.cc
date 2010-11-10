@@ -82,13 +82,17 @@ void WAnalysis::HadTopFitter( string fileName, TString DrawOpt, bool isMCMatched
   if ( isMCMatched && channelType != "data" ) {
      wmfitter->MCSolution( fileName, wbh );
   } else {
-     wmfitter->ReFitSolution( fileName, wbh, n_Jets, scale, NULL, 0, smearing );
+     wmfitter->ReFitSolution( fileName, wbh, 4, scale, NULL, 0, smearing );
   }
   // retrieve the histograms
   //wbh->scale( scale );	
   vector<TH2D*> h2Ds = wbh->Output2D();
 
+  // regular, more plots
   M2M3Plotter( h2Ds, fileName, DrawOpt, isMCMatched );
+
+  // For analysis note use
+  //AN_M2M3Plotter( h2Ds, fileName, DrawOpt, isMCMatched );
 
   delete wbh ;
   cout<<" DONE !! "<<endl;
@@ -129,14 +133,12 @@ void WAnalysis::LepTopFitter( string fileName, TString DrawOpt, bool isMCMatched
 
 void WAnalysis::Had_SBRatio(){
 
-  TString filepath = hfolder+"SBRatio40.log" ;
+  TString filepath = hfolder+"SBRatio.log" ;
   FILE* logfile = fopen( filepath,"a");
   fprintf(logfile," WMt    M2M3   dM3   S/B   SS   N_tt  N_bg  N_wj  N_qcd  Eff_tt  Eff_bg  Eff_wj  Eff_qcd  \n" ) ;  
 
   vector<string> File4J ;
   fitInput->GetParameters( "FakeData", &File4J );
-
-  //vector<TTree*> TrNJ = fitInput->GetForest( "FakeData", "muJets" );
 
   vector<double> nEvts ;
   fitInput->GetParameters( "nEvents" , &nEvts );
@@ -144,49 +146,51 @@ void WAnalysis::Had_SBRatio(){
   double scaleTt  = fitInput->NormalizeComponents( "tt" );
   double scaleQCD = fitInput->NormalizeComponents( "qcd" );
   double scaleWJ  = fitInput->NormalizeComponents( "wj" );
+  double scaleZJ  = fitInput->NormalizeComponents( "zj" );
 
-  TH2D* hSB = new TH2D("hSB", " S/B with cuts  dM3(X), M2M3(Y) ", 7, 7.5, 42.5, 14, 2.5, 72.5 );
-  TH2D* hCE = new TH2D("hCE", " Cut Eff for signal dM3(X), M2M3(Y) ", 7, 7.5, 42.5, 14, 2.5, 72.5 );
-
+  TH2D* hSB = new TH2D("hSB", " S/B with cuts  dM3(X), M2M3(Y) ",     14, 7.5, 77.5,  16, 2.5, 82.5 );
+  TH2D* hCE = new TH2D("hCE", " Cut Eff for signal dM3(X), M2M3(Y) ", 14, 7.5, 77.5,  16, 2.5, 82.5 );
+ 
   double nAll[4] = {0.};
   double cEff[4] = {0.};
-  cout<<" ---  Measuring SB Ratio( tt / wj+qcd ) --- "<<endl;
-  for ( int i = 0; i< 1; i++ ) {
-    for ( int j = 0; j< 6; j++ ) {
-      for ( int k= 0; k< 5; k++ ) {
+  cout<<" ---  Measuring SB Ratio( tt / wj+Zj+qcd ) --- "<<endl;
+  for ( int i = 0; i< 8; i++ ) {
+    for ( int k= 0; k< 1; k++ ) {
+      for ( int j = 0; j< 1; j++ ) {
 
          // reset the M2M3 windows
-         double lepm2tL = 40. + i*10 ;
-	 double window  = 10. + j*10 ;
+         double lepm2tL = 0. + i*5 ;
+	 double window  = 5. + j*5 ;
 	 double m2L = 80. - window ;
 	 double m2H = 80. + window ;
-	 double m3L = 170. - window ;
-	 double m3H = 170. + window ;
-         double dM3 = 10. + k*5 ;
+	 double m3L = 170. - window*1.5 ;
+	 double m3H = 170. + window*1.5 ;
+         double dM3 = 10. + k*10 ;
+         
+	 if ( i == 0 && j == 0 && k == 0 ) { wmfitter->ResetCuts(  0., 999.,  0., 999.,      0., 999. );
+                                             window = 999. ;
+                                             dM3    = 999. ;    }
+         if ( i != 0 && j == 0 && k == 0 ) { wmfitter->ResetCuts(  0., 999.,  0., 999., lepm2tL, 999. );
+                                             window = 999.;
+                                             dM3    = 999 ;     }
+         if ( i == 0 && j != 0 && k == 0 ) { wmfitter->ResetCuts( m2L,  m2H, m3L,  m3H,      0., 999. );
+                                             dM3    = 999. ;    }
+         if ( i == 0 && j == 0 && k != 0 ) { wmfitter->ResetCuts(  0., 999.,  0., 999.,      0.,  dM3 );
+                                             window = 999. ;    }
 
-	 if ( i == 0 && j == 0 && k == 0 ) wmfitter->ResetCuts(  0., 300.,  0., 350.,      0., 999. );
-
-         if ( i != 0 && j == 0 && k == 0 ) wmfitter->ResetCuts(  0., 300.,  0., 350., lepm2tL, 999. );
-         if ( i == 0 && j != 0 && k == 0 ) wmfitter->ResetCuts( m2L,  m2H, m3L,  m3H,      0., 999. );
-         if ( i == 0 && j == 0 && k != 0 ) wmfitter->ResetCuts(  50., 110.,140., 200.,     0.,  dM3 );
-
-         //if ( i == 0 && j != 0 && k != 0 ) continue;         
+         if ( i == 0 && j != 0 && k != 0 ) wmfitter->ResetCuts( m2L, m2H, m3L, m3H, lepm2tL, dM3 );
          if ( i != 0 && j == 0 && k != 0 ) continue;         
          if ( i != 0 && j != 0 && k == 0 ) continue;         
 
-         if ( i ==0 && j!=0 && k !=0 ) {
-            wmfitter->ResetCuts( m2L, m2H, m3L, m3H, lepm2tL, dM3 );
-            //cout<<" new LepM2t threshold = "<< lepm2tL<<" , ("<< m2L<<","<<m2H<<","<<m3L<<","<<m3H<<")"<< endl;
-         }
-
          ACounter* sg4j = new ACounter();
-	 wmfitter->ReFitSolution( File4J[0], sg4j, 4, scaleTt, NULL, 0, smearing );
+	 wmfitter->ReFitSolution( File4J[0], sg4j, 4, scaleTt,  NULL, 0, smearing );
 	 vector<double> nSg4J = sg4j->Output();
 
 	 ACounter* bg4j = new ACounter();
-	 wmfitter->ReFitSolution( File4J[1], bg4j, 4, scaleWJ, NULL, 0, smearing );
+	 wmfitter->ReFitSolution( File4J[1], bg4j, 4, scaleWJ,  NULL, 0, smearing );
 	 vector<double> nWj4J = bg4j->Output();
 	 wmfitter->ReFitSolution( File4J[2], bg4j, 4, scaleQCD, NULL, 0, smearing );
+	 wmfitter->ReFitSolution( File4J[3], bg4j, 4, scaleZJ,  NULL, 0, smearing );
          vector<double> nBg4J = bg4j->Output();
 
          // get the denumerator and cut efficiency for each channel
@@ -202,20 +206,18 @@ void WAnalysis::Had_SBRatio(){
 	 cEff[3] = nBg4J[0]/nAll[3] ;
 
          double ssR = nSg4J[0] / sqrt ( nSg4J[0] + nBg4J[0] );
-         //double sbR = nSg4J[0] / sqrt ( nBg4J[0] );
          double sbR = nSg4J[0] / nBg4J[0] ;
-         //cout<<" M2M3Counter Signal = "<< nSg4J[0] <<" Background = "<< nBg4J[0]  <<endl;
-	 //cout<<" The Cut Efficiency = "<< cEff[0] <<" WJ = "<< cEff[1] <<" QCD = "<< cEff[2] <<" BG = "<< cEff[3] <<endl;
-	 //cout<<"  *** S/B = "<< nSg4J[0] / nBg4J[0] << endl;
-	 //cout<<""<<endl; 
+
+         cout<<" Tt: "<< nSg4J[0] <<" Bg: "<< nBg4J[0] <<" SB: "<< nSg4J[0] / nBg4J[0] ;
+         cout<<" SS: "<< nSg4J[0] / sqrt( nBg4J[0] + nSg4J[0] ) <<" CutEff ="<< cEff[0]<<" / "<<cEff[1]<<endl;
 
          if ( i == 0 && j != 0 && k !=0 ) {
             hSB->Fill( dM3, window, sbR );
             hCE->Fill( dM3, window, cEff[0] );
          }
          if (  cEff[0] > 0. ) {
-            fprintf(logfile," %.1f   %.1f   %1.f   %.1f   %.1f   %.1f   %.1f   %.1f   %.1f   %.2f   %.2f   %.2f   %.2f \n",  
-                         lepm2tL, window, dM3, sbR, ssR, nSg4J[0], nBg4J[0], nWj4J[0], (nBg4J[0] - nWj4J[0]), cEff[0], cEff[3], cEff[1], cEff[2]);
+            fprintf(logfile," %.1f   %.1f   %1.f   %.2f   %.2f   %.1f   %.1f   %.1f   %.1f   %.2f   %.2f   %.2f   %.2f \n",  
+                   lepm2tL, window, dM3, sbR, ssR, nSg4J[0], nBg4J[0], nWj4J[0], (nBg4J[0] - nWj4J[0]), cEff[0], cEff[3], cEff[1], cEff[2]);
          }
 
           delete sg4j;
@@ -227,7 +229,7 @@ void WAnalysis::Had_SBRatio(){
 
   fclose(logfile);
 
-  gStyle->SetOptStat("nuom");
+  gStyle->SetOptStat("");
   //gStyle->SetNumberContours(10);
   gStyle->SetStatX(0.95);
   gStyle->SetStatY(0.99);
@@ -236,9 +238,9 @@ void WAnalysis::Had_SBRatio(){
   c1->SetGrid();
   c1->SetFillColor(10);
   c1->SetFillColor(10);
-  gStyle->SetPaintTextFormat("2.1f");
+  gStyle->SetPaintTextFormat("2.2f");
   c1->cd();
-  hSB->SetMarkerSize(2.5);
+  hSB->SetMarkerSize(2.2);
   hSB->Draw("TEXT");
   c1->Update();
 
@@ -251,7 +253,7 @@ void WAnalysis::Had_SBRatio(){
   c2->SetFillColor(10);
   gStyle->SetPaintTextFormat("2.2f");
   c2->cd();
-  hCE->SetMarkerSize(2.5);
+  hCE->SetMarkerSize(2.2);
   hCE->Draw("TEXT");
   c2->Update();
 
@@ -262,7 +264,118 @@ void WAnalysis::Had_SBRatio(){
   delete c2;
   delete hSB ;
   delete hCE ;
+}
 
+void WAnalysis::SBCEPlotter(){
+
+  TH1D* hCE0 = new TH1D("hCE0", " Cut Eff for M2M3 ", 10, 7.5, 57.5 );
+  TH1D* hSB0 = new TH1D("hSB0", " S/B     for M2M3 ", 10, 7.5, 57.5 );
+  TH1D* hCE1 = new TH1D("hCE1", " Cut Eff for M2M3 , dM = 30 ", 10, 2.5, 52.5 );
+  TH1D* hSB1 = new TH1D("hSB1", " S/B     for M2M3 , dM = 30 ", 10, 2.5, 52.5 );
+  TH1D* hCE2 = new TH1D("hCE2", " Cut Eff for M2M3 , dM = 20 ", 10, 2.5, 52.5 );
+  TH1D* hSB2 = new TH1D("hSB2", " S/B     for M2M3 , dM = 20 ", 10, 2.5, 52.5 );
+
+  // dM3 = 999
+  double sbR[8]  = { 1.97, 1.65, 1.42, 1.31, 1.26, 1.20, 1.17, 1.15 };   
+  double cEff[8] = { 0.46, 0.65, 0.76, 0.82, 0.86, 0.89, 0.91, 0.92 };   
+  // dM3 = 30
+  double sbR1[8]  = { 2.43, 2.02, 1.74, 1.54, 1.48, 1.40, 1.35, 1.32 };   
+  double cEff1[8] = { 0.36, 0.51, 0.60, 0.66, 0.69, 0.72, 0.74, 0.75 };   
+  // dM3 = 20
+  double sbR2[8]  = { 2.83, 2.25, 1.88, 1.67, 1.57, 1.50, 1.43, 1.40 };   
+  double cEff2[8] = { 0.31, 0.44, 0.53, 0.58, 0.62, 0.64, 0.66, 0.68 };   
+
+  for ( int i=0; i< 8; i++){
+      double window  = 15. + i*5 ;
+      double sR0 = 1. / ( (1./sbR[i] ) + 1.) ;
+      double sR1 = 1. / ( (1./sbR1[i]) + 1.) ;
+      double sR2 = 1. / ( (1./sbR2[i]) + 1.) ;
+
+      hSB0->Fill( window, sR0 );
+      hCE0->Fill( window, cEff[i] );
+      hSB1->Fill( window, sR1 );
+      hCE1->Fill( window, cEff1[i] );
+      hSB2->Fill( window, sR2 );
+      hCE2->Fill( window, cEff2[i] );
+  }
+
+  gStyle->SetOptStat("");
+  gStyle->SetOptTitle(0);
+  gStyle->SetPadRightMargin(0.15);
+  gStyle->SetPadLeftMargin(0.15);
+  TCanvas* c1 = new TCanvas("c1","", 800, 600);
+  c1->SetGrid();
+  c1->SetFillColor(10);
+  c1->SetFillColor(10);
+  c1->cd();
+  hSB0->SetAxisRange(0.1, 1., "Y");
+  hSB0->SetMarkerSize(1.5);
+  hSB0->SetMarkerStyle(20);
+  hSB0->SetXTitle(" Width of M2 window, #times 1.5 = Width of M3 window");
+  hSB0->SetYTitle(" Purity ( #frac{S}{S+B} ) ");
+  hSB0->SetTitleOffset(1.5, "Y") ;
+  hSB0->Draw("P");
+  c1->Update();
+
+  hSB1->SetMarkerSize(1.5);
+  hSB1->SetMarkerStyle(21);
+  hSB1->Draw("sameP");
+
+  hSB2->SetMarkerSize(1.5);
+  hSB2->SetMarkerStyle(22);
+  hSB2->Draw("sameP");
+  c1->Update();
+
+  //float rMax   = 1.1 * hCE0->GetMaximum();
+  float rMax   = 1. ;
+  float rScale = gPad->GetUymax() / rMax ;
+  hCE0->Scale(rScale)   ;
+  hCE0->SetMarkerColor(2);
+  hCE0->SetMarkerSize(2);
+  hCE0->SetMarkerStyle(24);
+  hCE0->Draw("sameP");
+  c1->Update();
+
+  hCE1->Scale(rScale)   ;
+  hCE1->SetMarkerColor(2);
+  hCE1->SetMarkerSize(2);
+  hCE1->SetMarkerStyle(25);
+  hCE1->Draw("sameP");
+  c1->Update();
+
+  hCE2->Scale(rScale)   ;
+  hCE2->SetMarkerColor(2);
+  hCE2->SetMarkerSize(2);
+  hCE2->SetMarkerStyle(26);
+  hCE2->Draw("sameP");
+  c1->Update();
+
+  TLegend *leg = new TLegend(.50, .12, .75, .40 );
+  leg->AddEntry(hSB0,  "Purity( No dM cut)", "P");
+  leg->AddEntry(hCE0,  "Efficiency( No dM cut)", "P");
+  leg->AddEntry(hSB1,  "Purity( dM < 30)",   "P");
+  leg->AddEntry(hCE1,  "Efficiency( dM < 30)",   "P");
+  leg->AddEntry(hSB2,  "Purity( dM < 20)",   "P");
+  leg->AddEntry(hCE2,  "Efficiency( dM < 20)",   "P");
+  leg->Draw();
+
+  TGaxis *axis = new TGaxis( gPad->GetUxmax(),gPad->GetUymin(),gPad->GetUxmax(), gPad->GetUymax(), 0.1, rMax, 510,"+L");
+  axis->SetLineColor(2);
+  axis->SetLabelColor(2);
+  axis->SetTitle("Signal Efficiency") ;
+  axis->SetTitleColor(2) ;
+  axis->Draw();
+
+  TString plotname3 = hfolder + "SB_Eff."+plotType ;
+  c1->Print( plotname3 );
+
+  delete c1;
+  delete leg;
+  delete hSB0;
+  delete hCE0;
+  delete hSB1;
+  delete hCE1;
+  
 }
 
 // for new soltree
@@ -526,15 +639,17 @@ void WAnalysis::LepTEnsembleTest( int randomSeed, TString DrawOpt ){
 
 void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt, bool isMCMatched ){
 
-  TString dNames[10] = { "M2M3", "M3M3",  "EtaM2", "EtaM3", "YM2",
-                       "YM3",  "M2MET", "M3Pt",  "METMt", "M2M3BG" };
+  TString dNames[10] = { "M2M3",  "M3M3",  "EtaM2", "EtaM3", "YM2",
+                          "YM3", "M2MET",   "M3Pt", "METMt", "M2M3BG" };
 
   TString theFolder = hfolder ;
   gSystem->mkdir( theFolder );
 
+  
   gStyle->SetOptStat("neirom");
   gStyle->SetStatY(0.95);
   gStyle->SetStatTextColor(1);
+  
   gStyle->SetPalette(1);
   gStyle->SetLabelSize( 0.06, "X");
   gStyle->SetLabelSize( 0.06, "Y");
@@ -546,7 +661,7 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
       gSystem->mkdir( dNames[i] );
       gSystem->cd("../");
 
-      TCanvas* c1 = new TCanvas("c1","", 800, 600);
+      TCanvas* c1 = new TCanvas("c1","", 1000, 800);
       c1->SetGrid();
       c1->SetFillColor(10);
       c1->SetFillColor(10);
@@ -583,6 +698,65 @@ void WAnalysis::M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOp
 
   cout<<" FINISHED  "<<endl;
 }
+
+void WAnalysis::AN_M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt, bool isMCMatched ){
+
+  TString dNames[10] = { "M2M3",  "M3M3",  "EtaM2", "EtaM3", "YM2",
+                          "YM3", "M2MET",   "M3Pt", "METMt", "M2M3BG" };
+
+  TString theFolder = hfolder ;
+  gSystem->mkdir( theFolder );
+
+  
+  gStyle->SetOptStat("");
+  gStyle->SetOptTitle(0);
+
+  gStyle->SetPadRightMargin(0.15);
+  gStyle->SetPadLeftMargin(0.15);
+  gStyle->SetPadBottomMargin(0.15);
+  gStyle->SetPalette(1);
+  gStyle->SetLabelSize( 0.05, "X");
+  gStyle->SetLabelSize( 0.05, "Y");
+  gStyle->SetLabelSize( 0.05, "Z");
+
+  for (size_t i=0; i< h2Ds.size(); i++ ) {
+
+      if ( i > 1 ) continue ;
+      gSystem->cd( theFolder );
+      gSystem->mkdir( dNames[i] );
+      gSystem->cd("../");
+
+      TCanvas* c1 = new TCanvas("c1","", 1000, 800);
+      c1->SetGrid();
+      c1->SetFillColor(10);
+      c1->SetFillColor(10);
+      c1->cd(1);
+      gStyle->SetNumberContours(5);
+      h2Ds[i]->SetTitleSize(0.05, "X") ;
+      h2Ds[i]->SetTitleSize(0.05, "Y") ;
+      h2Ds[i]->SetTitleOffset(1.5, "X") ;
+      h2Ds[i]->SetTitleOffset(1.5, "Y") ;
+      if ( i == 0 ) {
+         h2Ds[i]->SetXTitle("M3 ( GeV/c^{2} )");
+         h2Ds[i]->SetYTitle("M2 ( GeV/c^{2} )");
+      }
+      if ( i == 1 ) {
+         h2Ds[i]->SetXTitle("Hadronic M3 ( GeV/c^{2} )");
+         h2Ds[i]->SetYTitle("Leptonic M3 ( GeV/c^{2} )");
+      }
+      h2Ds[i]->Draw( DrawOpt );
+      c1->Update();
+
+      TString plotname1 = hfolder + dNames[i]+"/"+  fileName +"_"+ dNames[i] + "."+plotType ;
+      if ( isMCMatched ) plotname1 = hfolder + dNames[i] + "/" + fileName + "_"+ dNames[i]+"_MC."+plotType ;
+      c1->Print( plotname1 );
+
+      delete c1;
+  }
+
+  cout<<" FINISHED  "<<endl;
+}
+
 
 void WAnalysis::LepTopPlotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt, bool isMCMatched ){
  

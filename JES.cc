@@ -426,7 +426,7 @@ void JES::Matching( TString mName, double jes, TH1D* hMatchW ){
       }
 
       double w1 = WMSC( jpv[0], jpv[1], jes ) ;
-      double w2 = WMSC( qpv[0], qpv[1], jes ) ;
+      //double w2 = WMSC( qpv[0], qpv[1], jes ) ;
       double dR11 = deltaR( jpv[0],  qpv[0] ); 
       double dR22 = deltaR( jpv[1],  qpv[1] ); 
       double dR12 = deltaR( jpv[0],  qpv[1] ); 

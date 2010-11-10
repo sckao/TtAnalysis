@@ -6,6 +6,7 @@ MassFitFunction::MassFitFunction(){
 MassFitFunction::~MassFitFunction(){
  
 }
+
 Double_t MassFitFunction::fitPoly(Double_t *x, Double_t *par) {
 
          Double_t fitval =  par[0]
@@ -420,7 +421,7 @@ double MassFitFunction::ErrAxB( double A, double B, double s_A, double s_B, bool
     double sBp = ( s_B != -1 ) ? s_B : sB[1];
     double sBn = ( s_B != -1 ) ? s_B : -1*sB[0];
 
-    double f = A * B ;
+    //double f = A * B ;
     double s_fp = sqrt( B*B*sAp*sAp + A*A*sBp*sBp ) ;
     double s_fn = sqrt( B*B*sAn*sAn + A*A*sBn*sBn ) ;
 
@@ -428,3 +429,18 @@ double MassFitFunction::ErrAxB( double A, double B, double s_A, double s_B, bool
     return sf ;
 
 }
+
+/*
+double MassFitFunction::PtRel( TLorentzVector v1, TLorentzVector v2 ){
+
+       double px = ( v1.Y()*v2.Z() ) - ( v1.Z()*v2.Y() );
+       double py = ( v1.Z()*v2.X() ) - ( v1.X()*v2.Z() );
+       double pz = ( v1.X()*v2.Y() ) - ( v1.Y()*v2.X() );
+
+       double p = sqrt( (px*px) + (py*py) + (pz*pz) ) ;
+       double p_v2 = sqrt( (v2.X()*v2.X())  + (v2.Y()*v2.Y()) + (v2.Z()*v2.Z()) );
+
+       double ptRel =  p / p_v2  ;
+       return ptRel ;
+}
+*/

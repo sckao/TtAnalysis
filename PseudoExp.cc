@@ -84,7 +84,7 @@ void PseudoExp::JetEtReSort( vector<TLorentzVector>& vs ) {
 
   // re-sort the Jets
   vector<TLorentzVector> newVs ;
-  for (int i=0; i< vs.size()- 2; i++ ) {
+  for (size_t i=0; i< vs.size()- 2; i++ ) {
       newVs.push_back( vs[i] );
   }
 
@@ -93,7 +93,7 @@ void PseudoExp::JetEtReSort( vector<TLorentzVector>& vs ) {
   newVs.push_back( vs[ vs.size() -1 ] );
 
   vs.clear();
-  for (int i=0; i< newVs.size(); i++ ) {
+  for (size_t i=0; i< newVs.size(); i++ ) {
       vs.push_back( newVs[i] ) ;
   }
 
@@ -123,7 +123,7 @@ void PseudoExp::PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed, bool 
 
   double npx = 0.;
   double npy = 0.;
-  for (int i=0; i< vs.size()- 2; i++ ) {
+  for (size_t i=0; i< vs.size()- 2; i++ ) {
       //cout<<" "<< i <<"*  vs :"<<vs[i].Pt()<<" / "<< vs[i].Pz()<<endl;
       //mA = mA + vs[i] ;
       //if ( i < 3 ) m3A = m3A + vs[i] ;
@@ -166,7 +166,9 @@ void PseudoExp::PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed, bool 
   int in = vs.size() - 1 ;
   double dphi = vs[ im ].DeltaPhi( vs[ in ] ) ;
   double Mt2  = 2.* vs[im].Pt() * vs[in].Pt() *( 1- cos(dphi) );
-  for (int i=vs.size()- 2; i < vs.size(); i++ ) {
+  
+  //for (int i= static_cast<int>(vs.size()- 2) ; i < static_cast<int>(vs.size()); i++ ) {
+  for (int i= im ; i < in+1 ; i++ ) {
       //cout<<" "<< i <<"*  vs :"<<vs[i].Pt()<<" / "<< vs[i].Pz()<<" M = "<< vs[i].M() <<endl;
 
       int nS = 0 ;

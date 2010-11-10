@@ -1,102 +1,157 @@
-
-# This is the data card for the input of M2M3 analysis and TopMassFitter 
+#This is the data card for the input of M2M3 analysis and TopMassFitter 
 # Auther : SCKao - UCRiverside
 #
 
-#
+# root files directory
 RootFiles = rootfiles/
 
 # Folder to store results
 Path = PF_1J/
 
-# Luminostiy( pb^-1 ) before July
-Lumi = 1.93
+# Luminostiy( pb^-1 ), Oct29:2.945  Mu9A:  Mu9B:4.316 , M15B:13.897, M15Ba:12.832
+Lumi = 34.0
 
 # Number of Jets
 n_Jets = 1
 # inclusive=>   YES: >= n_Jets, NO: == n_Jets
 Inclusive = YES
 
-# jacobian test parameters 
-# p3 : scale , must > 0 , p0,p1,p2 : shape parameters for Mt < 80
-# p4: mass of W , p5: width of W , p6: Gassian Convolution, only stable when p6 < 10 
-PJacob  = (  15.4, 1., -20., 23.54,  80.4,  19.1,   1 )
-PSwitch = (   1,    0,    0,     1,    0,     0,    0 )
-
-# JES type 0: no JES, 1:JEC, 2:JES
-JESType = 0
-IsMES = OFF
-
-# Number of b tagged
-# -1 : no btagged , 0: 1+2 btagged , 1: 1 btagged , 2: 2 btagged
-# https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagOctober09ExerciseUsePayload
-n_btag = -1
-bThreshold = 5
-
-# plot type : png / gif / eps
+# plot type : png / gif / eps / jpg / pdf 
 PlotType = png
 
 #  cross-sections for 7 TeV Collision
 #  MuEnriched QCD is x-section*FilterEfficiency
-#        (   tt_in,   wj_lv,  zj_ll,  tq_in,  tw_in, ww_in, wz_in, qcd_mux )
+#        (   tt_in,   wj_lv,  zj_ll,  tq_lv,  tw_in, ww_in, wz_in, qcd_mux )
 channel= (      tt,      wj,     zj,     tq,     tw,    ww,    wz,     qcd )
-xsec   = (     165,   28049,   2907,  20.48,   10.6,    43,    18,   79688 )
+xsec   = (     165,   28049,   2907,  20.44,   10.6,    43,    18,   79688 )
 EffHLT = (  0.2991,  0.2063, 0.2968,  0.327, 0.2629,  0.13,   0.1,  0.7970 )
 nEvents = ( 443764, 2077337, 321975, 172830, 122617, 14780, 10940, 3488649 )
+# nominal wjets  => eff: 0.2063 , nEvt: 2077337
+# scale up=> eff: 0.1979 , nEvt: 348887  ; scale down=> eff: 0.2089 , nEvt: 1234550
+# use 0.2177 for efficiecny of both scale-up and scale-down sample
 
-# set up the module to run,  0 => off , 1=> on
-#          0:ObjectInfo 1:HadTopFitter 2:LepTopFitter 3:EnsembleTest, 4: S/B Ratio 5:MethodTest 6:X-section Measure
-Module = ( 6,           0,             0 ,            0,              0,           0,           0 )
+# set up the module to 8run,  0 => off , 1=> on
+#          0:ObjectInfo 1:RatioXY  2:TopFitter 3:EnsembleTest, 4: S/B Ratio 5:MethodTest 6:RealAnalysis
+Module = ( 4,           0,         0,          0,              0,           0,           0 )
 # Random Number Seed , 0 : using system time for the seed
 RandomSeed = 0
-# ON/OFF for MC matching 
-MCMatching = OFF
 
 #Cuts        Et,  Eta
-JetCuts = (  30., 2.4 )
+JetCuts = (  25., 2.4 )
 #Cuts        Et,  Eta, Iso
-MuonCuts = ( 18., 2.1, 0.1)
+MuonCuts = ( 20., 2.1, 0.1)
 # M2M3 window, M2_Min, M2_Max, M3_Min, M3_Max 
-#M2M3Cuts = ( 50, 110, 140, 200 )
-M2M3Cuts = ( 0, 300, 0, 350 )
+#M2M3Cuts = ( 60, 100, 140, 200 )
+#M2M3Cuts = ( 45, 115, 117.5, 222.5 )
+M2M3Cuts = ( 0, 999, 0, 999 )
 LepM2tCutL = 0
 dM3Cut = 999
 
-# number of pseudo experiments
-nPseudoExp = 1000
-# input mean for pseudo experiments
-#              tt4J,  wj4J,  QCD4J,    wj2J,   qcd2J
-# InputMean = ( 25.36,  6.52,   8.97,  513.57,  503.29  ) .. old value for pf
+# use default value for R42 and CutEff ; True / False
+UseDefault = True
+#Ratio4/2
+#                         R0      R1      R2      R3      R4      eR0     eR1     eR2     eR3     eR4
+# Jet pt30: Ratio42 = ( 0.0336, 0.0182, 0.0222, 0.0308, 0.0501, 0.001,  0.002,  0.002,  0.002,  0.002 ) 
+# Ratio32:  Ratio42 = ( 0.165,  0.113,  0.134,  0.177,  0.240,  0.002,  0.005,  0.004,  0.005,  0.004 )
+# 4Jets Only:  Ratio42 = ( 0.0328, 0.0197, 0.0208, 0.0314, 0.0532, 0.001,  0.002,  0.002,  0.002,  0.002 )
 
-# pfA              
-#InputMean = ( 24.81,  6.18,   7.90,  494.08,  478.29  )
-#For JES 1.1
-#InputMean = ( 27.34,  9.50,   13.03,  635.37,  609.13  )
-#For JES 0.9
-#InputMean = ( 21.77,  3.72,   4.91,  373.24,  343.07  )
-# caloA
-#InputMean = ( 41.18,  19.53,   8.37,  578.2,  446.8  )
-#              tt4J,  wj4J,  QCD4J,  z4J   wj2J,   qcd2J, z2J
+# Jet pt25, JES 0%   : Ratio42 = ( 0.0415, 0.0224, 0.0276, 0.0375, 0.0705, 0.001,  0.002,  0.002,  0.002,  0.002 )
+# Jet pt25, JES +5%  : Ratio42 = ( 0.0438, 0.0246, 0.0270, 0.0412, 0.0771, 0.001,  0.002,  0.002,  0.002,  0.002 )
+# Jet pt25, JES -5%  : Ratio42 = ( 0.0397, 0.0224, 0.0256, 0.0373, 0.0651, 0.001,  0.002,  0.002,  0.002,  0.002 )
+# ScaleUp            : Ratio42 = ( 0.0313, 0.013, 0.022, 0.031, 0.056, 0.002,  0.002,  0.003,  0.004,  0.005 )
+# ScaleDown          : Ratio42 = ( 0.0527, 0.022, 0.032, 0.047, 0.097, 0.001,  0.002,  0.002,  0.003,  0.003 )
+
+# MC 2 MC normalization
+# Nominal :   Ratio42 = ( 0.0432, 0.0227, 0.0284, 0.0385, 0.0750, 0.001,  0.002,  0.002,  0.002,  0.002 )
+# ScaleUp :   Ratio42 = ( 0.0318, 0.0132, 0.0227, 0.0324, 0.0605, 0.002,  0.003,  0.003,  0.004,  0.005 )
+# ScaleDown : Ratio42 = ( 0.0527, 0.0222, 0.0341, 0.0482, 0.0979, 0.002,  0.003,  0.002,  0.003,  0.004 )
+# alpha_s from MC + nominal    Ratio42 = ( 0.0403, 0.0559, 0.0151, 0.0420, 0.244, 0.006,  0.018,  0.003, 0.012, 0.065 )
+# alpha_s from MC + ScaleUP    Ratio42 = ( 0.0398, 0.0575, 0.0150, 0.0416, 0.244, 0.006,  0.018,  0.003, 0.012, 0.066 )
+# alpha_s from MC + ScaleDown  Ratio42 = ( 0.0397, 0.0560, 0.0150, 0.0418, 0.244, 0.006,  0.018,  0.003, 0.012, 0.066 )
+
+# alpha_s from MC w/o norml    Ratio42 = ( 0.0406, 0.0525, 0.0157, 0.0428, 0.243, 0.006,  0.017,  0.004,  0.013,  0.065 )
+# alpha_s from Data            Ratio42 = ( 0.0612, 0.0734, 0.0235, 0.0511, 0.444, 0.007,  0.021,  0.005,  0.013,  0.078 ) 
+# alpha_s from Data +ScaleUp   Ratio42 = ( 0.0609, 0.0769, 0.0232, 0.0505, 0.443, 0.008,  0.023,  0.005,  0.013,  0.106 ) 
+# alpha_s from Data +ScaleDown Ratio42 = ( 0.0602, 0.0739, 0.0231, 0.0505, 0.443, 0.008,  0.022,  0.005,  0.013,  0.105 ) 
+
+# Mu pt16:  Ratio42 = ( 0.0383, 0.0200, 0.0255, 0.0373, 0.0738, 0.001,  0.002,  0.002,  0.002,  0.002 )
+# Mu pt18:  Ratio42 = ( 0.0401, 0.0215, 0.0254, 0.0376, 0.0737, 0.001,  0.002,  0.002,  0.002,  0.002 )
+# Mu pt22:  Ratio42 = ( 0.0436, 0.0228, 0.0385, 0.0369, 0.0740, 0.001,  0.002,  0.002,  0.002,  0.002 )
+# Mu pt24:  Ratio42 = ( 0.0453, 0.0225, 0.0305, 0.0387, 0.0747, 0.001,  0.002,  0.002,  0.002,  0.002 )
+Ratio42 = ( 0.0434, 0.0226, 0.0289, 0.0383, 0.0741, 0.001,  0.002,  0.002,  0.002,  0.002 )
+
+#Cuts Efficiency
+#                      Eff_sg,  Eff_bg,  sEff_sg,  sEff_bg
+# Jet pt30: EffCut = ( 0.114,     1.0,    0.0002,   0.0214 )
+
+# JES -5%                         EffCut = ( 0.138,    1.0,     0.0002,  0.0236 )
+# JES -5%, M2_window 20,          EffCut = ( 0.105,    0.563,   0.0002,  0.0137 )
+# JES -5%, M2_window 35, dM= 20,  EffCut = ( 0.091,    0.470,   0.0001,  0.0116 )
+# JES +5%                         EffCut = ( 0.156,    1.0,     0.0002,  0.0267 )
+# JES +5%, M2_window 20,          EffCut = ( 0.116,    0.552,   0.0002,  0.0146 )
+# JES +5%, M2_window 35, dM= 20,  EffCut = ( 0.097,    0.459,   0.0001,  0.0128 )
+
+# wj scale up,   M2_window 20,             EffCut = ( 0.111,  0.544,   0.0002,  0.0453 )
+# wj scale up,   M2_window 35, dM3 = 20,   EffCut = ( 0.094,  0.487,   0.0001,  0.0406 )
+# wj scale down, M2_window 20,             EffCut = ( 0.111,  0.551,   0.0002,  0.0137 )
+# wj scale down, M2_window 35, dM3 = 20,   EffCut = ( 0.094,  0.453,   0.0001,  0.0113 )
+
+# JES  0%                         EffCut = ( 0.147,    1.0,     0.0002,  0.0243 )
+# JES  0%, M2_window 20,          EffCut = ( 0.111,    0.562,   0.0002,  0.0136 )
+# JES  0%, M2_window 35, dM= 20,  EffCut = ( 0.094,    0.451,   0.0001,  0.0110 )
+
+# 34 /pb
+# JES  0%                         EffCut = ( 0.147,    1.0,     0.0006,  0.232 )
+# JES  0%, M2_window 20,          EffCut = ( 0.111,    0.562,   0.0005,  0.130 )
+# JES  0%, M2_window 35, dM= 20,  EffCut = ( 0.094,    0.451,   0.0004,  0.105 )
+
+#                          no cut                         M2_window 20                             M2_window 35, dM3 = 20
+# Mu16, EffCut = ( 0.155,   1.0,   0.0002,   0.0280 ) | ( 0.117,   0.570,   0.0002,   0.0162 ) | ( 0.100,   0.464,   0.0002,   0.0133 )
+# Mu18, EffCut = ( 0.151,   1.0,   0.0002,   0.0251 ) | ( 0.114,   0.561,   0.0002,   0.0140 ) | ( 0.097,   0.457,   0.0001,   0.0117 )
+# Mu22, EffCut = ( 0.142,   1.0,   0.0002,   0.0212 ) | ( 0.108,   0.557,   0.0002,   0.0114 ) | ( 0.091,   0.449,   0.0001,   0.0095 )
+# Mu24, EffCut = ( 0.137,   1.0,   0.0002,   0.0195 ) | ( 0.104,   0.552,   0.0002,   0.0101 ) | ( 0.088,   0.451,   0.0001,   0.0087 )
+
+EffCut = ( 0.147,    1.0,     0.0006,  0.232 )
+
+# number of pseudo experiments
+nPseudoExp = 500
+# input mean for pseudo experiments
+#               tt4J,   wj4J,   QCD4J,    z4J,   wj2J,   qcd2J, z2J
 # Calo
 #InputMean = ( 26.52,  15.89,  6.82, 1.45 ,479.4,  394.1, 41.7 )
-# PF
-InputMean = ( 30.74,  13.79,  2.36,  1.47, 374.8,  175.7, 40.3 )
+# PF 30           ttJ,     wJ,  QCD4J,     zJ,     tq,    tw  
+#InputMean4J = ( 17.42,   7.94,   0.68,   0.85,   0.28,   0.40 )
+#InputMean2J = ( 15.37,  214.6,  40.92,  23.02,   3.84,   1.47 )
+# PF 20           ttJ,     wJ,  QCD4J,     zJ,     tq,    tw  
+InputMean4J = ( 23.63,  14.91,   2.82,   1.60,   0.44,   0.64 )
+InputMean2J = ( 13.49,  335.8,   170.,  35.43,   4.57,   1.43 )
 
 # ON/OFF for phase space smearing
 PhaseSmear = OFF
-# Jet Energy Scale
-JES = 1.
+# normalization parameters
+# PF J30 | v( 0.95, 1.15 ), q( 1.34, 1.17 )     | +5% v( 1.04, 1.20 ), q( 1.39, 1.35 ) | -5% v( 1.08, 1.18 ), q( 1.40, 1.33 )
+# PF J25 | v( 1.027, 1.236 ), q( 1.511, 1.378 ) | +5% v( 1.01, 1.22 ), q( 1.53, 1.47 ) | -5% v( 1.07, 1.19 ), q( 1.45, 1.34 )
+# ScaleUp | v( 1.10, 1.28 ), q( 1.49, 1.40 ) ;   ScaleDown | v( 0.79, 0.71 ), q( 1.57, 1.51 )
+# MC2MC | v(1.008, 1.004 ), q( 1.003, 0.999 ) ; Up | v( 1.079, 1.045 ), q( 0.982, 1.018 ) ;  Down | v( 0.779, 0.584 ), q( 1.058, 1.10 )
+# Mu18   | v( 1.026, 1.241 ), q( 1.467, 1.340 ) | Mu16   | v( 1.033, 1.236 ), q( 1.384, 1.268 )
+# Mu22   | v( 1.015, 1.219 ), q( 1.618, 1.367 ) | Mu24   | v( 1.017, 1.214 ), q( 1.746, 1.309 )
+# 22 /pb : PF J25 | v( 1.131, 1.295 ), q( 1.106, 1.111 ) 
+vjNorm  = ( 1.131, 1.333 )
+qcdNorm = ( 1.086, 1.097 )   
+#  normalize MC with Data , YES / NO
+MCNormalization = YES
 
 # FileName list for pseudo experiment
 # '+' is the flag for TChain 
-#TheData = ( data250nb_0J )
 TheData = ( data+ )
-#dataChain = ( data_mbias, data1_0716, data2_pv4_1, data2_pv4_2, data2_pv4_3 )
-dataChain = ( data_mbiaspf, data1_0716pf, data2_pv4_1pf, data2_pv4_2pf, data2_pv4_3pf )
+dataChain = ( data_mu15Ba, data_mu15B, data_mu9B, data_mu9A )
 
+#FakeData = ( tt_361_0jpf,  wj_361_down_0jpf,  qcd0+,  zj_361_0jpf1, tq_361_0jpf1, tw_361_0jpf1 )
 FakeData = ( tt_361_0jpf,  wj0+,  qcd0+,  zj_361_0jpf1, tq_361_0jpf1, tw_361_0jpf1 )
 wj0Chain = ( wj_361_0jpf1, wj_361_0jpf2, wj_361_0jpf3, wj_361_0jpf4, wj_361_0jpf5, wj_361_0jpf6, wj_361_0jpf7 )
 qcd0Chain = ( qcd_361_0jpf1, qcd_361_0jpf2, qcd_361_0jpf3, qcd_361_0jpf4, qcd_361_0jpf5, qcd_361_0jpf6, qcd_361_0jpf7 )
+
+OtherSamples = ( wj_361_down_0jpf )
 
 4JSamples = ( tt_361_4jpf,  wj+,  qcd+,  zj_361_4jpf1, tq_361_4jpf1, tw_361_4jpf1 )
 wjChain = ( wj_361_4jpf1, wj_361_4jpf2, wj_361_4jpf3, wj_361_4jpf4, wj_361_4jpf5, wj_361_4jpf6, wj_361_4jpf7 )
@@ -106,15 +161,21 @@ qcdChain = ( qcd_361_4jpf1, qcd_361_4jpf2, qcd_361_4jpf3, qcd_361_4jpf4, qcd_361
 wj2Chain = ( wj_361_2jpf1, wj_361_2jpf2, wj_361_2jpf3, wj_361_2jpf4, wj_361_2jpf5, wj_361_2jpf6, wj_361_2jpf7 )
 qcd2JChain = ( qcd_361_2jpf1, qcd_361_2jpf2, qcd_361_2jpf3, qcd_361_2jpf4, qcd_361_2jpf5, qcd_361_2jpf6, qcd_361_2jpf7 )
 
-# JES 1.1
-#FakeData =    ( tt_361_0jcaloA, wj0+, qcd0+, zj_361_0jcaloA1, tq_361_0jcaloA1, tw_361_0jcaloA1  )
-#wj0Chain = ( wj_361_0jcaloA1, wj_361_0jcaloA2, wj_361_0jcaloA3, wj_361_0jcaloA4, wj_361_0jcaloA5, wj_361_0jcaloA6, wj_361_0jcaloA7 )
-#qcd0Chain = ( qcd_361_0jcaloA1, qcd_361_0jcaloA2, qcd_361_0jcaloA3, qcd_361_0jcaloA4, qcd_361_0jcaloA5, qcd_361_0jcaloA6, qcd_361_0jcaloA7 )
+# JES type 0: no JES, 1:JEC, 2:JES
+JESType = 0
+IsMES = OFF
 
-# JES 0.9
-#FakeData =    ( tt_361_0jcaloB, wj0+, qcd0+, zj_361_0jcaloB1, tq_361_0jcaloB1, tw_361_0jcaloB1  )
-#wj0Chain = ( wj_361_0jcaloB1, wj_361_0jcaloB2, wj_361_0jcaloB3, wj_361_0jcaloB4, wj_361_0jcaloB5, wj_361_0jcaloB6, wj_361_0jcaloB7 )
-#qcd0Chain = ( qcd_361_0jcaloB1, qcd_361_0jcaloB2, qcd_361_0jcaloB3, qcd_361_0jcaloB4, qcd_361_0jcaloB5, qcd_361_0jcaloB6, qcd_361_0jcaloB7 )
+# Jet Energy Scale
+JES = 1
+
+# Number of b tagged
+# -1 : no btagged , 0: 1+2 btagged , 1: 1 btagged , 2: 2 btagged
+# https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagOctober09ExerciseUsePayload
+n_btag = -1
+bThreshold = 5
+
+# ON/OFF for MC matching 
+MCMatching = OFF
 
 # FileName list for parameterization, or ChainName+ ;  
 Backgrounds = ( wj1_356, zj_336, tq_336, tw_336, ww_336, wz_336, qcd1_356 )
@@ -122,6 +183,12 @@ Backgrounds = ( wj1_356, zj_336, tq_336, tw_336, ww_336, wz_336, qcd1_356 )
 BgGroups =    (      0,      0,      0,      0,      0,      0,     1 )
 # top mass assumption 
 Signals = ( tt_356 )
+
+# jacobian test parameters 
+# p3 : scale , must > 0 , p0,p1,p2 : shape parameters for Mt < 80
+# p4: mass of W , p5: width of W , p6: Gassian Convolution, only stable when p6 < 10 
+PJacob  = (  15.4, 1., -20., 23.54,  80.4,  19.1,   1 )
+PSwitch = (   1,    0,    0,     1,    0,     0,    0 )
 
 # range for mass fitting 
 MassLBound = 0

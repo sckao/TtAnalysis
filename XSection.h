@@ -10,6 +10,7 @@
 #include <TLegend.h>
 #include <TCanvas.h>
 #include <TSystem.h>
+#include <TGraphAsymmErrors.h>
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,8 +39,12 @@ private:
 
    string hfolder;
    TString theFolder;
+   string plotType ;
+
    bool smearing ;
-   vector<double> inputMean ;
+   bool mcNorm ;
+   vector<double> inputMean4J ;
+   vector<double> inputMean2J ;
 
    vector<string> File4J;
    vector<string> File2J;
@@ -51,24 +56,25 @@ public:
    XSection();     
    ~XSection();     
  
-   vector<double> Ratio42( int statIdx = 0 );
 
-   void MethodTest() ;
-
-   vector<double> GetXSection( vector<double>& R42, double n2J, double n4J ) ;
-   void EnsembleTest( int nRun, int randomSeed );
-   vector<double> RunEnsembles( int nJets, int treeSize, double pMean, int nRun, int randomSeed, string fileName, TH1D* hGen = NULL );
-
-   void MethodTest1() ;
    void BgClosureTest( int nX, int nY, bool inclX = false, bool inclY = false ) ;
-   vector<double> CutEff();
+   vector<double> CutEff( int nj = 4 );
+   void MethodTest1( int nj = 4 ) ;
+   void MethodTest2( string cfgFile, int nj ) ;
+   void MethodTest3( int nj = 4 ) ;
+
    vector<double> CrossSection( double nData_4J, vector<double>& nData_2j, vector<double>& R42, vector<double>& EffCut );
+   vector<double> CrossSection( double nData_4J, double nData_2j, vector<double>& R42, vector<double>& EffCut );
+
    void EnsembleTest1( int nRun, int randomSeed );
-   vector< vector<double> >RunEnsembles1( int nJets, int treeSize, double pMean, int nRun, int randomSeed, string fileName, TH1D* hGen = NULL );
+
+   vector<double> RunEnsembles( int nJets, int treeSize, double pMean, int nRun, int randomSeed, string fileName, TH1D* hGen = NULL );
+   vector<double> RunEnsembles1( int nJets, int treeSize, double pMean, int nRun, int randomSeed, string fileName, TH1D* hGen = NULL );
 
    vector<double> ErrAxB( double A, double s_A, double B, double s_B );
 
-   void RealBackground( int nX, int nY, bool inclX = false, bool inclY = false ) ;
+   void RealDataAnalysis( int nX = 4, int nY = 2) ;
+   void DataForSystematic( string cfgFile, int nX = 4 ) ;
 
    //ClassDef(XSection, 1);
 

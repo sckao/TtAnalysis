@@ -30,6 +30,7 @@ vector<TTree*> forest2J ;
 vector<TTree*> forest4J ;
 vector<TTree*> forestXJ ;
 vector<TTree*> forestData ;
+vector<TTree*> forestOther ;
 
 void MassAnaInput::Initialize( TString* hfolder ) {
 
@@ -70,6 +71,14 @@ void MassAnaInput::LinkForests( TString treeName ){
       TTree* tr = GetTree( fNamesXJ[i], treeName ) ;
       forestXJ.push_back( tr );
   }
+
+  vector<string> fNamesOther ;
+  GetParameters( "OtherSamples", &fNamesOther );
+  for ( size_t i =0 ; i< fNamesOther.size(); i++ ) {
+      TTree* tr = GetTree( fNamesOther[i], treeName ) ;
+      forestOther.push_back( tr );
+  }
+
 }
 
 TTree* MassAnaInput::TreeMap( string fileName ){
@@ -82,19 +91,25 @@ TTree* MassAnaInput::TreeMap( string fileName ){
     GetParameters( "2JSamples", &fNames2J );
     vector<string> fNames4J ;
     GetParameters( "4JSamples", &fNames4J );
+    vector<string> fNamesOther ;
+    GetParameters( "OtherSamples", &fNamesOther );
+
 
     TTree* theTr = 0;
-    for ( int i=0; i< f0Names.size(); i++ ) {
+    for ( size_t i=0; i< f0Names.size(); i++ ) {
         if ( f0Names[i] == fileName ) theTr = forestData[i] ;
     }
-    for ( int i=0; i< f1Names.size(); i++ ) {
+    for ( size_t i=0; i< f1Names.size(); i++ ) {
         if ( f1Names[i] == fileName ) theTr = forestXJ[i] ;
     }
-    for ( int i=0; i< fNames2J.size(); i++ ) {
+    for ( size_t i=0; i< fNames2J.size(); i++ ) {
         if ( fNames2J[i] == fileName ) theTr = forest2J[i] ;
     }
-    for ( int i=0; i< fNames4J.size(); i++ ) {
+    for ( size_t i=0; i< fNames4J.size(); i++ ) {
         if ( fNames4J[i] == fileName ) theTr = forest4J[i] ;
+    }
+    for ( size_t i=0; i< fNamesOther.size(); i++ ) {
+        if ( fNamesOther[i] == fileName ) theTr = forestOther[i] ;
     }
     return theTr ;
 }
@@ -109,19 +124,24 @@ int MassAnaInput::TreeSize( string fileName ){
     GetParameters( "2JSamples", &fNames2J );
     vector<string> fNames4J ;
     GetParameters( "4JSamples", &fNames4J );
+    vector<string> fNamesOther ;
+    GetParameters( "OtherSamples", &fNamesOther );
 
     int treeSize = 0;
-    for ( int i=0; i< f0Names.size(); i++ ) {
+    for ( size_t i=0; i< f0Names.size(); i++ ) {
         if ( f0Names[i] == fileName ) treeSize = forestData[i]->GetEntries() ;
     }
-    for ( int i=0; i< f1Names.size(); i++ ) {
+    for ( size_t i=0; i< f1Names.size(); i++ ) {
         if ( f1Names[i] == fileName ) treeSize = forestXJ[i]->GetEntries() ;
     }
-    for ( int i=0; i< fNames2J.size(); i++ ) {
+    for ( size_t i=0; i< fNames2J.size(); i++ ) {
         if ( fNames2J[i] == fileName ) treeSize = forest2J[i]->GetEntries() ;
     }
-    for ( int i=0; i< fNames4J.size(); i++ ) {
+    for ( size_t i=0; i< fNames4J.size(); i++ ) {
         if ( fNames4J[i] == fileName ) treeSize = forest4J[i]->GetEntries() ;
+    }
+    for ( size_t i=0; i< fNamesOther.size(); i++ ) {
+        if ( fNamesOther[i] == fileName ) treeSize = forestOther[i]->GetEntries() ;
     }
 
     return treeSize ;
@@ -895,9 +915,9 @@ void MassAnaInput::GetPermutes( int njets, vector<jlist>& jlistV ) {
 
 
 // Methods to read DataCard.txt
-void MassAnaInput::GetParameters(string paraName, int* thePara ){
+void MassAnaInput::GetParameters(string paraName, int* thePara, string cfgFile ){
 
-     fstream paraFile("DataCard.txt");
+     fstream paraFile( cfgFile.c_str() );
      if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
@@ -905,77 +925,95 @@ void MassAnaInput::GetParameters(string paraName, int* thePara ){
      size_t  pos ;
      size_t  vpos ;
 
+     bool gotIt = false ;
      while ( getline(paraFile, line) ) {
            if ( line[0] == '#' ) continue ;
 
            pos = line.find( paraName );
            vpos = pos + paraName.size() + 2;
            if ( pos < line.npos ) {
-              getName  = line.substr( pos, paraName.size() );
-              getValue = line.substr( vpos );
-              *thePara = atoi( getValue.c_str() );
-              //cout<< paraName <<" = "<< *thePara << endl;
-           }
-     }
-     paraFile.close();
-}
-
-void MassAnaInput::GetParameters(string paraName, double* thePara ){
-
-     fstream paraFile("DataCard.txt");
-     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
-     string  line;
-     string  getName;
-     string  getValue;
-     size_t  pos ;
-     size_t  vpos ;
-
-     while ( getline(paraFile, line) ) {
-           if ( line[0] == '#' ) continue ;
-
-           pos = line.find( paraName );
-           vpos = pos + paraName.size() + 2;
-           if ( pos < line.npos ) {
-              getName  = line.substr( pos, paraName.size() );
-              getValue = line.substr( vpos );
-              *thePara = atof( getValue.c_str() );
-              //cout<< paraName <<" = "<< *thePara << endl;
-           }
-     }
-     paraFile.close();
-}
-
-void MassAnaInput::GetParameters(string paraName, string* thePara ){
-
-     fstream paraFile("DataCard.txt");
-     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
-     string  line;
-     string  getName;
-     size_t  pos ;
-     size_t  vpos ;
-
-     while ( getline(paraFile, line) ) {
-           if ( line[0] == '#' ) continue ;
-
-           pos = line.find( paraName );
-           vpos = pos + paraName.size() + 2;
-           if ( pos < line.npos ) {
-              //cout<<" pos = "<< pos <<endl;
-              getName  = line.substr( pos, paraName.size() );
-              //*thePara = line.substr( vpos );
-              //cout<< paraName <<" = "<< *thePara << endl;
-              string strTmp = line.substr( vpos );
-              for (string::iterator it = strTmp.begin(); it< strTmp.end(); it++) {
-                  if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') thePara->push_back( *it );
+              string str_end = line.substr(vpos-1, 1) ;
+              if ( str_end == ' ' || str_end == '=') {
+                 getName  = line.substr( pos, paraName.size() );
+                 getValue = line.substr( vpos );
+                 *thePara = atoi( getValue.c_str() );
+                 //cout<< paraName <<" = "<< *thePara << endl;
+                 gotIt = true;
               }
            }
+           if ( gotIt ) break ;
      }
      paraFile.close();
 }
 
-void MassAnaInput::GetParameters(string paraName, vector<double>* thePara ){
+void MassAnaInput::GetParameters(string paraName, double* thePara, string cfgFile ){
 
-     fstream paraFile("DataCard.txt");
+     fstream paraFile( cfgFile.c_str() );
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
+     string  line;
+     string  getName;
+     string  getValue;
+     size_t  pos ;
+     size_t  vpos ;
+
+     bool gotIt = false ;
+     while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 2;
+           if ( pos < line.npos ) {
+              string str_end = line.substr(vpos-1, 1) ;
+              if ( str_end == ' ' || str_end == '=') {
+                 getName  = line.substr( pos, paraName.size() );
+                 getValue = line.substr( vpos );
+                 *thePara = atof( getValue.c_str() );
+                 //cout<< paraName <<" = "<< *thePara << endl;
+                 gotIt = true ;
+              }
+           }
+           if ( gotIt ) break ;
+     }
+     paraFile.close();
+}
+
+void MassAnaInput::GetParameters(string paraName, string* thePara, string cfgFile ){
+
+     fstream paraFile( cfgFile.c_str() );
+     if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
+     string  line;
+     string  getName;
+     size_t  pos ;
+     size_t  vpos ;
+
+     bool gotIt = false ;
+     while ( getline(paraFile, line) ) {
+           if ( line[0] == '#' ) continue ;
+
+           pos = line.find( paraName );
+           vpos = pos + paraName.size() + 2;
+           if ( pos < line.npos ) {
+              string str_end = line.substr(vpos-1, 1) ;
+              if ( str_end == ' ' || str_end == '=') {
+                 //cout<<" pos = "<< pos <<endl;
+                 getName  = line.substr( pos, paraName.size() );
+                 //*thePara = line.substr( vpos );
+                 //cout<< paraName <<" = "<< *thePara << endl;
+                 string strTmp = line.substr( vpos );
+                 for (string::iterator it = strTmp.begin(); it< strTmp.end(); it++) {
+                     if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') thePara->push_back( *it );
+                 }
+                 gotIt = true ;
+              }
+           }
+           if ( gotIt ) break;
+     }
+     paraFile.close();
+}
+
+void MassAnaInput::GetParameters(string paraName, vector<double>* thePara, string cfgFile ){
+
+     fstream paraFile( cfgFile.c_str() );
      if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;
@@ -1011,9 +1049,9 @@ void MassAnaInput::GetParameters(string paraName, vector<double>* thePara ){
 
 } 
 
-void MassAnaInput::GetParameters(string paraName, vector<string>* thePara ){
+void MassAnaInput::GetParameters(string paraName, vector<string>* thePara, string cfgFile ){
 
-     fstream paraFile("DataCard.txt");
+     fstream paraFile( cfgFile.c_str() );
 
      if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
@@ -1050,9 +1088,9 @@ void MassAnaInput::GetParameters(string paraName, vector<string>* thePara ){
 
 }
  
-void MassAnaInput::GetParameters(string paraName, vector<int>* thePara ){
+void MassAnaInput::GetParameters(string paraName, vector<int>* thePara, string cfgFile ){
 
-     fstream paraFile("DataCard.txt");
+     fstream paraFile( cfgFile.c_str() );
      if ( !paraFile.is_open() )  cout<<" file opened error => check file path and the folder "<<endl;
      string  line;
      string  getName;

@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string>
+#include <TGaxis.h>
 
 #include "MassAnaInput.h"
 #include "MassAna.h"
@@ -56,6 +57,7 @@ public:
    void LepTopFitter( string mName, TString DrawOpt = "COLZ", bool isMCMatched = false );
 
    void Had_SBRatio();
+   void SBCEPlotter();
 
    void EnsembleTest( int randomSeed = 0 ,TString DrawOpt = "COLZ" );
    void LepTEnsembleTest( int randomSeed = 0 ,TString DrawOpt = "COLZ" );
@@ -65,6 +67,7 @@ public:
    void MixAll( vector<string>& flist, TString DrawOpt = "COLZ" );
 
    void M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt = "COLZ", bool isMCMatched = false );
+   void AN_M2M3Plotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt = "COLZ", bool isMCMatched = false );
    void LepTopPlotter( vector<TH2D*> h2Ds, string fileName, TString DrawOpt = "COLZ", bool isMCMatched = false );
 
    void BJetEff( string fileName ) ;

@@ -107,8 +107,8 @@ void LepTopMassFitter::LTMFCN(Int_t &npar, Double_t *, Double_t &tChi2, Double_t
       for (int i=1; i<3; i++ ) {
           double nz = ( i == 1) ? nz1 : nz2 ;
 	  double ENu2 = ( np4a.Px()*np4a.Px() ) + ( np4a.Py()*np4a.Py() ) + (nz*nz);
-	  double zW = mp4.Pz() + nz ;
-	  double EW = mp4.E()  + sqrt(ENu2) ;
+	  //double zW = mp4.Pz() + nz ;
+	  //double EW = mp4.E()  + sqrt(ENu2) ;
 	  TLorentzVector neu_p4 = TLorentzVector( np4a.Px(), np4a.Py(), nz, sqrt(ENu2) );
           nPs.push_back( neu_p4 ) ;
       }
@@ -179,8 +179,8 @@ vector<TLorentzVector> LepTopMassFitter::NeuP4Solution( TLorentzVector muP4, TLo
       for (int i=1; i<3; i++ ) {
           double nz = ( i == 1) ? nz1 : nz2 ;
 	  double ENu2 = ( neuP4.Px()*neuP4.Px() ) + ( neuP4.Py()*neuP4.Py() ) + (nz*nz);
-	  double zW = muP4.Pz() + nz ;
-	  double EW = muP4.E()  + sqrt(ENu2) ;
+	  //double zW = muP4.Pz() + nz ;
+	  //double EW = muP4.E()  + sqrt(ENu2) ;
 	  TLorentzVector np4 = TLorentzVector( neuP4.Px(), neuP4.Py(), nz, sqrt(ENu2) );
           neuSol.push_back( np4 ) ;
       }

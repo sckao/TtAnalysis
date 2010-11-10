@@ -13,6 +13,7 @@
 #include <TCanvas.h>
 #include <TPad.h>
 #include <TGraphErrors.h>
+#include <TMultiGraph.h>
 #include <TSystem.h>
 #include <vector>
 #include <stdio.h>
@@ -48,8 +49,11 @@ public:
    ~BgEstimation();     
 
    vector<double> RatioXY(int njX, int njY, vector<string>& fNames, int index, bool doPlot = false, bool inclX = false, bool inclY = false, bool normMC = false );
+   vector<double> RatioXY( vector<string>& fNameX, vector<string>& fNameY, int index = -1., bool includeTt = false, bool doPlot = false ) ;
 
-   vector<double> RatioXY( vector<string>& fNameX, vector<string>& fNameY, int index = -1., bool includeTt = false, bool doPlot = false );
+   vector<double> RatioX2( int nxj, int nyj, vector<string>& DataFiles, vector<string>& MCFiles, bool normMC, bool isReal = true ) ;
+   vector<double> NEvtCounting( int njx, vector<string>& fNames, int index, bool inclX, bool normMC, int mcIdx = 0 ) ;
+   vector<double> NEvtFromAlphaS( int nxj, int nyj, double N2, double N1, double N_mc ) ;
 
    vector<double> BgEstimate( vector<double>& R42, vector<double>& nData_2j );
    vector<double> BgEstimate( vector<double>& R42, double nData_2j );
@@ -66,13 +70,14 @@ public:
    vector<double> MeasureScale( string& dataFiles, vector<string>& fNames );
    double MeasureScale2D( string& dataFiles, vector<string>& fNames, double MtCut = 40, double METCut = 25, bool doQCD = true, bool isVjNorm = false );
    double MeasureScale1D( string& dataFiles, vector<string>& fNames, int hID, double MtCut = 40, double METCut = 25, bool doQCD = true, bool isVjNorm = false );
+   double MeasureScale1D( vector<string>& fNames, int hID, double MtCut = 40, double METCut = 25, bool doQCD = true, bool isVjNorm = false );
 
    double Chi2Normalization( TH2D* hData, TH2D* hMC, int Bx1, int Bx2, int By1, int By2, double s1, double s2, bool doFit = false );
    double Chi2Normalization( TH1D* hData, TH1D* hMC, int Bx1, int Bx2, double s1, double s2, TString plotname, bool doFit = false  );
 
+   void RatioScan( vector<string>& DataNames, vector<string>& fNames,  bool normMC );
    //ClassDef(BgEstimation, 1);
   
-
 };
 
 //#if !defined(__CINT__)

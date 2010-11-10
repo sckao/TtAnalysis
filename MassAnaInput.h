@@ -105,12 +105,12 @@ public:
    void NormalizeComponents( string theChhannel, TH1D* tmp );
    double NormalizeComponents( string theChhannel );
    
-   void GetParameters( string paraName, int* thePara );
-   void GetParameters( string paraName, double* thePara );
-   void GetParameters( string paraName, string* thePara );
-   void GetParameters( string paraName, vector<double>* thePara );
-   void GetParameters( string paraName, vector<string>* thePara );
-   void GetParameters( string paraName, vector<int>* thePara );
+   void GetParameters( string paraName, int* thePara, string cfgFile ="DataCard.txt" );
+   void GetParameters( string paraName, double* thePara, string cfgFile ="DataCard.txt" );
+   void GetParameters( string paraName, string* thePara, string cfgFile ="DataCard.txt" );
+   void GetParameters( string paraName, vector<double>* thePara, string cfgFile ="DataCard.txt" );
+   void GetParameters( string paraName, vector<string>* thePara, string cfgFile ="DataCard.txt" );
+   void GetParameters( string paraName, vector<int>* thePara, string cfgFile ="DataCard.txt" );
 
    void LinkForests( TString treeName );
    TTree* TreeMap( string fileName );

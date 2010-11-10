@@ -60,9 +60,11 @@ class hadWBoson : public recoObj {
   public:
 
   hadWBoson(){
-    hM2M3    = new TH2D("hM2M3",  " M3(X) vs M2(Y) ", 18, 0, 360, 15, 0, 300);
+    hM2M3    = new TH2D("hM2M3",  " M3(X) vs M2(Y) ", 20, 50, 350, 16, 0, 240);
+    //hM2M3    = new TH2D("hM2M3",  " M3(X) vs M2(Y) ", 25, 100, 600, 20, 0, 400);
     hM2M3BG  = new TH2D("hM2M3BG"," LepM3(X) vs HadM2(Y) ", 18, 0, 360, 15, 0, 300);
-    hM3M3    = new TH2D("hM3M3", " M3 had(X) vs M3 lep(Y) ", 15,50,350, 15, 50, 350);
+    hM3M3    = new TH2D("hM3M3", " M3 had(X) vs M3 lep(Y) ", 20, 50, 350, 20, 50, 350);
+    //hM3M3    = new TH2D("hM3M3", " M3 had(X) vs M3 lep(Y) ", 25, 100, 600, 25, 100, 600);
     hEtaM2   = new TH2D("hEtaM2", " Eta of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
     hEtaM3   = new TH2D("hEtaM3", " Eta of M3 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
     hYM2     = new TH2D("hYM2", " Rapidity of M2 had(X) vs lep(Y) ", 25, -5, 5, 25, -5, 5);
@@ -100,9 +102,8 @@ class hadWBoson : public recoObj {
   void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
        TLorentzVector vM2 = v0 + v1 ;
        TLorentzVector vM3 = v0 + v1 + v2;
-       //double Mt2 = (v0.Et()+v1.Et())*(v0.Et()+v1.Et()) - vM2.Pt()*vM2.Pt() ;
-       double dphi = v0.DeltaPhi( v1 ) ;
-       double Mt2 = 2.*v0.Pt()*v1.Pt()*( 1. - cos(dphi) );
+       //double dphi = v0.DeltaPhi( v1 ) ;
+       //double Mt2 = 2.*v0.Pt()*v1.Pt()*( 1. - cos(dphi) );
        hadM2 = vM2.M() ;
        hadM3 = vM3.M() ;
        hadM2_eta = vM2.Eta() ;
@@ -110,6 +111,7 @@ class hadWBoson : public recoObj {
        hadM2_Y = vM2.Rapidity() ;
        hadM3_Y = vM3.Rapidity() ;
        hadM3_Pt = vM3.Pt() ;
+       //cout<<" hadM3: "<< hadM3 <<"  hadM2: "<< hadM2 ;
   }
   void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){
        TLorentzVector vM2 = v4 + v5 ;
@@ -124,6 +126,7 @@ class hadWBoson : public recoObj {
        lepM3_eta = vM3.Eta() ;
        MET = v5.Pt() ;
        lepM3_Pt = vM3.Pt() ;
+       //cout<<"   lepM3: "<< lepM3 <<"   Neutrino Pz: "<< v5.Pz() <<endl;
   }
 
   void getFloats( double fArr[] ) { }
@@ -187,7 +190,7 @@ class ACounter : public recoObj {
 
   public:
 
-  ACounter(){
+  ACounter( double muCut = 20 ){
      hadM2M3  = 0 ;
      shadM2M3 = 0 ;
      M3M3     = 0 ;
@@ -239,6 +242,21 @@ class ACounter : public recoObj {
        M3M3    = M3M3 * scale;
        NlepW_Mt = NlepW_Mt * scale ;
   }
+  void Reset(){
+     hadM2M3  = 0 ;
+     shadM2M3 = 0 ;
+     M3M3     = 0 ;
+     sM3M3    = 0 ;
+     NlepW_Mt = 0 ;
+
+     lepM3 = 0 ;
+     hadM3 = 0 ;
+     hadM2 = 0 ;
+     lepW_mt = 0 ;
+     lepW_pt = 0 ;
+     outV.clear();
+  }
+
   vector<double> Output(){
       outV.clear();
       outV.push_back( hadM2M3 );
@@ -364,6 +382,8 @@ class hObjs : public recoObj {
   double mu_nhits ;
   double mu_d0 ;
   double mu_x2 ;
+  double dRmj ;
+  double relPt ;
 
   double lepW_pt ;
   double lepW_mt ;
@@ -374,6 +394,7 @@ class hObjs : public recoObj {
   double NlepW_all ;
   double NlepW ;
   double WPtCut ;
+  double dPhi_MuMet ;
 
   int njets ;
 
@@ -401,8 +422,13 @@ class hObjs : public recoObj {
     hMuNHits = new TH1D("hMuNHits"+sfx," muon N Hits ", 40, 0, 40 ) ; 
     hMuD0    = new TH1D("hMuD0"+sfx,   " muon d0(Bsp)", 40, -0.02, 0.02 ) ; 
     hMuX2    = new TH1D("hMuX2"+sfx,   " muon X2 "    , 110, 0, 11 ) ; 
+    hdRmj    = new TH1D("hdRmj"+sfx,   " dR( mu, jet) "     ,  63, 0, 6.3 ) ; 
+    hRelPt   = new TH1D("hRelPt"+sfx,   " RelPt( mu, jet)"  ,  50, 0, 100 ) ; 
 
     hMETMt   = new TH2D("hMETMt"+sfx, " MET(X) vs lep Mt(Y) ", 30, 0, 150, nbin, 0, 150);
+    hWPtMt   = new TH2D("hWPtMt"+sfx, " Pt of W(X) vs lep Mt(Y) ", 20, 0, 200, nbin, 0, 150);
+    hWPtdPhi = new TH2D("hWPtdPhi"+sfx, " Pt of W(X) vs dPhi(mu, MET) ", 20, 0, 200, 32, 0, 3.2);
+    hMuMET   = new TH2D("hMuMET"+sfx, " Mu(X) vs MET(Y) ", nbin, 0, 120, nbin, 0, 120);
 
     NlepW     = 0 ;
     NlepW_all = 0 ;
@@ -428,8 +454,13 @@ class hObjs : public recoObj {
     delete hMuNHits ;
     delete hMuD0 ;
     delete hMuX2 ;
+    delete hdRmj ;
+    delete hRelPt ;
+
     delete hMETMt ;
-    
+    delete hWPtMt ;
+    delete hWPtdPhi ;
+    delete hMuMET ;
   }
 
   void Fillh( double weight =  1., double scale = 1. ) {
@@ -446,17 +477,24 @@ class hObjs : public recoObj {
        hMuNHits->Fill( mu_nhits, weight*scale );
        hMuD0->Fill( mu_d0, weight*scale );
        hMuX2->Fill( mu_x2, weight*scale );
+       hdRmj->Fill( dRmj, weight*scale );
+       hRelPt->Fill( relPt, weight*scale );
+
        lepWPt->Fill( lepW_pt, weight*scale );
        lepWMt->Fill( lepW_mt, weight*scale );
+
        hMETMt->Fill( pt5, lepW_mt, weight*scale );
+       hWPtMt->Fill( lepW_pt, lepW_mt, weight*scale );
+       hWPtdPhi->Fill( lepW_pt, dPhi_MuMet, weight*scale );
+       hMuMET->Fill( pt4, pt5, weight*scale );
 
        if (lepW_pt <   WPtCut )                        lepWMt1->Fill( lepW_mt, weight*scale );
        if (lepW_pt < 2*WPtCut && lepW_pt >=   WPtCut ) lepWMt2->Fill( lepW_mt, weight*scale );
        if (lepW_pt < 3*WPtCut && lepW_pt >= 2*WPtCut ) lepWMt3->Fill( lepW_mt, weight*scale );
        if (                      lepW_pt >= 3*WPtCut ) lepWMt4->Fill( lepW_mt, weight*scale );
 
-       if (lepW_pt < 3*WPtCut && lepW_mt >=40 ) NlepW = NlepW + (weight*scale) ;
-       if (lepW_pt < 3*WPtCut )                 NlepW_all = NlepW_all + (weight*scale) ;
+       if (lepW_pt < 3*WPtCut && lepW_mt >= 40 ) NlepW     = NlepW + (weight*scale) ;
+       if (lepW_pt < 3*WPtCut )                  NlepW_all = NlepW_all + (weight*scale) ;
   }
 
   void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
@@ -475,6 +513,7 @@ class hObjs : public recoObj {
        mu_eta = v4.Eta() ;
        lepW_mt = sqrt( Mt2 );
        lepW_pt = vM2.Pt() ;
+       dPhi_MuMet = fabs( dphi );
   }
 
 
@@ -497,12 +536,16 @@ class hObjs : public recoObj {
        hMuNHits->Scale(scale);
        hMuD0->Scale(scale);
        hMuX2->Scale(scale);
+       hdRmj->Scale(scale);
+       hRelPt->Scale(scale);
   }
 
   void getFloats( double fArr[] ) { 
        mu_iso   = fArr[0] ;
        mu_d0    = fArr[1] ;
        mu_x2    = fArr[2] ;
+       dRmj     = fArr[3] ;
+       relPt    = fArr[4] ;
   }
   void getIntegrals( int iArr[] ) { 
        njets = iArr[0] ;
@@ -530,10 +573,15 @@ class hObjs : public recoObj {
        hList.push_back(lepWMt2);
        hList.push_back(lepWMt3);
        hList.push_back(lepWMt4);
+       hList.push_back(hdRmj);
+       hList.push_back(hRelPt);
   }
 
   void Fill2DVec( vector<TH2D*>& hList ){
        hList.push_back( hMETMt );
+       hList.push_back( hWPtMt );
+       hList.push_back( hWPtdPhi );
+       hList.push_back( hMuMET );
   }
 
   void CounterVec( vector<double>& cList ) {
@@ -555,11 +603,17 @@ class hObjs : public recoObj {
   TH1D* hMuNHits ;
   TH1D* hMuD0 ;
   TH1D* hMuX2 ;
+  TH1D* hdRmj ;
+  TH1D* hRelPt ;
   TH1D* lepWMt1 ;
   TH1D* lepWMt2 ;
   TH1D* lepWMt3 ;
   TH1D* lepWMt4 ;
+
   TH2D* hMETMt ;  
+  TH2D* hWPtMt ;  
+  TH2D* hWPtdPhi ;  
+  TH2D* hMuMET ;
 
   //ClassDef(hObjs, 1);
 };
@@ -755,7 +809,6 @@ class bgCounter : public recoObj {
   public:
 
   bgCounter( string fsfx = "", double iniPt = 20. ){
-    TString sfx = fsfx ;
     WPtCut = iniPt ;
 
     for (int i=0; i<5; i++) {
@@ -812,6 +865,15 @@ class bgCounter : public recoObj {
   void getFloats( double fArr[] ) { } 
   void getIntegrals( int iArr[] ) { }
   void Fill1DVec( vector<TH1D*>& hList ){ }
+
+  void Reset( double iniPt = 20. ){
+    WPtCut = iniPt ;
+
+    for (int i=0; i<5; i++) {
+        nW[i] = 0 ;
+        sW[i] = 0 ;
+    }
+  }
 
   void scale( double scale = 1. ) { 
        nW[0] = nW[0]*scale ;

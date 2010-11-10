@@ -59,6 +59,7 @@ private:
 
    string Inclusive ;
    bool inclu ;
+   bool normMCData ;
 
    MassAnaInput*    fitInput;
    PseudoExp*       pseudoExp;
@@ -93,8 +94,6 @@ public:
 
    vector<TLorentzVector> newVector( TLorentzVector v1, TLorentzVector v2, TLorentzVector v3, TLorentzVector v4, Double_t *par );
 
-   bool JetPtFilter( vector<TLorentzVector> jpv );
-
    double jetAngle( TLorentzVector v1, TLorentzVector v2 );
    double minTheta_WDecay( TLorentzVector v1, TLorentzVector v2 );
 
@@ -108,11 +107,15 @@ public:
 
    void ResetCuts( double m2L = -1, double m2H = -1, double m3L = -1, double m3H = -1, double lepM2tL = -1, double lepM2tH = -1, bool GetDefault = false );
 
+   void SetMCNormalization( bool normMC ) ;
+   void SetMuonCuts( double pt_, double eta_, double iso_ );
+
    // methods for old soltree
    double ReFitSolution( string mName, recoObj* wObj, int nJets, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0, bool smearing = false );
 
    void MCSolution( string fileName, recoObj* wObj );
 
+   double EvtScaling( int NJets, string fileName );
    //ClassDef(HadWMassFitter, 1);
 
 };
