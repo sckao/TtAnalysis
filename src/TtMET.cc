@@ -60,7 +60,7 @@ TtMET::TtMET(const edm::ParameterSet& iConfig)
   muonSrc         = iConfig.getParameter<edm::InputTag> ("muonSource");
   recoMetSrc      = iConfig.getParameter<edm::InputTag> ("recoMetSource");
   metSrc          = iConfig.getParameter<edm::InputTag> ("metSource");
-  caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
+  //caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
   genSrc          = iConfig.getParameter<edm::InputTag> ("genParticles"); 
 
   ttMuon          = new TtMuon( iConfig );
@@ -101,8 +101,8 @@ void TtMET::metAnalysis(const edm::Event& iEvent, HTOP2* histo2) {
  Handle<std::vector<pat::Muon> > muons;
  iEvent.getByLabel(muonSrc, muons);
 
- Handle<CaloTowerCollection>  caloTowers;
- iEvent.getByLabel(caloSrc, caloTowers);
+ //Handle<CaloTowerCollection>  caloTowers;
+ //iEvent.getByLabel(caloSrc, caloTowers);
 
  Handle<std::vector<reco::GenParticle> > genParticles;
  iEvent.getByLabel(genSrc, genParticles);
@@ -127,45 +127,42 @@ void TtMET::metAnalysis(const edm::Event& iEvent, HTOP2* histo2) {
      histo2->Fill2a( (*m1).et(), emf, emfCalo, (*m1).sumEt() );
 
      // calculate the MET from CaloTowers
-     LorentzVector calo = CaloMET(caloTowers);
+     //LorentzVector calo = CaloMET(caloTowers);
      // calculate the muon correction
-     std::vector<double> muPtCorr = ttMuon->MuonEtCorrection(muons);
+     //std::vector<double> muPtCorr = ttMuon->MuonEtCorrection(muons);
 
      // the pure caloMET info
-     double vsc =  sqrt( calo.Px()*calo.Px() + calo.Py()*calo.Py() );
-     double phic = atan2( calo.Py(), calo.Px() );
+     //double vsc =  sqrt( calo.Px()*calo.Px() + calo.Py()*calo.Py() );
+     //double phic = atan2( calo.Py(), calo.Px() );
 
      // caloMET + over corrected muon
-     double calx1 = calo.Px() + muPtCorr[0];
-     double caly1 = calo.Py() + muPtCorr[1];
-     double vsc1  =  sqrt( calx1*calx1 + caly1*caly1 );
-     double phic1 = atan2(caly1, calx1);
+     //double calx1 = calo.Px() + muPtCorr[0];
+     //double caly1 = calo.Py() + muPtCorr[1];
+     //double vsc1  =  sqrt( calx1*calx1 + caly1*caly1 );
+     //double phic1 = atan2(caly1, calx1);
 
      // find neutrino from generator
      LorentzVector vP4 = METfromNeutrino(genParticles) ;
 
      double vPT = sqrt(vP4.Px()*vP4.Px() + vP4.Py()*vP4.Py());
      double vPhi= atan2(vP4.Py(), vP4.Px());
-     double MET_Res[4] = {100.};
-     double Phi_Res[4] = {100.};
+     double MET_Res[2] = {100.};
+     double Phi_Res[2] = {100.};
 
      histo2->Fill2f( (*recomet)[0].et(), (*m1).et(), (*recomet)[0].phi(), (*m1).phi() );
      if ( vPT != 0 ) {
         MET_Res[0] = ((*m1).et() - vPT) / vPT ;
-	MET_Res[1] = ( vsc - vPT) / vPT ;
-	MET_Res[2] = ( vsc1 - vPT) / vPT ;
-        MET_Res[3] = ((*recomet)[0].et() - vPT) / vPT ;
+        MET_Res[1] = ((*recomet)[0].et() - vPT) / vPT ;
 
 	Phi_Res[0] = (*m1).phi() - vPhi;
-	Phi_Res[1] =  phic  - vPhi;
-        Phi_Res[2] =  phic1 - vPhi;
-	Phi_Res[3] = (*recomet)[0].phi() - vPhi;
-        histo2->Fill2b( MET_Res[0],MET_Res[1],MET_Res[2],MET_Res[3],Phi_Res[0],Phi_Res[1],Phi_Res[2],Phi_Res[3] );
+	Phi_Res[1] = (*recomet)[0].phi() - vPhi;
+        histo2->Fill2b( MET_Res[0],MET_Res[1],Phi_Res[0],Phi_Res[1] );
      }
  }
 
 }
 
+/*
 LorentzVector TtMET::CaloMET( Handle<CaloTowerCollection> calotowers ) {
 
    double caloXY[2] = {0.0};
@@ -198,7 +195,7 @@ LorentzVector TtMET::CaloMET( const edm::Event& iEvent ) {
 
    return theMET;
 }
-
+*/
 LorentzVector  TtMET::METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets ) {
 
   double Psum[3] ={ 0.0 };

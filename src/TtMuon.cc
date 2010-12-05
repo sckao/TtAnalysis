@@ -44,19 +44,18 @@
 using namespace edm;
 using namespace std;
 TtMuon::TtMuon(const edm::ParameterSet& iConfig)
-//TtMuon::TtMuon()
 {
    //now do what ever initialization is needed
   muSetup = iConfig.getParameter<std::vector<double> >("muSetup");
+  //muonSrc = iConfig.getParameter<edm::InputTag> ("muonSource");
+  tools        = new TtTools();
 
 }
 
 
 TtMuon::~TtMuon()
 {
-   // do anything here that needs to be done at desctruction time
-   // (e.g. close files, deallocate resources etc.)
-   //if (debug) cout << "[TtMuon Analysis] Destructor called" << endl;
+   delete tools ;
 }
 
 //
@@ -68,6 +67,26 @@ static bool PtDecreasing(const reco::Candidate* s1, const reco::Candidate* s2) {
 static bool PtDecreasing2(ttCandidate s1, ttCandidate s2) { return ( s1.p4.pt() > s2.p4.pt() ); }
 
 // ------------ method called to for each event  ------------
+void TtMuon::PromptMuonScope( Handle<std::vector<pat::Muon> > patMu, HOBJ3* histo ){
+
+   double thePt = 0 ;
+   double theEta = 999 ;
+   double theIso = 999 ;
+   for (std::vector<pat::Muon>::const_iterator m1 = patMu->begin(); m1!= patMu->end(); m1++) {
+       if ( m1->pt() > thePt ) {
+          thePt = m1->pt() ;
+          theEta = m1->eta() ;
+          double emIso = m1->isolationR03().emEt ;
+          double hdIso = m1->isolationR03().hadEt ;
+	  double tkIso = m1->isolationR03().sumPt ;
+	  double RelIso = ( tkIso + emIso + hdIso )/ m1->pt() ;
+          theIso = RelIso ;
+        }
+   }
+   histo->Fill_3d( thePt, theEta, theIso, 0., 0., 0. );
+
+}
+
 void TtMuon::PatMuonScope( Handle<std::vector<pat::Muon> > patMu, const edm::Event& iEvent, HOBJ3* histo ){
 
      // get the beam spot information
@@ -179,7 +198,7 @@ std::vector<const reco::Candidate*> TtMuon::IsoMuonSelection( Handle<std::vector
 
 }
 
-std::vector<ttCandidate> TtMuon::IsoMuonSelection1( Handle<std::vector<pat::Muon> > patMu) {
+std::vector<ttCandidate> TtMuon::IsoMuonSelection1( Handle<std::vector<pat::Muon> > patMu,  Handle<std::vector<pat::Jet> > patJet, Handle<reco::BeamSpot> bSpot_, double PVz, std::vector<ttCandidate>& vetoInfo ) {
 
  std::vector<ttCandidate> isoMuons;
  isoMuons.clear();
@@ -188,57 +207,96 @@ std::vector<ttCandidate> TtMuon::IsoMuonSelection1( Handle<std::vector<pat::Muon
      if ( !(it->isGlobalMuon()) ) continue ;
      double relIso = IsoMuonID( *it );    
 
-     if ( !(it->isTrackerMuon()) ) continue ;
-     reco::TrackRef inTrack = it->innerTrack();
-     int    nHit  = inTrack->numberOfValidHits();
-     double d0    = inTrack->d0();
-     double d0Err = inTrack->d0Error()  ;
-     double ipSig = d0 / d0Err ;
-    
+     bool pass = true ;
+     
+     reco::TrackRef glbTrack = it->globalTrack();
+     double nChi2 = glbTrack->normalizedChi2() ;
+     if ( glbTrack->hitPattern().numberOfValidMuonHits() < 1 ) pass = false ;
+     if ( !it->muonID("GlobalMuonPromptTight") ) pass = false ;
+
      reco::MuonEnergy muE = it->calEnergy() ;
      double muCalE = muE.em + muE.had ;
 
-     bool pass = true ;
-     if ( it->pt()         < muSetup[0]  ) pass = false ;  
-     if ( fabs(it->eta())  > muSetup[1]  ) pass = false ;  
-     if ( relIso           > muSetup[2]  ) pass = false ;  
-     if ( nHit             < muSetup[3]  ) pass = false ;  
-     if ( it->normChi2()   > muSetup[4]  ) pass = false ;
-     if ( fabs(ipSig)      > muSetup[5]  ) pass = false ;
+     // beam Spot information
+     reco::BeamSpot bSpot = *bSpot_ ;
+     //double beamWdthX = bSpot.BeamWidthX() ;
+     //double beamWdthY = bSpot.BeamWidthY() ;
+
+     // dB = d0(Bsp) if set process.patMuons.usePV = False 
+     double d0 = it->dB() ;
+     int  nHit = 0 ; 
+     int  nSiLayer = 0 ;
+     if ( it->isTrackerMuon() ) {
+        reco::TrackRef inTrack = it->innerTrack();
+	nHit  = inTrack->numberOfValidHits();
+	// d0    = inTrack->d0();
+	// double d0Err = inTrack->d0Error()  ;
+	d0    = -1.*inTrack->dxy( bSpot.position() ) ;
+	//double d0Err = sqrt( inTrack->d0Error()*inTrack->d0Error() + 0.5*beamWdthX*beamWdthX + 0.5* beamWdthY*beamWdthY );
+	//double ipSig = d0 / d0Err ;
+        nSiLayer = inTrack->hitPattern().pixelLayersWithMeasurement() ;
+     } else {
+       pass = false ;
+     }
+
+     double dZ = fabs( it->vertex().z() - PVz ) ;
+
+     if ( it->pt()         <= muSetup[0]  ) pass = false ;  
+     if ( fabs(it->eta())  >= muSetup[1]  ) pass = false ;  
+     if ( relIso           >= muSetup[2]  ) pass = false ;  
+     if ( nHit             <  muSetup[3]  ) pass = false ;  
+     if ( nChi2            >= muSetup[4]  ) pass = false ;
+     if ( fabs( d0 )       >= muSetup[5]  ) pass = false ;
+     if ( nSiLayer         <           1  ) pass = false ;
+     if ( it->numberOfMatches() <      2  ) pass = false ;
+     if ( dZ               >= 1           ) pass = false ;
+  
+     //if ( fabs(ipSig)      > muSetup[5]  ) pass = false ;
+
+     //double mindR = 999.;
+     for (std::vector<pat::Jet>::const_iterator j1 = patJet->begin(); j1 != patJet->end(); j1++) {
+
+         if ( !pass ) break ;
+         if ( !j1->isCaloJet() ) continue ;
+         if ( j1->pt() < 30. || fabs(j1->eta()) > 2.4 ||  j1->emEnergyFraction() < 0.01 || j1->jetID().n90Hits <= 1 ) continue; 
+         if ( j1->jetID().fHPD >= 0.98 ) continue;
+         double dR = deltaR( it->p4(), j1->p4() ) ;
+         if ( dR <= 0.3 )  pass = false ;
+         //if ( dR < mindR )  mindR = dR ;
+     }
 
      if ( pass ) {
         ttCandidate ttMuon ;
         ttMuon.p4 = it->p4() ;
         ttMuon.eta = it->eta() ;
         ttMuon.iso =  relIso ;
-        ttMuon.cuts[0] =  d0 ;
-        ttMuon.cuts[1] = it->normChi2() ;
+        ttMuon.cuts[0] = d0 ;
+        ttMuon.cuts[1] = nChi2 ;
         ttMuon.cuts[2] = muCalE  ;
         ttMuon.charge = it->charge() ;
         ttMuon.nHits = nHit ;
         ttMuon.pdgId = it->pdgId() ;
         isoMuons.push_back( ttMuon );
+     } else {
+        if ( it->pt() < 10.  ) continue ;  
+	if ( fabs(it->eta())  > 2.5  ) continue ;  
+	if ( relIso           > 0.2  ) continue ;  
+	ttCandidate vetoMuon ;
+	vetoMuon.p4 = it->p4() ;
+	vetoMuon.eta = it->eta() ;
+	vetoMuon.iso =  relIso ;
+	vetoMuon.cuts[0] = it->dB() ;
+	vetoMuon.cuts[1] = nChi2 ;
+	vetoMuon.cuts[2] = muCalE  ;
+	vetoMuon.charge = it->charge() ;
+	vetoMuon.nHits = it->numberOfValidHits() ;
+	vetoMuon.pdgId = 13 ;
+	vetoInfo.push_back( vetoMuon );
      }
+
  }
  if ( isoMuons.size() > 1 ) sort( isoMuons.begin(), isoMuons.end(), PtDecreasing2 );
  return isoMuons ;
-
-}
-
-std::vector<const reco::Candidate*> TtMuon::nonIsoMuonSelection( Handle<std::vector<pat::Muon> > patMu) {
-
- //std::vector<pat::Muon> isoMuons;
- std::vector<const reco::Candidate*> nonIsoMuons;
- nonIsoMuons.clear();
- for (std::vector<pat::Muon>::const_iterator it = patMu->begin(); it!= patMu->end(); it++) {
-
-     bool isolated = IsoMuonID( *it, muSetup[2] );    
-
-     //if ( isolated && it->pt() > 20. && fabs(it->eta()) < 2.1 && it->isGlobalMuon() ) isoMuons.push_back( &*it );
-     if ( !isolated &&  fabs(it->eta()) < muSetup[1] ) nonIsoMuons.push_back( &*it );
- }
- if ( nonIsoMuons.size() > 1 ) sort( nonIsoMuons.begin(), nonIsoMuons.end(), PtDecreasing );
- return nonIsoMuons ;
 
 }
 
@@ -283,11 +341,16 @@ double TtMuon::IsoMuonID( pat::Muon muon ) {
     std::pair<double, int> emR3 = ecalIso->depositAndCountWithin(0.3);
     std::pair<double, int> hdR3 = hcalIso->depositAndCountWithin(0.3);
     std::pair<double, int> tkR3 = trackIso->depositAndCountWithin(0.3);
-    //double RelIso =  (emR3.first + hdR3.first + tkR3.first)/muon.pt()  ;
+    double RelIso =  (emR3.first + hdR3.first + tkR3.first)/muon.pt()  ;
+
+    double emIso = muon.ecalIso() ;
+    double hdIso = muon.hcalIso() ;
+    double tkIso = muon.trackIso() ;
     */
     double emIso = muon.isolationR03().emEt ;
     double hdIso = muon.isolationR03().hadEt ;
     double tkIso = muon.isolationR03().sumPt ;
+
     double RelIso = ( tkIso + emIso + hdIso )/ muon.pt() ;
     //double RelIso = muon.pt() / ( muon.pt() + emR3.first + hdR3.first + tkR3.first ) ;
     //if ( RelIso >= isoCut ) isolation = true;

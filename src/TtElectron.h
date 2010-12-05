@@ -32,7 +32,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -46,11 +46,17 @@
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
+//#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+//#include "RecoLocalCalo/EcalRecAlgos/interface/EcalSeverityLevelAlgo.h"
+
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h" 
 #include "DataFormats/Candidate/interface/Particle.h" 
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
+
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
+#include "DataFormats/Math/interface/Point3D.h"
 
 #include "TtAnalysisHisto.h"
 #include "TtObjHisto.h"
@@ -77,7 +83,6 @@ class TtElectron {
     ~TtElectron();
 
     /// Perform the real analysis
-    void ElectronTreeFeeder(edm::Handle<std::vector<pat::Electron> > patMu, ObjNtp* jtree, int eventId );
     void ElectronAnalysis(edm::Handle<std::vector<pat::Electron> > patMu, HTOP4* histo4 );
 
     void matchedElectronAnalysis( std::vector<const reco::Candidate*> patMu, HOBJ4* histo4 );
@@ -87,13 +92,14 @@ class TtElectron {
 
     std::vector<const reco::Candidate*> IsoEleSelection( edm::Handle<std::vector<pat::Electron> > patEle );
 
-    std::vector<ttCandidate> IsoEleSelection1( edm::Handle<std::vector<pat::Electron> > patEle );
+    std::vector<ttCandidate> IsoEleSelection1( edm::Handle<std::vector<pat::Electron> > patEle, edm::Handle<reco::BeamSpot> bSpot_, std::vector<ttCandidate>& vetoInfo );
 
     void PatEleScope( edm::Handle<std::vector<pat::Electron> > patEle, HOBJ4* histo ) ;
-   
+
 
    private:
    std::vector<double> eleSetup ;
+   //edm::InputTag electronSrc;
 
 };
 

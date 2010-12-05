@@ -43,10 +43,10 @@
 // constructors and destructor
 using namespace edm;
 using namespace std;
-//TtElectron::TtElectron(const edm::ParameterSet& iConfig)
 TtElectron::TtElectron( const edm::ParameterSet& iConfig )
 {
-  eleSetup = iConfig.getParameter<std::vector<double> >("eleSetup");
+  eleSetup     = iConfig.getParameter<std::vector<double> >("eleSetup");
+  //electronSrc  = iConfig.getParameter<edm::InputTag> ("electronSource");
 
 }
 
@@ -61,21 +61,6 @@ TtElectron::~TtElectron()
 //typedef std::pair<double, pat::Jet> ptjet ;
 
 // ------------ method called to for each event  ------------
-void TtElectron::ElectronTreeFeeder(Handle<std::vector<pat::Electron> > patEle, ObjNtp* eTree, int eventId ) {
-
- int i =0 ;
- for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
-     i++;
-     /*
-     double caloE = it->caloEnergy() ;
-     double HovE = it->hadronicOverEm() ;
-     double emE   = caloE / ( 1. + HovE ) ;
-     double hdE   = emE * HovE  ;
-     */
-     eTree->FillB( eventId, i, -1, it->px(), it->py(), it->pz(), it->energy(),  it->pt() );
- }
-
-}
 
 void TtElectron::ElectronAnalysis(Handle<std::vector<pat::Electron> > patEle, HTOP4* histo4  ) {
 
@@ -260,53 +245,81 @@ void TtElectron::PatEleScope( Handle<std::vector<pat::Electron> > patEle, HOBJ4*
 
 }
 
-std::vector<ttCandidate> TtElectron::IsoEleSelection1( Handle<std::vector<pat::Electron> > patEle) {
+//std::vector<ttCandidate> TtElectron::IsoEleSelection1( Handle<std::vector<pat::Electron> > patEle, Handle<reco::BeamSpot> bSpot_, std::vector<ttCandidate>& vetoInfo, Handle<EcalRecHitCollection> recHits  ) {
+std::vector<ttCandidate> TtElectron::IsoEleSelection1( Handle<std::vector<pat::Electron> > patEle, Handle<reco::BeamSpot> bSpot_, std::vector<ttCandidate>& vetoInfo  ) {
+
+ //const  EcalRecHitCollection *myRecHits = recHits.product();
 
  std::vector<ttCandidate> isoEle;
  isoEle.clear();
  for (std::vector<pat::Electron>::const_iterator it = patEle->begin(); it!= patEle->end(); it++) {
 
-     //const reco::IsoDeposit* AllIso  = it->isoDeposit( pat::TrackerIso );
+     // stupid ECal cleaning
      /*
-     const reco::IsoDeposit* ecalIso  = it->ecalIsoDeposit();
-     const reco::IsoDeposit* hcalIso  = it->hcalIsoDeposit();
-     const reco::IsoDeposit* trackIso = it->trackIsoDeposit();
-     std::pair<double, int> emR = ecalIso->depositAndCountWithin(0.3); 
-     std::pair<double, int> hdR = hcalIso->depositAndCountWithin(0.3); 
-     std::pair<double, int> tkR = trackIso->depositAndCountWithin(0.3); 
-     double emCompensation = ecalIso->depositWithin(0.055);
-     double sumIso = emR.first + hdR.first + tkR.first - emCompensation;
-     double IsoValue = it->et() / (it->et() + sumIso );
+     const reco::CaloClusterPtr    seed =   it->superCluster()->seed();
+     const DetId seedId = seed->seed();
+     EcalSeverityLevelAlgo severity;
+     double myswissCross =  severity.swissCross(seedId, *myRecHits) ;
+     if ( myswissCross > 0.95 ) continue ;
      */
 
-     double emIso = it->dr04EcalRecHitSumEt() ;
-     double hdIso = it->dr04HcalTowerSumEt();
-     double tkIso = it->dr04TkSumPt() ;
+     // Isolation Value
+     double emIso = it->dr03EcalRecHitSumEt() ;
+     double hdIso = it->dr03HcalTowerSumEt();
+     double tkIso = it->dr03TkSumPt() ;
      double IsoValue = (emIso + hdIso+ tkIso) / it->et() ;
-     //double IsoValue =  it->et() / ( it->et() + emIso + hdIso );
       
      double EovP = it->caloEnergy() / it->p() ;
      double HovE = it->hadronicOverEm() ;
 
-     // Isolation Cut
-     if ( it->pt() < eleSetup[0] || fabs( it->eta() ) > eleSetup[1] )  continue ;
-     if ( IsoValue > eleSetup[2] ) continue;     
-     //if ( IsoValue < eleSetup[2] ) continue;     
-     if ( HovE > eleSetup[3] ) continue;
-     if ( EovP < eleSetup[4] || EovP > 1.2 ) continue;
-     //if ( EovP < eleSetup[4]  ) continue;
+     // beam Spot information
+     reco::BeamSpot bSpot = *bSpot_ ;
+     //double beamWdthX = bSpot.BeamWidthX() ;
+     //double beamWdthY = bSpot.BeamWidthY() ;
 
-     ttCandidate ttEle ;
-     ttEle.p4 = it->p4() ;
-     ttEle.eta = it->eta() ;
-     ttEle.iso =  IsoValue ;
-     ttEle.cuts[0] = EovP ;
-     ttEle.cuts[1] = HovE ;
-     ttEle.cuts[2] = it->caloEnergy()  ;
-     ttEle.charge = it->charge() ;
-     ttEle.nHits = 0 ;
-     ttEle.pdgId = it->pdgId() ;
-     isoEle.push_back( ttEle );
+     // d0 Cut , set pass = false in order to use the loose veto 
+     bool pass = false ;
+     reco::GsfTrackRef gsfTrk = it->gsfTrack() ;
+     int nHit = gsfTrk->numberOfValidHits();
+     //double d0 = it->dB() ;
+     double d0 = -1.*gsfTrk->dxy( bSpot.position() );
+     //double d0Err = sqrt( gsfTrk->d0Error()*gsfTrk->d0Error() + 0.5*beamWdthX*beamWdthX + 0.5* beamWdthY*beamWdthY );
+
+     if ( it->pt()          < eleSetup[0]  ) pass = false ;
+     if ( fabs( it->eta() ) > eleSetup[1]  ) pass = false ;
+     if ( IsoValue          > eleSetup[2]  ) pass = false ;     
+     if ( HovE > eleSetup[3]               ) pass = false ;
+     if ( EovP < eleSetup[4] || EovP > 1.2 ) pass = false ;
+     if ( d0   > 0.02                      ) pass = false ;
+
+     if ( pass ) {
+        ttCandidate ttEle ;
+	ttEle.p4 = it->p4() ;
+	ttEle.eta = it->eta() ;
+	ttEle.iso =  IsoValue ;
+	ttEle.cuts[0] = EovP ;
+	ttEle.cuts[1] = HovE ;
+	ttEle.cuts[2] = it->caloEnergy()  ;
+	ttEle.charge = it->charge() ;
+	ttEle.nHits = nHit ;
+	ttEle.pdgId = it->pdgId() ;
+	isoEle.push_back( ttEle );
+     } else {
+        if ( it->pt()          < 15. )  continue ;
+	if ( fabs( it->eta() ) > 2.5 )  continue ;
+	if ( IsoValue          > 0.2 )  continue ;
+        ttCandidate vetoEle ;
+	vetoEle.p4  = it->p4() ;
+	vetoEle.eta = it->eta() ;
+	vetoEle.iso =  IsoValue ;
+	vetoEle.cuts[0] = EovP ;
+	vetoEle.cuts[1] = HovE ;
+	vetoEle.cuts[2] = it->caloEnergy()  ;
+	vetoEle.charge = it->charge() ;
+	vetoEle.nHits = nHit ;
+	vetoEle.pdgId = 11 ;
+	vetoInfo.push_back( vetoEle  ); 
+     }
 
  }
 

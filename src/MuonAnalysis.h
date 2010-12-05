@@ -32,7 +32,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -46,7 +46,7 @@
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 //#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Framework/interface/TriggerNames.h"
+#include "FWCore/Common/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
@@ -85,9 +85,9 @@
 // class decleration
 //
 //class TtEvtSelector;
-class TtElectron;
+//class TtElectron;
 class TtMuon;
-class TtMCMatching;
+//class TtMCMatching;
 
 class MuonAnalysis : public edm::EDAnalyzer {
    public:
@@ -104,20 +104,20 @@ class MuonAnalysis : public edm::EDAnalyzer {
    private:
       // ----------member data ---------------------------
 
-    TtEvtSelector*       evtSelected;
-    TtMCMatching*        MCMatching;
+    //TtEvtSelector*       evtSelected;
+    //TtMCMatching*        MCMatching;
     TtMuon*              ttMuon;
-    TtJet*               ttJet;
-    TtElectron*          ttEle;
+    //TtJet*               ttJet;
+    //TtElectron*          ttEle;
 
     // Histograms
     HOBJ3 *hMu_Iso;
     HOBJ3 *hMu_All;
     HOBJ3 *hMu_MC;
 
-    HOBJ4 *hEl_Iso;
-    HOBJ4 *hEl_All;
-    HOBJ4 *hEl_MC;
+    //HOBJ4 *hEl_Iso;
+    //HOBJ4 *hEl_All;
+    //HOBJ4 *hEl_MC;
 
     // The file which will store the histos
     TFile *theFile;

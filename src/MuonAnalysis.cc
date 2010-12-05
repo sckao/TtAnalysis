@@ -44,13 +44,13 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
-  recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
   muSetup           = iConfig.getParameter<std::vector<double> >("muSetup");
+  //recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
 
   //evtSelected = new TtEvtSelector( iConfig );
   ttMuon      = new TtMuon( iConfig );
-  MCMatching  = new TtMCMatching();
-  ttEle       = new TtElectron( iConfig );
+  //MCMatching  = new TtMCMatching();
+  //ttEle       = new TtElectron( iConfig );
 
   evtIt = 0;
   // Create the root file
@@ -58,15 +58,15 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 
   theFile->mkdir("Muon_All");
   theFile->cd();
-  theFile->mkdir("Ele_Iso");
-  theFile->cd();
-  theFile->mkdir("Ele_All");
-  theFile->cd();
+  //theFile->mkdir("Ele_Iso");
+  //theFile->cd();
+  //theFile->mkdir("Ele_All");
+  //theFile->cd();
 
 
   hMu_All  = new HOBJ3();
-  hEl_All  = new HOBJ4();
-  hEl_Iso  = new HOBJ4();
+  //hEl_All  = new HOBJ4();
+  //hEl_Iso  = new HOBJ4();
 
 }
 
@@ -80,24 +80,24 @@ MuonAnalysis::~MuonAnalysis()
 
    //delete evtSelected;
    delete ttMuon;
-   delete ttEle;
-   delete MCMatching;
+   //delete ttEle;
+   //delete MCMatching;
 
    theFile->cd();
    hMu_All->Write("Muon_All", theFile);
    theFile->cd();
-   hEl_Iso->Write("Ele_Iso",theFile);
-   theFile->cd();
-   hEl_All->Write("Ele_All", theFile);
-   theFile->cd();
+   //hEl_Iso->Write("Ele_Iso",theFile);
+   //theFile->cd();
+   //hEl_All->Write("Ele_All", theFile);
+   //theFile->cd();
 
    if (debug) cout << "  Number of Events"<< evtIt << endl;
    //Release the memory
 
    delete hMu_All;
 
-   delete hEl_All;
-   delete hEl_Iso;
+   //delete hEl_All;
+   //delete hEl_Iso;
 
    //Close the Root file
    theFile->Close();
@@ -117,11 +117,11 @@ void MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    Handle<std::vector<pat::Muon> > muons;
    iEvent.getByLabel(muonSrc, muons);
 
-   Handle<std::vector<reco::Muon> > recomuons;
-   iEvent.getByLabel(recoMuon,"",recomuons);
+   //Handle<std::vector<reco::Muon> > recomuons;
+   //iEvent.getByLabel(recoMuon,"",recomuons);
 
-   Handle<std::vector<pat::Electron> > electrons;
-   iEvent.getByLabel(electronSrc, electrons);
+   //Handle<std::vector<pat::Electron> > electrons;
+   //iEvent.getByLabel(electronSrc, electrons);
 
    Handle<std::vector<reco::GenParticle> > genParticles;
    iEvent.getByLabel(genSrc, genParticles);
@@ -139,11 +139,11 @@ void MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
    //int topo = evtSelected->MCEvtSelection(genParticles);
 
    // 2. Muon Isolation analysis
-   ttMuon->PatMuonScope( muons, iEvent, hMu_All);
+   ttMuon->PromptMuonScope( muons, hMu_All);
 
    //ttMuon->MuonTrigger( muons, triggers );
    //3. Electron Studies
-   ttEle->PatEleScope( electrons, hEl_All );
+   //ttEle->PatEleScope( electrons, hEl_All );
 
    /*
    if ( !isData ) {

@@ -15,7 +15,7 @@
 //
 // Original Author:  Shih-Chuan Kao
 //         Created:  Fri May 16 2008
-// $Id: TtEfficiency.h,v 1.5 2009/01/15 14:58:02 sckao Exp $
+// $Id: TtEfficiency.h,v 1.9 2009/03/07 14:22:25 sckao Exp $
 //
 //
 
@@ -32,7 +32,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"

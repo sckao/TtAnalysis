@@ -33,7 +33,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -44,10 +44,10 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
-//#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
+#include "DataFormats/PatCandidates/interface/TriggerEvent.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Framework/interface/TriggerNames.h"
-
+#include "FWCore/Common/interface/TriggerNames.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h" 
@@ -55,6 +55,8 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
+
+//#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 
 #include "TtAnalysisHisto.h"
 #include "TtAnalysisNtuple.h"
@@ -84,15 +86,15 @@ class TtEvtSelector {
 
     /// Perform the real analysis
 
-    int eventSelection(int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, std::vector<double>* bDisList = NULL );
-
-    int eventSelection(int topo, std::vector<ttCandidate>& isoLep,  std::vector<ttCandidate>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType );
+    int eventSelection(int topo, std::vector<ttCandidate>& isoLep,  std::vector<ttCandidate>& selectedJets, std::vector<LorentzVector>& metp4, std::vector<ttCandidate>& vetoInfo, const edm::Event& iEvent, string MetType );
 
     int eventSelection( int topo, double JetEtCut, const edm::Event& iEvent, string MetType );
 
     int MCEvtSelection( edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
-    void TriggerStudy( edm::Handle <edm::TriggerResults> triggers, int topo, int setup, HTOP9* histo9 );
+    bool VertexSelection( const edm::Event& iEvent, std::vector<double>& pvInfo ) ;
+
+    bool TriggerSelection( const edm::Event& iEvent, string trigPathName );
 
    private:
 
@@ -102,11 +104,19 @@ class TtEvtSelector {
    TtMET*        ttMET;
    TtMCMatching* mcMatch;
 
+   double pvZ ;
+   double pvRho ;
+   double pvNDF ;
    std::vector<double> jetSetup;
+   edm::InputTag pvSrc;
+   edm::InputTag beamSpotSrc;
    edm::InputTag muonSrc;
    edm::InputTag electronSrc;
    edm::InputTag metSrc;
    edm::InputTag jetSrc;
+   edm::InputTag trigSrc;
+   //edm::InputTag ecalRecHitSrc;
+  
    edm::InputTag recoMetSrc;
    string bTagAlgo;
 

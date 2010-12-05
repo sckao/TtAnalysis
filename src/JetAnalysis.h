@@ -32,7 +32,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -46,7 +46,7 @@
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 //#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Framework/interface/TriggerNames.h"
+#include "FWCore/Common/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 #include "DataFormats/CaloTowers/interface/CaloTower.h"
@@ -140,7 +140,7 @@ class JetAnalysis : public edm::EDAnalyzer {
     edm::InputTag metSrc;
     edm::InputTag genJetSrc;
     edm::InputTag genSrc;
-    edm::InputTag caloSrc;
+    //edm::InputTag caloSrc;
     string bTagAlgo;
 
 };

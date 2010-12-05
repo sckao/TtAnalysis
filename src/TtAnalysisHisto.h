@@ -225,12 +225,8 @@ public:
     hSumEt_MET= new TH2F("hSumEt_MET","sumEt vs MET ", 1500, 0,1500, 500, 0,500);
 
     hResPAT = new TH1F("ResPAT","PAT MET Resolution", 100, -5.,5.);
-    hResCal = new TH1F("ResCal","Cal MET Resolution", 100, -5.,5.);
-    hResCor = new TH1F("ResCor","Cor MET Resolution", 100, -5.,5.);
     hResTC  = new TH1F("ResTC", " TC MET Resolution", 100, -5.,5.);
     hPhiPAT = new TH1F("PhiPAT","PAT Phi Resolution", 100, -5.,5.);
-    hPhiCal = new TH1F("PhiCal","Cal Phi Resolution", 100, -5.,5.);
-    hPhiCor = new TH1F("PhiCor","Cor Phi Resolution", 100, -5.,5.);
     hPhiTC  = new TH1F("PhiTC" ," TC Phi Resolution", 100, -5.,5.);
 
     tc_patMET = new TH2F("tc_patMET"," tcMET vs patMet ",  400, 0,400, 400, 0,400);
@@ -253,12 +249,8 @@ public:
     delete hemfMET;
     delete hSumEt_MET;
     delete hResPAT;
-    delete hResCal;
-    delete hResCor;
     delete hResTC;
     delete hPhiPAT;
-    delete hPhiCal;
-    delete hPhiCor;
     delete hPhiTC;
 
     delete MET_dPhi0;
@@ -278,14 +270,10 @@ public:
     hSumEt_MET->Fill(sumEt, met);
  }
 
- void Fill2b(double respat, double rescal, double rescor, double restc, double phipat, double phical, double phicor, double phitc ){
+ void Fill2b(double respat, double restc, double phipat, double phitc ){
     hResPAT->Fill(respat);
-    hResCal->Fill(rescal);
-    hResCor->Fill(rescor);
     hResTC->Fill(restc);
     hPhiPAT->Fill(phipat);
-    hPhiCal->Fill(phical);
-    hPhiCor->Fill(phicor);
     hPhiTC->Fill(phitc);
  }
 
@@ -324,12 +312,8 @@ public:
     hSumEt_MET->Write();
 
     hResPAT->Write();
-    hResCal->Write();
-    hResCor->Write();
     hResTC->Write();
     hPhiPAT->Write();
-    hPhiCal->Write();
-    hPhiCor->Write();
     hPhiTC->Write();
 
     tc_patMET->Write();
@@ -350,12 +334,8 @@ public:
   TH2F *hSumEt_MET;
 
   TH1F *hResPAT;
-  TH1F *hResCal;
-  TH1F *hResCor;
   TH1F *hResTC;
   TH1F *hPhiPAT;
-  TH1F *hPhiCal;
-  TH1F *hPhiCor;
   TH1F *hPhiTC;
 
   TH2F *tc_patMET;
@@ -619,9 +599,6 @@ public:
     hEta     = new TH2F("hEta"," MC(X) vs reco(Y) , eta distribution for bjets of semiTt ",71,-3.55,3.55,71,-3.55,3.55);
     hPhi     = new TH2F("hPhi"," MC(X) vs reco(Y) , phi distribution for bjets of semiTt ",63,-3.15,3.15,71,-3.15,3.15);
     Pt_Resol = new TH2F("hPt_Resol", " Pt MC(X) vs Resol_Pt(Y) distribution for bjets of semiTt",60,0,300, 200,-0.995,1.005 );
-    // 
-    dR_RelPtg = new TH2F("dR_RelPtg","dR vs RelPt for b and mu - gen ",200, 0.,5., 500, 0.,50. );  
-    dR_RelPtr = new TH2F("dR_RelPtr","dR vs RelPt for b and mu - reco after matching ",200, 0.,5., 500, 0.,50. );  
  } 
 
  /// Destructor
@@ -634,17 +611,10 @@ public:
     delete hPhi;
     delete Pt_Resol;
 
-    delete dR_RelPtg;
-    delete dR_RelPtr;
  }
 
  void Fill7d( double phi, double d0 ){
     bDis_phi_d0->Fill( phi, d0 );
- }
-
- void Fill7e( double dR, double RelPt, double gdR, double gRelPt) {
-    dR_RelPtr->Fill(dR, RelPt);
-    dR_RelPtg->Fill(gdR, gRelPt);
  }
 
  void Fill7h(double eta_mc, double phi_mc, double eta_rc, double phi_rc, double pt, double ptResol) {
@@ -668,8 +638,6 @@ public:
     hPhi->Write();
     Pt_Resol->Write();
   
-    dR_RelPtg->Write();
-    dR_RelPtr->Write();
  }
 
   TH2F *bDis_dR_RelPt;
@@ -678,9 +646,6 @@ public:
   TH2F *hEta;
   TH2F *hPhi;
   TH2F *Pt_Resol;
-
-  TH2F *dR_RelPtg;
-  TH2F *dR_RelPtr;
 
 };
 

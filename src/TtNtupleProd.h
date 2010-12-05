@@ -33,7 +33,7 @@
 //#include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
 #include "DataFormats/PatCandidates/interface/Particle.h"
@@ -45,8 +45,8 @@
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 //#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
-#include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Framework/interface/TriggerNames.h"
+//#include "DataFormats/Common/interface/TriggerResults.h"
+//#include "FWCore/Framework/interface/TriggerNames.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h" 
 #include "DataFormats/JetReco/interface/GenJet.h"
@@ -108,7 +108,6 @@ class TtNtupleProd : public edm::EDAnalyzer {
 
     // Switch for debug output
     bool debug;
-    bool trigOn;
     bool isData;
     int  evtIt;
     int  nJets ;

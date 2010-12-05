@@ -79,36 +79,6 @@ static bool PtDecreasing(const reco::Candidate* s1, const reco::Candidate* s2) {
 static bool PidDecreasing( jmatch s1, jmatch s2) { return ( s1.MomIdx > s2.MomIdx ); }
 static bool dRIncreasing( IDPair s1, IDPair s2) { return ( s1.second < s2.second ); }
 
-void TtMCMatching::MCTreeFeeder(Handle<std::vector<reco::GenParticle> > genParticles , ObjNtp* genTree, int evtId ){
-
-   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
-
-       // record top
-       if ( abs((*it).pdgId()) == 6) genTree->FillB( evtId, it->pdgId(), -1, it->px(), it->py(), it->pz(), it->energy(), it->pt() );
-
-       // record W
-       if ( abs((*it).pdgId()) == 24) {
-          for (size_t q=0; q< (*it).numberOfMothers(); q++) {
-              const reco::Candidate *mom = (*it).mother(q) ;
-              if ( abs(mom->pdgId()) != 6 ) continue;
-              genTree->FillB( evtId, it->pdgId(), -1, it->px(), it->py(), it->pz(), it->energy(), it->pt() );
-          }
-       }
-       // record b or w-decays
-       bool wjParton = ( abs((*it).pdgId()) < 6 ) ? true : false ;
-       bool wLepton = ( abs((*it).pdgId()) < 17 && abs((*it).pdgId()) > 10 ) ? true : false ;
-       if ( wjParton || wLepton ) {
-          for (size_t q=0; q< (*it).numberOfMothers(); q++) {
-              const reco::Candidate *mom = (*it).mother(q) ;
-              bool fromT = ( abs(mom->pdgId()) ==  6 ) ? true : false ;
-              bool fromW = ( abs(mom->pdgId()) == 24 ) ? true : false ;
-              if ( fromT || fromW ) genTree->FillB( evtId, it->pdgId(), -1, it->px(), it->py(), it->pz(), it->energy(), it->pt() );
-          }
-       }
-   } 
-       
-} 
-
 std::vector<const reco::Candidate*> TtMCMatching::GenTtCollection(Handle<std::vector<reco::GenParticle> > genParticles ){
 
    std::vector<const reco::Candidate*> GenCollects ;
@@ -639,57 +609,6 @@ std::vector<const reco::Candidate*> TtMCMatching::ttPartons( Handle<std::vector<
    return targets ;
 }
 */
-
-std::vector<const reco::Candidate*> TtMCMatching::matchMuonfromB( Handle<std::vector<reco::GenParticle> > genParticles,
-                std::vector<const reco::Candidate*> jets, std::vector<const reco::Candidate*> theMuons ,HTOP7* histo7, bool fillhisto ){
-
-   // Accumulate the candidates of leptonic dauaghters from B
-   std::vector<const reco::Candidate*> theB = ttDecay( genParticles, 5 ) ;
-
-   std::vector<const reco::Candidate*> lepB ;
-   std::vector<const reco::Candidate*> bmuon ;
-   for( size_t i=0; i< theB.size(); i++ ) {
-      std::vector<const reco::Candidate*> bmu = genMuonFromB( genParticles, theB[i] );  
-      if( bmu.size() > 0 ) {
-        bmuon.push_back( bmu[0] );
-        lepB.push_back( theB[i] );
-      }
-   }
-  
-   // find the matched muon passed isolation cut
-   std::vector<const reco::Candidate*> matchedMuon ;
-   for (size_t i=0; i< bmuon.size(); i++) {
-
-      int usedMuon = -1;
-      int usedB    = -1;
-
-      // matching selected muons with parton
-      double dR1 = 9.;
-      double ptRes1 = 1.;
-      for (size_t j=0; j < theMuons.size(); j++ ) {
-          bool matched = matchingGeneral( bmuon[i]->p4(), theMuons[j]->p4(), dR1, ptRes1 );
-          if ( matched ) usedMuon = static_cast<int>(j);
-      }
-      // matched b parton with jets
-      double dR2 = 9.;
-      double ptRes2 = 1.;
-      for (size_t j=0; j < jets.size(); j++ ) {
-          bool matched = matchingGeneral( theB[i]->p4(), jets[j]->p4(), dR2, ptRes2 );
-          if ( matched ) usedB = static_cast<int>(j);
-      }
-      // 
-      if ( usedMuon != -1 && usedB != -1 ) {
-         double dR     = tools->getdR( theMuons[usedMuon]->p4(), jets[usedB]->p4() );
-         double RelPt  = tools->getRelPt( theMuons[usedMuon]->p4(), jets[usedB]->p4() );
-         double gdR    = tools->getdR( bmuon[i]->p4(), lepB[i]->p4() );
-         double gRelPt = tools->getRelPt( bmuon[i]->p4(), lepB[i]->p4() );
-         if (fillhisto) histo7->Fill7e( dR, RelPt, gdR, gRelPt );
-         matchedMuon.push_back( theMuons[usedMuon] );
-      }
-   }
-
-   return matchedMuon ;
-}
 
 // B quarks have hadronic daughters => no directory link btw muon & b  
 std::vector<const reco::Candidate*> TtMCMatching::genMuonFromB( Handle<std::vector<reco::GenParticle> > genParticles, const reco::Candidate* theB){

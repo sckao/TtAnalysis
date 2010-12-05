@@ -36,6 +36,9 @@ public:
     solTree2->Branch("jpz"   ,&jpz,    "jpz[nJ]/D");
     solTree2->Branch("jE"    ,&jE,     "jE[nJ]/D");
     solTree2->Branch("bTh"   ,&bTh,    "bTh[nJ]/D");
+    solTree2->Branch("emF"   ,&emF,    "emF[nJ]/D");
+    solTree2->Branch("EvH"   ,&EvH,    "EvH[nJ]/D");
+    solTree2->Branch("n90"   ,&n90,    "n90[nJ]/I");
 
     solTree2->Branch("nNu"    ,&nNu,   "nNu/I");
     solTree2->Branch("npx"    ,&npx,   "npx[nNu]/D");
@@ -48,6 +51,22 @@ public:
     solTree2->Branch("mpy"    ,&mpy,   "mpy[nMu]/D");
     solTree2->Branch("mpz"    ,&mpz,   "mpz[nMu]/D");
     solTree2->Branch("mE"     ,&mE,    "mE[nMu]/D");
+    solTree2->Branch("d0"     ,&d0,    "d0[nMu]/D");
+    solTree2->Branch("X2"     ,&X2,    "X2[nMu]/D");
+    solTree2->Branch("calE"   ,&calE,  "calE[nMu]/D");
+    solTree2->Branch("mIso"   ,&mIso,  "mIso[nMu]/D");
+    solTree2->Branch("nHits"  ,&nHits, "nHits[nMu]/I");
+
+    solTree2->Branch("pvZ"    ,&pvZ,   "pvZ/D");
+    solTree2->Branch("pvRho"  ,&pvRho, "pvRho/D");
+    solTree2->Branch("pvNDF"  ,&pvNDF, "pvNDF/D");
+
+    solTree2->Branch("ePt"    ,&ePt,   "ePt/D");
+    solTree2->Branch("eEta"   ,&eEta,  "eEta/D");
+    solTree2->Branch("eIso"   ,&eIso,  "eIso/D");
+    solTree2->Branch("eHovE"  ,&eHovE, "eHovE/D");
+    solTree2->Branch("eEovP"  ,&eEovP, "eEovP/D");
+
  } 
 
  /// Destructor
@@ -55,45 +74,15 @@ public:
     delete solTree2;
  }
 
- 
- void FillB( int eventId, vector<double> bThV, vector<const reco::Candidate*> jp4V, vector<LorentzVector> np4V,
-                          vector<const reco::Candidate*> mp4V ) {
+ void FillB1( int eventId, vector<ttCandidate> jp4V, vector<LorentzVector> np4V, vector<ttCandidate> mp4V, vector<double> pv, vector<ttCandidate> vetoInfo ) {
       evtId   = eventId ;
 
       nJ      = jp4V.size() ;
       for (int i = 0; i < nJ; i++) {
-          bTh[i] = bThV[i] ;
-          jpx[i] = jp4V[i]->px() ;
-          jpy[i] = jp4V[i]->py() ;
-          jpz[i] = jp4V[i]->pz() ;
-          jE[i]  = jp4V[i]->energy()  ;
-      }
-
-      nNu      = np4V.size() ;
-      for (int i = 0; i < nNu; i++) {
-          npx[i] = np4V[i].Px() ;
-          npy[i] = np4V[i].Py() ;
-          npz[i] = np4V[i].Pz() ;
-          nE[i]  = np4V[i].E()  ;
-      }
-
-      nMu      = mp4V.size() ;
-      for (int i = 0; i < nMu; i++) {
-          mpx[i] = mp4V[i]->px() ;
-          mpy[i] = mp4V[i]->py() ;
-          mpz[i] = mp4V[i]->pz() ;
-          mE[i]  = mp4V[i]->energy()  ;
-      }
-
-      solTree2->Fill();
- }
-
- void FillB1( int eventId, vector<ttCandidate> jp4V, vector<LorentzVector> np4V, vector<ttCandidate> mp4V ) {
-      evtId   = eventId ;
-
-      nJ      = jp4V.size() ;
-      for (int i = 0; i < nJ; i++) {
+          n90[i] = jp4V[i].nHits ;
           bTh[i] = jp4V[i].cuts[0] ;
+          emF[i] = jp4V[i].cuts[1] ;
+          EvH[i] = jp4V[i].cuts[2] ;
           jpx[i] = jp4V[i].p4.Px() ;
           jpy[i] = jp4V[i].p4.Py() ;
           jpz[i] = jp4V[i].p4.Pz() ;
@@ -108,13 +97,47 @@ public:
           nE[i]  = np4V[i].E()  ;
       }
 
-      nMu      = mp4V.size() ;
-      for (int i = 0; i < nMu; i++) {
+      int nGoodMu  = mp4V.size() ;
+      for (int i = 0; i < nGoodMu; i++) {
           mpx[i] = mp4V[i].p4.Px() ;
           mpy[i] = mp4V[i].p4.Py() ;
           mpz[i] = mp4V[i].p4.Pz() ;
           mE[i]  = mp4V[i].p4.E()  ;
+          mIso[i]  = mp4V[i].iso   ;
+          nHits[i] = mp4V[i].nHits ;
+          d0[i]    = mp4V[i].cuts[0] ;
+          X2[i]    = mp4V[i].cuts[1] ;
+          calE[i]  = mp4V[i].cuts[2] ;
       }
+
+      pvZ   = pv[0] ;
+      pvRho = pv[1] ;
+      pvNDF = pv[2] ;
+
+      int m = 0 ;
+      for (size_t i =0; i < vetoInfo.size() ; i++ ) {
+          if ( vetoInfo[i].pdgId == 11 ) { 
+             ePt   = vetoInfo[i].p4.Pt() ;
+	     eEta  = vetoInfo[i].eta ;
+	     eIso  = vetoInfo[i].iso ;
+	     eEovP = vetoInfo[i].cuts[0] ;
+	     eHovE = vetoInfo[i].cuts[1] ;
+          }
+          if ( vetoInfo[i].pdgId == 13 ) {
+             if ( m > 3 ) continue ;
+             mpx[ nGoodMu + m ] = vetoInfo[i].p4.Px() ;
+	     mpy[ nGoodMu + m ] = vetoInfo[i].p4.Py() ;
+	     mpz[ nGoodMu + m ] = vetoInfo[i].p4.Pz() ;
+	     mE[ nGoodMu + m ]  = vetoInfo[i].p4.E()  ;
+	     mIso[ nGoodMu + m ]  = vetoInfo[i].iso   ;
+	     nHits[ nGoodMu + m ] = vetoInfo[i].nHits ;
+	     d0[ nGoodMu + m ]    = vetoInfo[i].cuts[0] ;
+	     X2[ nGoodMu + m ]    = vetoInfo[i].cuts[1] ;
+	     calE[ nGoodMu + m ]  = vetoInfo[i].cuts[2] ;
+             m++ ;
+          }
+      }
+      nMu = nGoodMu + m ;
 
       solTree2->Fill();
  }
@@ -129,27 +152,46 @@ public:
 private:
 
      static const int maxCount  = 15 ;
-     static const int maxCount1 = 2 ;
+     static const int maxCount1 = 5 ;
 
      int evtId;
      int nJ ;
-     double bTh[maxCount];
      double jpx[maxCount];
      double jpy[maxCount];
      double jpz[maxCount];
      double jE[maxCount];
+     double bTh[maxCount];
+     double EvH[maxCount];
+     double emF[maxCount];
+     int    n90[maxCount];
 
      int nNu;
-     double npx[maxCount1];
-     double npy[maxCount1];
-     double npz[maxCount1];
-     double nE[maxCount1];
+     double npx[2];
+     double npy[2];
+     double npz[2];
+     double nE[2];
 
      int nMu;
      double mpx[maxCount1];
      double mpy[maxCount1];
      double mpz[maxCount1];
      double mE[maxCount1];
+     double d0[maxCount1];
+     double X2[maxCount1];
+     double calE[maxCount1];
+     double mIso[maxCount1];
+     int    nHits[maxCount1];
+
+     double pvZ ;
+     double pvRho ;
+     double pvNDF ;
+
+     double ePt  ;
+     double eEta ;
+     double eIso ;
+     double eEovP ;
+     double eHovE ;
+
 };
  
 // new solution tree

@@ -34,14 +34,11 @@ TtNtupleProd::TtNtupleProd(const edm::ParameterSet& iConfig)
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
-  trigOn            = iConfig.getUntrackedParameter<bool>   ("trigOn");
   isData            = iConfig.getUntrackedParameter<bool>   ("isData");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   genSrc            = iConfig.getParameter<edm::InputTag>   ("genParticles"); 
   evtIt             = iConfig.getUntrackedParameter<int> ("eventId");
   nJets             = iConfig.getUntrackedParameter<int> ("numberOfJets");
-  //triggerSrc        = iConfig.getParameter<edm::InputTag> ("triggerSource");
-  
 
   // Create the root file
   theFile     = new TFile(rootFileName.c_str(), "RECREATE");
@@ -117,7 +114,6 @@ void TtNtupleProd::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       Handle<std::vector<reco::GenParticle> > genParticles;
       iEvent.getByLabel(genSrc, genParticles);
       //cout<<" 2. GEN "<<endl;
-      //MCMatching->MCTreeFeeder( genParticles, ntuples.genTree, evtIt );
       //cout<<" 3. MC Matching "<<endl;
       semiSol->MCBuildSemiTt(iEvent, 1, evtIt, &ntuples );
    }

@@ -45,25 +45,34 @@ TtSemiEventSolution::TtSemiEventSolution(const edm::ParameterSet& iConfig ): ini
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
-  genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
+  genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles");
+  trigTag           = iConfig.getUntrackedParameter<string> ("trigTag");
   //algo              = iConfig.getUntrackedParameter<string> ("recoAlgo");
   
   evtSelected = new TtEvtSelector( iConfig );
   MCMatching  = new TtMCMatching();
   ttMuon      = new TtMuon( iConfig );
+  ttEle       = new TtElectron( iConfig );
   ttMET       = new TtMET( iConfig );
   ttJet       = new TtJet( iConfig );
   tools       = new TtTools();
- 
+
+  nGoodJet = -1 ;
+
+  for (int i = 0; i< 9; i++) { counter[i] = 0 ; }
+
 }
 
 
 TtSemiEventSolution::~TtSemiEventSolution()
 {
- 
+
+   cout <<" hltMu= "<<counter[0] <<" Vtx = "<<counter[1] <<" 1IsoM= "<<counter[2] <<" LM= "<<counter[3] <<" Le= "<<counter[4] <<" 1J= "<<counter[5] <<" 2J= "<<counter[6] <<" 3J= "<<counter[7] <<" 4J= "<<counter[8] <<endl;
+
    delete evtSelected;
    delete MCMatching;
    delete ttMuon;
+   delete ttEle;
    delete ttMET;
    delete ttJet;
    delete tools;
@@ -86,14 +95,80 @@ void TtSemiEventSolution::RecordSolutions( const edm::Event& iEvent, int topo, i
    isoLep.clear();
    selectedJets.clear();
    solvedMetP4.clear();
-   
+   pvInfo.clear();
+   vetoInfo.clear();
+
+   // temperary selection for hitfit people
+   /*
+   bool hitfit = false ;
+   if ( iEvent.id().run() == 139786 && iEvent.id().event()== 30766631 )  hitfit = true; 
+   if ( iEvent.id().run() == 140124 && iEvent.id().event()== 1749068 )  hitfit = true; 
+   if ( iEvent.id().run() == 141960 && iEvent.id().event()== 36380903 )  hitfit = true; 
+   if ( iEvent.id().run() == 142137 && iEvent.id().event()== 115049658 )  hitfit = true; 
+   if ( iEvent.id().run() == 142524 && iEvent.id().event()== 119786558 )  hitfit = true; 
+   if ( iEvent.id().run() == 142528 && iEvent.id().event()== 528865367 )  hitfit = true; 
+   evtId =  iEvent.id().event() ;
+   */
+
    // 2. Event Selection
-   pass = evtSelected->eventSelection( topo, isoLep, selectedJets, solvedMetP4, iEvent, "patMet" );
+   //bool passtrig = evtSelected->TriggerSelection( iEvent, "HLT_Mu15v1" ); 
+   bool passtrig = evtSelected->TriggerSelection( iEvent, trigTag ); 
+   //bool passtrig = true ; 
+
+   bool goodVtx = evtSelected->VertexSelection( iEvent, pvInfo ) ;
+
+   nGoodJet = evtSelected->eventSelection( topo, isoLep, selectedJets, solvedMetP4, vetoInfo, iEvent, "patMet" );
+
    //cout<<" event selected w/ jet "<<selectedJets.size()<<"  w/ lepton "<< isoLep.size() <<endl;
+   int nLmu = 0;
+   int nLel = 0;
+   for ( size_t j=0 ; j< vetoInfo.size(); j++ ) {
+       if ( vetoInfo[j].pdgId == 11 ) nLel++;
+       if ( vetoInfo[j].pdgId == 13 ) nLmu++;
+   }
 
-   // 3. Reconstruct leptonic W 
-   if ( pass == njets ) {
+   //int failIdx = 0 ;
+   // sync exerc
+   
+   if ( passtrig )                                                     counter[0]++ ;
+   if ( passtrig && goodVtx  )                                         counter[1]++ ;
+   if ( passtrig && goodVtx && nGoodJet > -1 )                         counter[2]++ ;
+   if ( passtrig && goodVtx && nGoodJet > -1 && nLmu == 0 )            counter[3]++ ;
+   if ( passtrig && goodVtx && nGoodJet > -1 && vetoInfo.size() == 0 ) counter[4]++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 1 && vetoInfo.size() == 0 ) counter[5]++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 2 && vetoInfo.size() == 0 ) counter[6]++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 3 && vetoInfo.size() == 0 ) counter[7]++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 4 && vetoInfo.size() == 0 ) counter[8]++ ;
+   
+   /*
+   if ( passtrig )                                                     failIdx++ ;
+   if ( passtrig && goodVtx  )                                         failIdx++ ;
+   if ( passtrig && goodVtx && nGoodJet > -1 )                         failIdx++ ;
+   if ( passtrig && goodVtx && nGoodJet > -1 && nLmu == 0 )            failIdx++ ;
+   if ( passtrig && goodVtx && nGoodJet > -1 && vetoInfo.size() == 0 ) failIdx++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 1 && vetoInfo.size() == 0 ) failIdx++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 2 && vetoInfo.size() == 0 ) failIdx++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 3 && vetoInfo.size() == 0 ) failIdx++ ;
+   if ( passtrig && goodVtx && nGoodJet >= 4 && vetoInfo.size() == 0 ) failIdx++ ;
+   */
+    
+   //double isoLepPt = -1 ;
+   //if ( isoLep.size() > 0 ) isoLepPt = isoLep[0].p4.Pt() ;
+   //cout<< iEvent.id().run() <<" : "<<iEvent.id().event()<<" : "<< iEvent.id().luminosityBlock() <<" : "<< isoLepPt <<
+   //" : "<< failIdx+1 << endl;
 
+   // selection for 2 jet sample
+   bool getEvent = ( nGoodJet >= njets ) ? true : false ;
+   if ( njets == 2 ) getEvent = ( nGoodJet == njets ) ? true : false ;
+
+   if ( !goodVtx ) getEvent = false ;
+   if ( !passtrig ) getEvent = false ;
+   if ( vetoInfo.size() >  0 ) getEvent = false ;
+
+   if ( getEvent ) {
+
+      //cout<< iEvent.id().run() <<" : "<<iEvent.id().event()<<" : "<< iEvent.id().luminosityBlock() <<" : "<< isoLep[0].p4.Pt() <<endl;
+      // 3. Reconstruct leptonic W 
      //cout<<"    -> "<<njets<<" jets event " <<endl ;
      std::vector<iReco> lepWs;
      bool leptonic = recoW( isoLep[0], solvedMetP4[0], lepWs );
@@ -102,7 +177,7 @@ void TtSemiEventSolution::RecordSolutions( const edm::Event& iEvent, int topo, i
          solvedMetP4.push_back( lepWs[i].q4v[1].second ) ;
      }
      // save the events without considering neutrino pz solution => events with only 1 neutrino pz( = 0 )  
-     solTree->FillB1( evtId, selectedJets, solvedMetP4, isoLep );
+     solTree->FillB1( evtId, selectedJets, solvedMetP4, isoLep, pvInfo, vetoInfo );
 
    }
    //cout<<" ------ reco finished --------------"<<endl;
@@ -124,7 +199,7 @@ void TtSemiEventSolution::MCBuildSemiTt( const edm::Event& iEvent, int topoIdx, 
    mcWJets.clear();
    mcbJets.clear();
 
-   if ( pass < 4 ) return;
+   if ( nGoodJet < 4 ) return;
 
    std::vector<const reco::Candidate*> genCollects = MCMatching->GenTtCollection( genParticles ) ;
 

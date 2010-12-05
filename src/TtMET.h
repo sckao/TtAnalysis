@@ -32,7 +32,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -86,8 +86,8 @@ class TtMET {
     LorentzVector METfromNeutrino( edm::Handle<std::vector<reco::GenParticle> > genParticles );
     LorentzVector METfromNeutrino( const edm::Event & iEvent );
 
-    LorentzVector CaloMET( edm::Handle<CaloTowerCollection> calotowers );
-    LorentzVector CaloMET( const edm::Event & iEvent );
+    //LorentzVector CaloMET( edm::Handle<CaloTowerCollection> calotowers );
+    //LorentzVector CaloMET( const edm::Event & iEvent );
 
     LorentzVector METfromObjects( std::vector<const reco::Candidate*> theLep, std::vector<const reco::Candidate*> theJets );
     LorentzVector METfromObjects( std::vector<ttCandidate>& theLep, std::vector<ttCandidate>& theJets );
@@ -104,7 +104,7 @@ class TtMET {
     TtMuon*   ttMuon;
     TtTools*  tools;
 
-    edm::InputTag caloSrc;
+    //edm::InputTag caloSrc;
     edm::InputTag muonSrc;
     edm::InputTag recoMetSrc;
     edm::InputTag metSrc;

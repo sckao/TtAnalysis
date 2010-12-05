@@ -32,7 +32,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -108,14 +108,16 @@ class TtSemiEventSolution {
     TtEvtSelector* evtSelected;
     TtMCMatching*  MCMatching;
     TtMuon*        ttMuon;
+    TtElectron*    ttEle;
     TtMET*         ttMET;
     TtJet*         ttJet;
     TtTools*       tools;
 
-    std::vector<iReco> semiTt;
     std::vector<ttCandidate> isoLep;
     std::vector<ttCandidate> selectedJets;
     std::vector<LorentzVector> solvedMetP4;
+    std::vector<double> pvInfo ;
+    std::vector<ttCandidate> vetoInfo ;
 
     std::vector<ttCandidate> mcLep;
     std::vector<ttCandidate> mcWJets ;
@@ -124,14 +126,15 @@ class TtSemiEventSolution {
     int ini_Id;
     int ent_Id;
     int ent_sz;
-    int pass;
+    int counter[9] ;
+    int nGoodJet ;
 
     // variables for py config
     bool debug;
     std::vector<double> jetSetup;
 
     //std::string recoMuon;
-    std::string algo;
+    std::string trigTag;
     edm::InputTag muonSrc;
     edm::InputTag electronSrc;
     edm::InputTag metSrc;

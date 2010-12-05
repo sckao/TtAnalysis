@@ -36,7 +36,6 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
 {
   //now do what ever initialization is needed
   debug             = iConfig.getUntrackedParameter<bool>   ("debug");
-  trigOn            = iConfig.getUntrackedParameter<bool>   ("trigOn");
   rootFileName      = iConfig.getUntrackedParameter<string> ("rootFileName");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
@@ -46,10 +45,9 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   genJetSrc         = iConfig.getParameter<edm::InputTag> ("genJetSource");
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles"); 
   recoMuon          = iConfig.getUntrackedParameter<string> ("recoMuons");
-  caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
-  triggerSrc        = iConfig.getParameter<edm::InputTag> ("triggerSource");
+  //caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
+  triggerSrc        = iConfig.getParameter<edm::InputTag> ("trigSource");
   //recoJet           = iConfig.getUntrackedParameter<string> ("recoJets");
-  
 
   // Create the root file
   theFile = new TFile(rootFileName.c_str(), "RECREATE");
@@ -193,12 +191,8 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    Handle<std::vector<reco::GenJet> > genJets;
    iEvent.getByLabel(genJetSrc, genJets);
 
-   Handle<CaloTowerCollection>  caloTowers;
-   iEvent.getByLabel(caloSrc, caloTowers);
-
-   // Handle<std::vector<pat::TriggerPrimitive> >  triggers;
-   // Handle<edm::TriggerResults>  triggers;
-   // iEvent.getByLabel(triggerSrc, triggers);
+   //Handle<CaloTowerCollection>  caloTowers;
+   //iEvent.getByLabel(caloSrc, caloTowers);
 
    //cout<<" ***** new Event start ***** "<<endl;
    evtIt++;
@@ -214,16 +208,11 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    //  And calculate the selection efficiency
    bool passSelect = ( jpass > 3 ) ? true : false ;
    ttEff->EventEfficiency( topo, passSelect, histos.hTop );
+
    // check generator process 
    //MCMatching->CheckGenParticle( genParticles );
 
    // 1. Build semi-mu tt events and compare the result
-   // 2. Trigger studies of semi-Tt events
-   if ( trigOn ) {
-      Handle<edm::TriggerResults>  triggers;
-      iEvent.getByLabel(triggerSrc, triggers);
-      evtSelected->TriggerStudy( triggers, topo, 3 ,histos.hTop );
-   }
  
    //3. Muon and Leptonic W analysis
    std::vector<const reco::Candidate*> isoMu   = ttMuon->IsoMuonSelection( muons );
@@ -235,13 +224,7 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    std::vector<const reco::Candidate*> genCollects = MCMatching->GenTtCollection( genParticles ) ;
 
-   std::vector<const reco::Candidate*> nonIsoMu = ttMuon->nonIsoMuonSelection(muons);
    ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histos.hMuon, true );
-
-   // looking for the leptonic b jet effect 
-   if ( jpass > 3 ) {
-      std::vector<const reco::Candidate*> isoMufromB = MCMatching->matchMuonfromB( genParticles, theJets, nonIsoMu, histos.hBJet,true ); 
-   }
 
    //5. MET from PAT
    ttMET->metAnalysis( iEvent, histos.hMET);

@@ -33,8 +33,6 @@
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 //#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h"
-#include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Framework/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
@@ -117,13 +115,14 @@ struct tHisto {
 
 struct ttCandidate {
    LorentzVector p4;
-   double eta;
-   double iso;
-   double cuts[3] ;     // muon:(d0,X2,calE) jet:(bTh,emF,E/H ), electron:(E/P,H/E,calE)
    int    charge ;
    int    nHits ;      // muon:nHits of inner track,  jet:n90 
    int    pdgId ;
+   double eta;
+   double iso;
+   double cuts[3] ;     // muon:(d0,X2,calE) jet:(bTh,emF,E/H ), electron:(E/P,H/E,calE)
 };
+
 /*
 struct tNtuple {
 

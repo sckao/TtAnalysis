@@ -32,7 +32,7 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -45,7 +45,7 @@
 #include "DataFormats/PatCandidates/interface/EventHypothesis.h"
 //#include "DataFormats/PatCandidates/interface/TriggerPrimitive.h" 
 #include "DataFormats/Common/interface/TriggerResults.h"
-#include "FWCore/Framework/interface/TriggerNames.h"
+#include "FWCore/Common/interface/TriggerNames.h"
 
 #include "DataFormats/MuonReco/interface/Muon.h" 
 
@@ -58,11 +58,13 @@
 
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/Math/interface/Point3D.h"
+#include "DataFormats/Math/interface/deltaR.h"
 
 #include "TtAnalysisHisto.h"
 #include "TtObjHisto.h"
 #include "TtAnalysisNtuple.h"
 #include "TtFormat.h"
+#include "TtTools.h"
 
 #include "TFile.h"
 #include <vector>
@@ -86,9 +88,8 @@ class TtMuon {
 
     /// Perform the real analysis
     std::vector<const reco::Candidate*> IsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
-    std::vector<ttCandidate> IsoMuonSelection1( edm::Handle<std::vector<pat::Muon> > patMu );
 
-    std::vector<const reco::Candidate*> nonIsoMuonSelection( edm::Handle<std::vector<pat::Muon> > patMu );
+    std::vector<ttCandidate> IsoMuonSelection1( edm::Handle<std::vector<pat::Muon> > patMu, edm::Handle<std::vector<pat::Jet> > patJet, edm::Handle<reco::BeamSpot> bSpot_, double PVz, std::vector<ttCandidate>& vetoInfo );
 
     bool IsoMuonID( pat::Muon Mu, double isoCut );
     double IsoMuonID( pat::Muon Mu );
@@ -100,6 +101,7 @@ class TtMuon {
     void matchedMuonAnalysis( std::vector<const reco::Candidate*>  matchedMuon, HOBJ3* histo  ); 
 
     void PatMuonScope( edm::Handle<std::vector<pat::Muon> > mu, const edm::Event& iEvent, HOBJ3* histo);
+    void PromptMuonScope( edm::Handle<std::vector<pat::Muon> > patMu, HOBJ3* histo ) ;
 
     double PatMuonRelIso( const pat::Muon& patMu, double ConeSize, double& ecalIso, double& hcalIso, double& trkIso );
 
@@ -108,6 +110,9 @@ class TtMuon {
 
    private:
    std::vector<double> muSetup ;
+   //edm::InputTag muonSrc;
+   TtTools*       tools;
+
 };
 
 template<typename muonT>

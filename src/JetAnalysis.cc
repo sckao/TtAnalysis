@@ -49,7 +49,7 @@ JetAnalysis::JetAnalysis(const edm::ParameterSet& iConfig)
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles");
   genJetSrc         = iConfig.getParameter<edm::InputTag> ("genJetSource");
-  caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
+  //caloSrc           = iConfig.getParameter<edm::InputTag> ("caloSource"); 
 
   evtSelected = new TtEvtSelector( iConfig );
   ttMuon      = new TtMuon( iConfig );
@@ -150,8 +150,8 @@ void JetAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    Handle<std::vector<pat::MET> > met;
    iEvent.getByLabel(metSrc, met);
 
-   Handle<CaloTowerCollection>  caloTowers;
-   iEvent.getByLabel(caloSrc, caloTowers);
+   //Handle<CaloTowerCollection>  caloTowers;
+   //iEvent.getByLabel(caloSrc, caloTowers);
 
    // Handle<std::vector<pat::TriggerPrimitive> >  triggers;
    // Handle<edm::TriggerResults>  triggers;

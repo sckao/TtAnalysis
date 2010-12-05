@@ -32,7 +32,8 @@
 //#include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+//include "FWCore/ParameterSet/interface/InputTag.h"
+#include <FWCore/Utilities/interface/InputTag.h>
 
 
 #include "DataFormats/PatCandidates/interface/PATObject.h"
@@ -76,8 +77,6 @@ class TtMCMatching {
     ~TtMCMatching();
 
     /// Perform the real analysis
-    void MCTreeFeeder(edm::Handle<std::vector<reco::GenParticle> > genParticles, ObjNtp* genTree, int eventId);
-
     std::vector<const reco::Candidate*> GenTtCollection(edm::Handle<std::vector<reco::GenParticle> > genParticles ) ;
 
     std::vector<jmatch> matchJets(std::vector<const reco::Candidate*> genCollects, 
@@ -104,9 +103,6 @@ class TtMCMatching {
     //std::vector<reco::Candidate> ttPartons( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
     std::vector<const reco::Candidate*> ttDecay( edm::Handle<std::vector<reco::GenParticle> > genParticles, int targetId ) ;
     std::vector<const reco::Candidate*> genMuonFromB( edm::Handle<std::vector<reco::GenParticle> > genParticles, const reco::Candidate* genB ) ;
-
-    std::vector<const reco::Candidate*> matchMuonfromB( edm::Handle<std::vector<reco::GenParticle> > genParticles,
-                std::vector<const reco::Candidate*> jets, std::vector<const reco::Candidate*> isoMuons ,HTOP7* histo7, bool fillhisto ) ;
 
     void CheckGenParticle(  edm::Handle<std::vector<reco::GenParticle> > genParticles );
 

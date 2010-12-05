@@ -39,7 +39,7 @@ TtJet::TtJet(const edm::ParameterSet& iConfig)
 
   jetSetup        = iConfig.getParameter<std::vector<double> >("jetSetup");
   muonSrc         = iConfig.getParameter<edm::InputTag> ("muonSource");
-  caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
+  //caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
   genSrc          = iConfig.getParameter<edm::InputTag> ("genParticles"); 
 
   bCut            = iConfig.getUntrackedParameter<double> ("bTagCut");
@@ -457,7 +457,7 @@ std::vector<const reco::Candidate* > TtJet::JetSelection( edm::Handle<std::vecto
            double dR_mu = tools->getdR( muP4, j1->p4() );
            if ( dR_mu < 0.1 ) fakeJet = true ;
        }
-       if ( fakeJet ) continue;
+       //if ( fakeJet ) continue;
 
        double bDis = j1->bDiscriminator( bTagAlgo1 ) ;
        if ( bDis >= bCut ) nBJets++ ;
@@ -486,23 +486,29 @@ std::vector<ttCandidate> TtJet::JetSelection1( edm::Handle<std::vector<pat::Jet>
    std::vector<ttCandidate> jet_temp ;
    for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++) {
 
-       if ( ( fScale * j1->et() ) < EtThreshold ) continue;
-       if ( fabs(j1->eta()) > jetSetup[1] ) continue;
+       if ( ( fScale * j1->pt() ) <= EtThreshold ) continue ;
+       if ( fabs(j1->eta())       >= jetSetup[1] ) continue ;
+       if ( j1->jetID().fHPD      >= 0.98        ) continue ;
 
        // if using PF jet, no calo information
        double emFrac = -1 ;
        double EovH   = -1 ;
        if ( j1->isCaloJet() ) {
+          /*
           double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
                         j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+
                         j1->hadEnergyInHO();
           double calEt = calE * sin( j1->theta() );
           if ( calEt < 4. ) continue;
+          */
 
           emFrac = j1->emEnergyFraction() ;
           EovH = EoverH(*j1);
-          if ( EovH == -1. ) continue;
+          //if ( EovH == -1. ) continue;
+          if ( j1->jetID().n90Hits <= 1 ) continue ;
        }
+        
+       bool badPFJet = false ;
        if ( j1->isPFJet() ) {
           double chargedEM = j1->chargedEmEnergy() ;
           double chargedHad = j1->chargedHadronEnergy() ;
@@ -510,15 +516,26 @@ std::vector<ttCandidate> TtJet::JetSelection1( edm::Handle<std::vector<pat::Jet>
           double neutralHad = j1->neutralHadronEnergy() ;
           emFrac = ( chargedEM + neutralEM ) / ( chargedEM + chargedHad + neutralEM + neutralHad ) ;
           EovH = ( chargedEM + neutralEM) / ( chargedHad + neutralHad ) ;
-       }
-       if ( emFrac < jetSetup[3] ) continue;
 
+          double CEF = j1->chargedEmEnergyFraction() ;
+          double NHF = j1->neutralHadronEnergyFraction() ;
+          double NEF = j1->neutralEmEnergyFraction() ;
+          double CHF = j1->chargedHadronEnergyFraction() ;
+          int    NCH = j1->chargedMultiplicity() ;
+          if ( CEF >= 0.99 || NHF >= 0.99 || NEF >= 0.99 ) badPFJet = true ;
+          if ( fabs( j1->eta()) < 2.4 && CHF <= 0 )        badPFJet = true ;  
+          if ( fabs( j1->eta()) < 2.4 && NCH <= 0 )        badPFJet = true ;  
+       }
+       if ( emFrac <= jetSetup[3] ) continue;
+       if ( badPFJet              ) continue;
+       
        bool fakeJet = false;
        for ( size_t i =0; i < IsoMuons.size(); i++ ) {
            double dR_mu = tools->getdR( IsoMuons[i].p4 , j1->p4() );
            if ( dR_mu < 0.1 ) fakeJet = true ;
        }
        if ( fakeJet ) continue;
+       
 
        double bDis = j1->bDiscriminator( bTagAlgo1 ) ;
        if ( bDis >= bCut ) nBJets++ ;
@@ -531,7 +548,7 @@ std::vector<ttCandidate> TtJet::JetSelection1( edm::Handle<std::vector<pat::Jet>
         ttjet.cuts[1] =  emFrac;
         ttjet.cuts[2] =  EovH ;
         ttjet.charge  = j1->charge() ;
-        ttjet.nHits = j1->n90() ;
+        ttjet.nHits = j1->jetID().n90Hits ;
         ttjet.pdgId = j1->pdgId() ;
         jet_temp.push_back( ttjet );
 
@@ -562,6 +579,7 @@ std::vector<ttCandidate> TtJet::SoftJetSelection1( edm::Handle<std::vector<pat::
        double emFrac = -1 ;
        double EovH   = -1 ;
        if ( j1->isCaloJet() ) {
+          
           double calE = j1->emEnergyInEB()  + j1->emEnergyInEE()  + j1->emEnergyInHF() +
                         j1->hadEnergyInHB() + j1->hadEnergyInHE() + j1->hadEnergyInHF()+
                         j1->hadEnergyInHO();
@@ -600,7 +618,7 @@ std::vector<ttCandidate> TtJet::SoftJetSelection1( edm::Handle<std::vector<pat::
         ttjet.cuts[1] =  emFrac;
         ttjet.cuts[2] =  EovH ;
         ttjet.charge  = j1->charge() ;
-        ttjet.nHits = j1->n90() ;
+        ttjet.nHits = j1->jetID().n90Hits ;
         ttjet.pdgId = j1->pdgId() ;
         jet_temp.push_back( ttjet );
 

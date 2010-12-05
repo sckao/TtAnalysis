@@ -46,13 +46,20 @@ TtEvtSelector::TtEvtSelector(const edm::ParameterSet& iConfig)
 {
 //TtEvtSelector::TtEvtSelector()
    //now do what ever initialization is needed
+  pvSrc             = iConfig.getParameter<edm::InputTag> ("pvSource");
+  pvNDF             = iConfig.getUntrackedParameter<double> ("pvNDOF");
+  pvZ               = iConfig.getUntrackedParameter<double> ("pvMaxZ");
+  pvRho             = iConfig.getUntrackedParameter<double> ("pvMaxRho");
+  beamSpotSrc       = iConfig.getParameter<edm::InputTag> ("beamSpotSource");
   electronSrc       = iConfig.getParameter<edm::InputTag> ("electronSource");
   muonSrc           = iConfig.getParameter<edm::InputTag> ("muonSource");
   metSrc            = iConfig.getParameter<edm::InputTag> ("metSource");
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
+  trigSrc           = iConfig.getParameter<edm::InputTag> ("trigSource");
   recoMetSrc        = iConfig.getParameter<edm::InputTag> ("recoMetSource");
   bTagAlgo          = iConfig.getUntrackedParameter<string> ("bTagAlgo");
   jetSetup          = iConfig.getParameter<std::vector<double> >("jetSetup");
+  //ecalRecHitSrc     = iConfig.getParameter<edm::InputTag>("ecalRecHitSource");
   //JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
 
   ttEle     = new TtElectron( iConfig );
@@ -79,13 +86,15 @@ TtEvtSelector::~TtEvtSelector()
 //
 // member functions
 //
-//typedef std::pair<double, pat::Jet> ptjet ;
 
-
-// Event selection plus object selection , new general method
-int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const reco::Candidate*>& isoLep,  std::vector<const reco::Candidate*>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType, std::vector<double>* bDisList ){
+// Event selection plus object selection , new general method using ttCandidate
+int TtEvtSelector::eventSelection( int topo, std::vector<ttCandidate>& isoLep,  std::vector<ttCandidate>& selectedJets, std::vector<LorentzVector>& metp4, std::vector<ttCandidate>& vetoInfo, const edm::Event& iEvent, string MetType ){
 
    // retrieve the reco-objects
+
+   Handle<reco::BeamSpot> beamSpot;
+   iEvent.getByLabel(beamSpotSrc, beamSpot );
+
    Handle<std::vector<pat::Muon> > muons;
    iEvent.getByLabel(muonSrc, muons);
 
@@ -100,100 +109,34 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, std::vector<const 
 
    Handle<std::vector<reco::MET> > recomet;
    iEvent.getByLabel(recoMetSrc, recomet);
-   
-   std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
-   std::vector<const reco::Candidate*> isoEl = ttEle->IsoEleSelection( electrons );
-   selectedJets = ttJet->JetSelection( jets, isoMu, jetSetup[0], jetSetup[2], NULL,  bTagAlgo, bDisList );
-   
+
+   Handle<std::vector<reco::Vertex> > primVtx;
+   iEvent.getByLabel(pvSrc, primVtx);
+
+   double PVz = 0 ;
+   if (  primVtx->size()  >= 1 ) { 
+      const reco::Vertex pv = primVtx->at(0);
+      if (  !pv.isFake() )  PVz = pv.z() ;
+   }
+   //Handle<EcalRecHitCollection> recHits;
+   //iEvent.getByLabel( ecalRecHitSrc, recHits);
+
    int pass = -1;
 
-   int nEle = isoEl.size();
-   int nMu  = isoMu.size();
-   int nJet = selectedJets.size();
-   int nLep = nEle + nMu ;
-
-   // this probably will exhaust memory fast
-   std::vector<double> softBDisList;
-   std::vector<const reco::Candidate*> additionalJets = ttJet->SoftJetSelection( jets, isoMu, jetSetup[0], jetSetup[2], bTagAlgo, NULL, &softBDisList );
-   if ( additionalJets.size() > 0  && additionalJets[0]->et() > 20. ) {
-      selectedJets.push_back( additionalJets[0] );
-      bDisList->push_back( softBDisList[0] );
-   }
-
-   // hadronic 
-   if ( topo == 0 && nMu == 0 && nEle == 0 ) {
-      pass = nJet ;
-   }
-
-   // muon + jets
-   if ( topo == 1 && nMu == 1 && nEle == 0 ) {
-      pass = nJet ;
-      isoLep = isoMu;
-   }
-   // dilepton e mu
-   if ( topo == 2 && nLep == 2 ) {
-      pass = nJet ;
-      if (isoMu.size() ==2 ) isoLep = isoMu;
-      if (isoEl.size() ==2 ) isoLep = isoEl;
-      if (isoMu.size() ==1 ) {
-         isoLep = isoMu;
-         isoLep.push_back( isoEl[0] );
-      }
-   }
-   // e + jets
-   if ( topo == 3 && nMu == 0 && nEle == 1 ) {
-      pass = nJet ;
-      isoLep = isoEl;
-   }
-
-   double metCut = 0. ;
-   LorentzVector theMetP4 ;
-   if ( MetType == "patMet" && mets->size()  > 0 ) theMetP4 = jetSetup[2] * (*mets)[0].p4() ;
-   if ( MetType == "recoMet" && recomet->size() > 0 ) theMetP4 = jetSetup[2] * (*recomet)[0].p4() ;
-   if ( MetType == "evtMet" ) theMetP4 = ttMET->METfromObjects( isoLep, selectedJets );
-   if ( MetType == "neuMet" ) theMetP4 = ttMET->METfromNeutrino( iEvent );
-   if ( theMetP4.Et() < metCut ) pass = -1 ;
-   metp4.push_back( theMetP4 );
-
-   return pass;
-
-}
-
-// Event selection plus object selection , new general method
-int TtEvtSelector::eventSelection( int topo, std::vector<ttCandidate>& isoLep,  std::vector<ttCandidate>& selectedJets, std::vector<LorentzVector>& metp4, const edm::Event& iEvent, string MetType ){
-
-   // retrieve the reco-objects
-   Handle<std::vector<pat::Muon> > muons;
-   iEvent.getByLabel(muonSrc, muons);
-
-   Handle<std::vector<pat::Electron> > electrons;
-   iEvent.getByLabel(electronSrc, electrons);
-   
-   Handle<std::vector<pat::MET> > mets;
-   iEvent.getByLabel(metSrc, mets);
-
-   Handle<std::vector<pat::Jet> > jets;
-   iEvent.getByLabel(jetSrc, jets);
-
-   Handle<std::vector<reco::MET> > recomet;
-   iEvent.getByLabel(recoMetSrc, recomet);
-   
-   std::vector<ttCandidate> isoMu = ttMuon->IsoMuonSelection1( muons );
-   std::vector<ttCandidate> isoEl = ttEle->IsoEleSelection1( electrons );
+   std::vector<ttCandidate> isoMu = ttMuon->IsoMuonSelection1( muons, jets, beamSpot, PVz, vetoInfo );
+   std::vector<ttCandidate> isoEl = ttEle->IsoEleSelection1( electrons, beamSpot, vetoInfo );
    selectedJets = ttJet->JetSelection1( jets, isoMu, jetSetup[0], jetSetup[2], NULL,  bTagAlgo );
-   
-   int pass = -1;
-
+  
    int nEle = isoEl.size();
    int nMu  = isoMu.size();
    int nJet = selectedJets.size();
    int nLep = nEle + nMu ;
 
    // this probably will exhaust memory fast
-   std::vector<ttCandidate> additionalJets = ttJet->SoftJetSelection1( jets, isoMu, jetSetup[0], jetSetup[2], NULL, bTagAlgo );
-   if ( additionalJets.size() > 0  && additionalJets[0].p4.Et() > 20. ) {
-      selectedJets.push_back( additionalJets[0] );
-   }
+   //std::vector<ttCandidate> additionalJets = ttJet->SoftJetSelection1( jets, isoMu, jetSetup[0], jetSetup[2], NULL, bTagAlgo );
+   //if ( additionalJets.size() > 0  && additionalJets[0].p4.Et() > 20. ) {
+   //   selectedJets.push_back( additionalJets[0] );
+   //}
 
    // hadronic 
    if ( topo == 0 && nMu == 0 && nEle == 0 ) {
@@ -254,6 +197,7 @@ int TtEvtSelector::eventSelection( int topo, double JetEtCut, const edm::Event& 
 
    Handle<std::vector<pat::Jet> > jets;
    iEvent.getByLabel(jetSrc, jets);
+
 
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
    std::vector<const reco::Candidate*> isoEl = ttEle->IsoEleSelection( electrons );
@@ -317,25 +261,54 @@ int TtEvtSelector::MCEvtSelection( Handle<std::vector<reco::GenParticle> > genPa
 
 }
 
-void TtEvtSelector::TriggerStudy( Handle <edm::TriggerResults> triggers, int topo, int setup ,HTOP9* histo9 ) {
+bool TtEvtSelector::VertexSelection( const edm::Event& iEvent, std::vector<double>& pvInfo ){
 
-   // trigger summeray for 3 different topo 
-   edm::TriggerNames trigNames( *triggers );
-   for (size_t i=0; i< triggers->size(); i++ ) {
+   // retrieve the reco-objects
+   Handle<std::vector<reco::Vertex> > primVtx;
+   iEvent.getByLabel(pvSrc, primVtx);
 
-       /*
-       string triggered = triggers->accept(i) ? "Yes" : "No" ;
-       cout<<" path("<<i<<") accepted ? "<< triggered ;
-       cout<<" trigName: "<< trigNames.triggerName(i)<<endl;
-       if ( triggers->accept(i) && topo == 0 ) histo9->Fill9k0( i );
-       if ( triggers->accept(i) && topo == 1 ) histo9->Fill9k1( i );
-       if ( triggers->accept(i) && topo == 2 ) histo9->Fill9k2( i );
-       */
-
-       if ( triggers->accept(i) ) histo9->Fill9k( i, topo );
-
+   // primVertex cut
+   bool goodVtx = true ;
+   if (  primVtx->size()  < 1 ) { 
+      goodVtx = false ;  
+   }  else {
+      const reco::Vertex pv = primVtx->at(0);
+      if (  pv.isFake()  )                  goodVtx = false ;
+      if (  fabs( pv.z()) >= pvZ  )         goodVtx = false ;
+      if (  pv.position().Rho() >= pvRho  ) goodVtx = false ;
+      if (  pv.ndof() <= pvNDF  )           goodVtx = false ;
+      pvInfo.push_back( pv.z() );
+      pvInfo.push_back( pv.position().Rho() );
+      pvInfo.push_back( pv.ndof() );
    }
 
+   return goodVtx ;
+
+}
+
+
+bool TtEvtSelector::TriggerSelection( const edm::Event& iEvent, string trigPathName ) {
+
+   Handle<pat::TriggerEvent> triggerEvent;
+   iEvent.getByLabel(trigSrc, triggerEvent);
+
+   /*
+   Handle<std::vector<pat::TriggerPath> > trigPaths;
+   iEvent.getByLabel("patTrigger", trigPaths);
+   for(std::vector<pat::TriggerPath>::const_iterator t1 = trigPaths->begin(); t1!= trigPaths->end(); t1++){
+      cout<<" trig path name : "<< t1->name() <<endl;
+   } 
+   */
+
+   bool passTrig = false ;
+   pat::TriggerEvent const * trig = &*triggerEvent;
+   if ( trig->wasRun() && trig->wasAccept() ) {
+
+       pat::TriggerPath const * thePath = trig->path( trigPathName );
+       if ( thePath != 0 && thePath->wasAccept() ) passTrig = true;    
+   }
+  
+   return passTrig ;
 }
 
 
