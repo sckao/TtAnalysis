@@ -123,14 +123,18 @@ class TtSemiEventSolution {
     std::vector<ttCandidate> mcWJets ;
     std::vector<LorentzVector> mcbJets ;
    
+    std::vector<double> ttPdfErr ;
+
     int ini_Id;
     int ent_Id;
     int ent_sz;
     int counter[9] ;
     int nGoodJet ;
+    double ttCount ;
 
     // variables for py config
     bool debug;
+    bool isData;
     std::vector<double> jetSetup;
 
     //std::string recoMuon;

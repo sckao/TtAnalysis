@@ -79,7 +79,6 @@
 #include "TtMET.h"
 #include "TtJet.h"
 #include "TtEfficiency.h"
-#include "TtSemiEventSolution.h"
 #include "TtFormat.h"
 
 #include "TFile.h"
@@ -93,6 +92,7 @@
 //
 // class decleration
 //
+/*
 class TtEvtSelector;
 class TtMCMatching;
 class TtMuon;
@@ -101,7 +101,7 @@ class TtPhoton;
 class TtMET;
 class TtJet;
 class TtEfficiency; 
-class TtSemiEventSolution;
+*/
 
 class TtAnalysis : public edm::EDAnalyzer {
    public:
@@ -125,7 +125,6 @@ class TtAnalysis : public edm::EDAnalyzer {
     TtMET*         ttMET;
     TtJet*         ttJet;
     TtEfficiency*  ttEff;
-    TtSemiEventSolution* semiSol;
 
     // Histograms & Trees
     tHisto histos ;

@@ -278,20 +278,20 @@ std::vector<ttCandidate> TtElectron::IsoEleSelection1( Handle<std::vector<pat::E
      //double beamWdthY = bSpot.BeamWidthY() ;
 
      // d0 Cut , set pass = false in order to use the loose veto 
-     bool pass = false ;
+     bool pass = true ;
      reco::GsfTrackRef gsfTrk = it->gsfTrack() ;
      int nHit = gsfTrk->numberOfValidHits();
      //double d0 = it->dB() ;
-     double d0 = -1.*gsfTrk->dxy( bSpot.position() );
+     //double d0 = -1.*gsfTrk->dxy( bSpot.position() );
      //double d0Err = sqrt( gsfTrk->d0Error()*gsfTrk->d0Error() + 0.5*beamWdthX*beamWdthX + 0.5* beamWdthY*beamWdthY );
 
      if ( it->pt()          < eleSetup[0]  ) pass = false ;
      if ( fabs( it->eta() ) > eleSetup[1]  ) pass = false ;
      if ( IsoValue          > eleSetup[2]  ) pass = false ;     
-     if ( HovE > eleSetup[3]               ) pass = false ;
-     if ( EovP < eleSetup[4] || EovP > 1.2 ) pass = false ;
-     if ( d0   > 0.02                      ) pass = false ;
-
+     //if ( HovE > eleSetup[3]               ) pass = false ;
+     //if ( EovP < eleSetup[4] || EovP > 1.2 ) pass = false ;
+     //if ( d0   > 0.02                      ) pass = false ;
+     /*
      if ( pass ) {
         ttCandidate ttEle ;
 	ttEle.p4 = it->p4() ;
@@ -305,9 +305,11 @@ std::vector<ttCandidate> TtElectron::IsoEleSelection1( Handle<std::vector<pat::E
 	ttEle.pdgId = it->pdgId() ;
 	isoEle.push_back( ttEle );
      } else {
-        if ( it->pt()          < 15. )  continue ;
-	if ( fabs( it->eta() ) > 2.5 )  continue ;
-	if ( IsoValue          > 0.2 )  continue ;
+     */
+     if ( pass ) {
+        //if ( it->pt()          < 15. )  continue ;
+	//if ( fabs( it->eta() ) > 2.5 )  continue ;
+	//if ( IsoValue          > 0.2 )  continue ;
         ttCandidate vetoEle ;
 	vetoEle.p4  = it->p4() ;
 	vetoEle.eta = it->eta() ;

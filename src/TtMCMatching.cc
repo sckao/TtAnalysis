@@ -665,6 +665,39 @@ std::vector<const reco::Candidate*> TtMCMatching::ttDecay( Handle<std::vector<re
    return targets ;
 }
 
+double TtMCMatching::WBRCorrection_Ttbar( Handle<std::vector<reco::GenParticle> > genParticles ){
+
+   double BRc = 1. ;
+
+   int numTop = 0 ;
+   int hadW = 0 ;
+   int lepW = 0 ;
+   for (std::vector<reco::GenParticle>::const_iterator it = genParticles->begin(); it != genParticles->end(); it++ ){
+       // looking for objects from W  
+       if ( abs(it->pdgId()) != 24 || it->status() != 3 ) continue;
+
+       bool fromT = false ;
+       for (size_t q=0; q< (*it).numberOfMothers(); q++) {
+           const reco::Candidate *mom = (*it).mother(q) ;
+           if ( abs(mom->pdgId()) ==  6 ) fromT = true ;
+       }
+
+       if ( fromT ) {
+          numTop++ ;
+          for (size_t q=0; q< (*it).numberOfDaughters(); ++q) {
+              const reco::Candidate *dau = (*it).daughter(q) ;
+              if ( abs(dau->pdgId()) < 5                            ) hadW++ ; // hadronic 
+              if ( abs(dau->pdgId()) < 19 && abs(dau->pdgId()) > 10 ) lepW++ ; // leptonic
+          }
+       }
+   }
+   if ( numTop == 2 && hadW == 4 )             BRc = (0.676*1.5)*(0.676*1.5);  // hadronic ttbar
+   if ( numTop == 2 && lepW == 4 )             BRc = (0.108*9)*(0.108*9);      // dilepton ttbar
+   if ( numTop == 2 && hadW == 2 && lepW == 2) BRc = (0.108*9)*(0.676*1.5);    // semi-lep ttbar
+
+   return BRc ;
+}
+
 void TtMCMatching::CheckGenParticle(  Handle<std::vector<reco::GenParticle> > genParticles ) {
    
 

@@ -57,8 +57,10 @@ TtEvtSelector::TtEvtSelector(const edm::ParameterSet& iConfig)
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
   trigSrc           = iConfig.getParameter<edm::InputTag> ("trigSource");
   recoMetSrc        = iConfig.getParameter<edm::InputTag> ("recoMetSource");
+  pdfSrc            = iConfig.getParameter<edm::InputTag> ("pdfSource");
   bTagAlgo          = iConfig.getUntrackedParameter<string> ("bTagAlgo");
   jetSetup          = iConfig.getParameter<std::vector<double> >("jetSetup");
+  isData            = iConfig.getUntrackedParameter<bool>   ("isData");
   //ecalRecHitSrc     = iConfig.getParameter<edm::InputTag>("ecalRecHitSource");
   //JEScale           = iConfig.getUntrackedParameter<double> ("JEScale");
 
@@ -126,7 +128,7 @@ int TtEvtSelector::eventSelection( int topo, std::vector<ttCandidate>& isoLep,  
    std::vector<ttCandidate> isoMu = ttMuon->IsoMuonSelection1( muons, jets, beamSpot, PVz, vetoInfo );
    std::vector<ttCandidate> isoEl = ttEle->IsoEleSelection1( electrons, beamSpot, vetoInfo );
    selectedJets = ttJet->JetSelection1( jets, isoMu, jetSetup[0], jetSetup[2], NULL,  bTagAlgo );
-  
+
    int nEle = isoEl.size();
    int nMu  = isoMu.size();
    int nJet = selectedJets.size();
@@ -164,13 +166,13 @@ int TtEvtSelector::eventSelection( int topo, std::vector<ttCandidate>& isoLep,  
       isoLep = isoEl;
    }
 
-   double metCut = 0. ;
+   //double metCut = 0. ;
    LorentzVector theMetP4 ;
    if ( MetType == "patMet" && mets->size()  > 0 ) theMetP4 = jetSetup[2] * (*mets)[0].p4() ;
    if ( MetType == "recoMet" && recomet->size() > 0 ) theMetP4 = jetSetup[2] * (*recomet)[0].p4() ;
    if ( MetType == "evtMet" ) theMetP4 = ttMET->METfromObjects( isoLep, selectedJets );
    if ( MetType == "neuMet" ) theMetP4 = ttMET->METfromNeutrino( iEvent );
-   if ( theMetP4.Et() < metCut ) pass = -1 ;
+   //if ( theMetP4.Et() < metCut ) pass = -1 ;
 
    metp4.push_back( theMetP4 );
 
@@ -283,7 +285,6 @@ bool TtEvtSelector::VertexSelection( const edm::Event& iEvent, std::vector<doubl
    }
 
    return goodVtx ;
-
 }
 
 
@@ -292,7 +293,7 @@ bool TtEvtSelector::TriggerSelection( const edm::Event& iEvent, string trigPathN
    Handle<pat::TriggerEvent> triggerEvent;
    iEvent.getByLabel(trigSrc, triggerEvent);
 
-   /*
+   /*  
    Handle<std::vector<pat::TriggerPath> > trigPaths;
    iEvent.getByLabel("patTrigger", trigPaths);
    for(std::vector<pat::TriggerPath>::const_iterator t1 = trigPaths->begin(); t1!= trigPaths->end(); t1++){
@@ -311,4 +312,110 @@ bool TtEvtSelector::TriggerSelection( const edm::Event& iEvent, string trigPathN
    return passTrig ;
 }
 
+LorentzVector TtEvtSelector::Unclustered_Uncertainty( const edm::Event& iEvent ) {
+
+  Handle<std::vector<pat::Muon> > muons;
+  iEvent.getByLabel(muonSrc, muons);
+
+  Handle<std::vector<pat::Electron> > electrons;
+  iEvent.getByLabel(electronSrc, electrons);
+
+  Handle<std::vector<pat::Jet> > jets;
+  iEvent.getByLabel(jetSrc, jets);
+
+  double met_x = 0;
+  double met_y = 0;
+  for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++) {
+  
+       double jer_scale = 1.0 ;
+       if ( !isData && j1->genJet() != NULL ) { 
+          const reco::GenJet* genj = j1->genJet() ;
+          if (  genj->pt() >= 15. ) {
+             double deltaPt = (j1->pt() - genj->pt())*0.1 ;
+             jer_scale = max(0.0, ( j1->pt() + deltaPt ) / j1->pt() ) ;
+          }
+       }
+
+       met_x += (j1->px()*jer_scale) ;
+       met_y += (j1->py()*jer_scale) ;
+  }
+  for (std::vector<pat::Muon>::const_iterator m1 = muons->begin(); m1!= muons->end(); m1++) {
+      if ( !(m1->isGlobalMuon()) ) continue;
+      bool veto = false ;
+      for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++) {
+          double df = j1->phi() - m1->phi() ;
+	  double dh = j1->eta() - m1->eta() ;
+	  double dR = sqrt( df*df + dh*dh ) ;
+	  if ( dR <= 0.5 ) veto = true ;
+      }
+      if ( veto ) continue;
+      met_x += m1->px() ;
+      met_y += m1->py() ;
+  }
+  for (std::vector<pat::Electron>::const_iterator e1 = electrons->begin(); e1!= electrons->end(); e1++) {
+      bool veto = false ;
+      for (std::vector<pat::Jet>::const_iterator j1 = jets->begin(); j1 != jets->end(); j1++) {
+          double df = j1->phi() - e1->phi() ;
+	  double dh = j1->eta() - e1->eta() ;
+	  double dR = sqrt( df*df + dh*dh ) ;
+	  if ( dR <= 0.5 ) veto = true ;
+      }
+      if ( veto ) continue;
+      met_x += e1->px() ;
+      met_y += e1->py() ;
+  }
+
+
+  met_x = 0.1*met_x ;
+  met_y = 0.1*met_y ;
+  double met_E = sqrt( (met_x*met_x) +  (met_y*met_y) ) ;
+  LorentzVector met_err = LorentzVector( met_x, met_y , 0., met_E ) ;
+
+  return met_err ;
+
+}
+
+namespace LHAPDF {
+       void initPDFSet(int nset, const std::string& filename, int member=0);
+       int numberPDF(int nset);
+       void usePDFMember(int nset, int member);
+       double xfx(int nset, double x, double Q, int fl);
+       double getXmin(int nset, int member);
+       double getXmax(int nset, int member);
+       double getQ2min(int nset, int member);
+       double getQ2max(int nset, int member);
+       void extrapolate(bool extrapolate=true);
+}
+
+vector<double> TtEvtSelector::PDF_Uncertainty( const edm::Event& iEvent ) {
+
+   edm::Handle<GenEventInfoProduct> pdfParty;
+   iEvent.getByLabel( pdfSrc, pdfParty );
+
+   LHAPDF::initPDFSet(1, "cteq66.LHgrid");
+ 
+   float   q = pdfParty->pdf()->scalePDF;
+   int   id1 = pdfParty->pdf()->id.first;
+   double x1 = pdfParty->pdf()->x.first;
+   int   id2 = pdfParty->pdf()->id.second;
+   double x2 = pdfParty->pdf()->x.second;
+
+   // get x1, x2, id1, id2, q from pdfInfo
+   
+   vector<double> pdf_weights ;
+   LHAPDF::usePDFMember(1,0);
+   double xpdf1 = LHAPDF::xfx(1, x1, q, id1);
+   double xpdf2 = LHAPDF::xfx(1, x2, q, id2);
+   double w0 = xpdf1 * xpdf2;
+   for(int i=1; i <=44; ++i){
+      LHAPDF::usePDFMember(1,i);
+      double xpdf1_new = LHAPDF::xfx(1, x1, q, id1);
+      double xpdf2_new = LHAPDF::xfx(1, x2, q, id2);
+      double weight = xpdf1_new * xpdf2_new / w0;
+      pdf_weights.push_back(weight);
+   }
+   
+   return pdf_weights ;
+
+}
 

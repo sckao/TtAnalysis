@@ -108,7 +108,7 @@ class TtNtupleProd : public edm::EDAnalyzer {
 
     // Switch for debug output
     bool debug;
-    bool isData;
+    //bool isData;
     int  evtIt;
     int  nJets ;
 

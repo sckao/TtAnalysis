@@ -59,7 +59,6 @@ TtAnalysis::TtAnalysis(const edm::ParameterSet& iConfig)
   ttGam       = new TtPhoton();
   ttMET       = new TtMET( iConfig );
   ttJet       = new TtJet( iConfig );
-  semiSol     = new TtSemiEventSolution( iConfig );
   ttEff       = new TtEfficiency();
 
   theFile->cd();
@@ -116,7 +115,6 @@ TtAnalysis::~TtAnalysis()
    delete ttMET;
    delete ttJet;
    delete ttEff; 
-   delete semiSol;
    
    theFile->cd();
    histos.hJet->Write("Jets",theFile);
@@ -204,13 +202,15 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    int jpass = evtSelected->eventSelection( 1, 30., iEvent, "patMET");
    int topo  = evtSelected->MCEvtSelection(genParticles);
 
-   cout<<" jpass : "<<jpass<<" topo :"<<topo <<endl;
+   //cout<<" jpass : "<<jpass<<" topo :"<<topo <<endl;
    //  And calculate the selection efficiency
    bool passSelect = ( jpass > 3 ) ? true : false ;
    ttEff->EventEfficiency( topo, passSelect, histos.hTop );
 
    // check generator process 
-   //MCMatching->CheckGenParticle( genParticles );
+   double WBR = MCMatching->WBRCorrection_Ttbar( genParticles );
+   cout<<" WBR = "<< WBR <<endl;
+   MCMatching->CheckGenParticle( genParticles );
 
    // 1. Build semi-mu tt events and compare the result
  
@@ -219,15 +219,16 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
    std::vector<const reco::Candidate*> theJets = ttJet->JetSelection( jets, isoMu, 30 ) ;
 
    //4. Jet Studies
-   ttJet->jetAnalysis(jets, histos.hJet);
+   //ttJet->jetAnalysis(jets, histos.hJet);
    //ttJet->JetTrigger( jets, triggers );
 
    std::vector<const reco::Candidate*> genCollects = MCMatching->GenTtCollection( genParticles ) ;
 
+   /*
    ttJet->JetMatchedMuon( jets, muons, iEvent, iSetup, histos.hMuon, true );
 
    //5. MET from PAT
-   ttMET->metAnalysis( iEvent, histos.hMET);
+   //ttMET->metAnalysis( iEvent, histos.hMET);
    if ( jpass > 3 ) {
       ttMET->MetAndMuon(mets, isoMu, histos.hMET, jpass );
       ttMET->MetAndJets(mets, theJets, histos.hMET );
@@ -238,6 +239,7 @@ void TtAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 
    //7. photon studies
    ttGam->PhotonAnalysis(photons, histos.hGam);
+   */
    cout<<" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "<<endl;
 
 

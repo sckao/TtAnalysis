@@ -71,6 +71,9 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
+// for the fucking JEC uncertainty
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+
 #include "TtTools.h"
 #include "TtObjHisto.h"
 #include "TtAnalysisHisto.h"
@@ -141,6 +144,8 @@ class TtJet {
     std::vector<ttCandidate> JetSelection1( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<ttCandidate> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, string bTagAlgo = "" );
     std::vector<ttCandidate> SoftJetSelection1( edm::Handle<std::vector<pat::Jet> > patJet, std::vector<ttCandidate> IsoMuons, double EtThreshold, double fScale = 1., HOBJ1* histo1 = NULL, string bTagAlgo = "" );
 
+    double JES_Uncertainty( double pt, double eta ) ;
+
     template<typename jetT>
     void JetEtSpectrum( std::vector<jetT> theJet, HOBJ1* histo1);
     template<typename jetT>
@@ -156,6 +161,7 @@ class TtJet {
     double bCut;
     string bTagAlgo;
     std::vector<double> jetSetup;
+    bool isData ;
     //edm::ParameterSet tkParas; 
     //TrackAssociatorParameters theParameters; 
 

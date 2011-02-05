@@ -163,11 +163,26 @@ void JetAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
    // 0. select the semi-lep events and objects
    int pass = evtSelected->eventSelection( 1, 5, iEvent, "patMET" );
 
+
    //1. Jet Et threshold analysis
    std::vector<const reco::Candidate*> isoMu = ttMuon->IsoMuonSelection( muons );
    std::vector<const reco::Candidate*> theJets1 = ttJet->JetSelection( jets, isoMu, 20, jetSetup[2], hJ_Et20, bTagAlgo );
    std::vector<const reco::Candidate*> theJets2 = ttJet->JetSelection( jets, isoMu, 25, jetSetup[2], hJ_Et25, bTagAlgo );
    std::vector<const reco::Candidate*> theJets3 = ttJet->JetSelection( jets, isoMu, 30, jetSetup[2], hJ_Et30, bTagAlgo );
+
+   // fucking JEC uncertainty
+   cout<<" N of Jet Selection = "<< theJets2.size() << endl;
+   std::string JEC_PATH("CondFormats/JetMETObjects/data/");
+   //edm::FileInPath fip(JEC_PATH+"Spring10DataV2_Uncertainty_AK5PF.txt");
+   edm::FileInPath fip(JEC_PATH+"Spring10_Uncertainty_AK5PF.txt");
+   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( fip.fullPath() );
+   //JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty("CondFormats/JetMETObjects/data/Spring10_Uncertainty_AK5PF.txt");
+   for ( size_t i = 0 ; i < theJets1.size(); i++ ) {
+       jecUnc->setJetEta( theJets2[i]->eta() );
+       jecUnc->setJetPt( theJets2[i]->pt() );
+       float unc = jecUnc->getUncertainty(true);
+       cout<<" the Jet (Pt, eta) = ("<< theJets2[i]->pt()<<", "<<theJets2[i]->eta()<<" ) -> "<< unc <<endl; 
+   }
 
    ttJet->bTagAnalysis( iEvent, jets, jetSetup[1], 20, hb_Et30 );
    ttJet->bTagAnalysis( iEvent, jets, jetSetup[1], 30, hb_Et30 );

@@ -38,6 +38,8 @@ public:
     solTree2->Branch("bTh"   ,&bTh,    "bTh[nJ]/D");
     solTree2->Branch("emF"   ,&emF,    "emF[nJ]/D");
     solTree2->Branch("EvH"   ,&EvH,    "EvH[nJ]/D");
+    solTree2->Branch("jes"   ,&jes,    "jes[nJ]/D");
+    solTree2->Branch("jer"   ,&jer,    "jer[nJ]/D");
     solTree2->Branch("n90"   ,&n90,    "n90[nJ]/I");
 
     solTree2->Branch("nNu"    ,&nNu,   "nNu/I");
@@ -67,6 +69,11 @@ public:
     solTree2->Branch("eHovE"  ,&eHovE, "eHovE/D");
     solTree2->Branch("eEovP"  ,&eEovP, "eEovP/D");
 
+    solTree2->Branch("metErrX" ,&metErrX, "metErrX/D");
+    solTree2->Branch("metErrY" ,&metErrY, "metErrY/D");
+    solTree2->Branch("WBRc"    ,&WBRc,    "WBRc/D");
+    solTree2->Branch("pdfErr"  ,&pdfErr,  "pdfErr[44]/D");
+
  } 
 
  /// Destructor
@@ -74,7 +81,7 @@ public:
     delete solTree2;
  }
 
- void FillB1( int eventId, vector<ttCandidate> jp4V, vector<LorentzVector> np4V, vector<ttCandidate> mp4V, vector<double> pv, vector<ttCandidate> vetoInfo ) {
+ void FillB1( int eventId, vector<ttCandidate> jp4V, vector<LorentzVector> np4V, vector<ttCandidate> mp4V, vector<double> pv, vector<ttCandidate> vetoInfo, vector<double> others, vector<double> pdf_Err ) {
       evtId   = eventId ;
 
       nJ      = jp4V.size() ;
@@ -83,6 +90,8 @@ public:
           bTh[i] = jp4V[i].cuts[0] ;
           emF[i] = jp4V[i].cuts[1] ;
           EvH[i] = jp4V[i].cuts[2] ;
+          jes[i] = jp4V[i].err[0]  ;
+          jer[i] = jp4V[i].err[1]  ;
           jpx[i] = jp4V[i].p4.Px() ;
           jpy[i] = jp4V[i].p4.Py() ;
           jpz[i] = jp4V[i].p4.Pz() ;
@@ -114,6 +123,10 @@ public:
       pvRho = pv[1] ;
       pvNDF = pv[2] ;
 
+      metErrX = others[0] ;
+      metErrY = others[1] ;
+      WBRc    = others[2] ;
+
       int m = 0 ;
       for (size_t i =0; i < vetoInfo.size() ; i++ ) {
           if ( vetoInfo[i].pdgId == 11 ) { 
@@ -139,6 +152,10 @@ public:
       }
       nMu = nGoodMu + m ;
 
+      for( size_t i=0; i< pdf_Err.size(); i++ ){
+         pdfErr[i] =  pdf_Err[i] ;
+      }
+
       solTree2->Fill();
  }
 
@@ -147,7 +164,7 @@ public:
       solTree2->Write();
  }
 
- TTree *solTree2;
+TTree *solTree2;
 
 private:
 
@@ -163,6 +180,8 @@ private:
      double bTh[maxCount];
      double EvH[maxCount];
      double emF[maxCount];
+     double jes[maxCount];
+     double jer[maxCount];
      int    n90[maxCount];
 
      int nNu;
@@ -191,6 +210,12 @@ private:
      double eIso ;
      double eEovP ;
      double eHovE ;
+
+     double metErrX ;
+     double metErrY ;
+     double WBRc ;
+  
+     double pdfErr[44];
 
 };
  

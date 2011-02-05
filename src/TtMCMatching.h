@@ -106,6 +106,8 @@ class TtMCMatching {
 
     void CheckGenParticle(  edm::Handle<std::vector<reco::GenParticle> > genParticles );
 
+    double WBRCorrection_Ttbar( edm::Handle<std::vector<reco::GenParticle> > genParticles );
+
     //template<typename allT>
     //std::vector<const allT* > matchMuon( std::vector<const reco::Candidate*>  genCollects,
     //                                     std::vector<const allT*> isoMuons ,HTOP3* histo3 =NULL) ;

@@ -61,6 +61,8 @@
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
+// for the fucking JEC uncertainty
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 //#include "DataFormates/TrackReco/interface/Track.h"
 //#include "DataFormates/TrackReco/interface/TrackFwd.h"
 

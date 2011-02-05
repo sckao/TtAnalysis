@@ -55,8 +55,10 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/Candidate/interface/CandidateFwd.h"
 #include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
-
 //#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+
+// for PDF uncertainty
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
 #include "TtAnalysisHisto.h"
 #include "TtAnalysisNtuple.h"
@@ -96,6 +98,10 @@ class TtEvtSelector {
 
     bool TriggerSelection( const edm::Event& iEvent, string trigPathName );
 
+    LorentzVector Unclustered_Uncertainty( const edm::Event& iEvent ) ;
+
+    vector<double> PDF_Uncertainty(  const edm::Event& iEvent );
+
    private:
 
    TtMuon*       ttMuon;
@@ -107,6 +113,7 @@ class TtEvtSelector {
    double pvZ ;
    double pvRho ;
    double pvNDF ;
+   bool isData ;
    std::vector<double> jetSetup;
    edm::InputTag pvSrc;
    edm::InputTag beamSpotSrc;
@@ -115,6 +122,7 @@ class TtEvtSelector {
    edm::InputTag metSrc;
    edm::InputTag jetSrc;
    edm::InputTag trigSrc;
+   edm::InputTag pdfSrc;
    //edm::InputTag ecalRecHitSrc;
   
    edm::InputTag recoMetSrc;

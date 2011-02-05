@@ -121,6 +121,7 @@ struct ttCandidate {
    double eta;
    double iso;
    double cuts[3] ;     // muon:(d0,X2,calE) jet:(bTh,emF,E/H ), electron:(E/P,H/E,calE)
+   double err[2];       // jet:(JES,JER)
 };
 
 /*

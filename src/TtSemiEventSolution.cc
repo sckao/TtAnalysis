@@ -47,6 +47,8 @@ TtSemiEventSolution::TtSemiEventSolution(const edm::ParameterSet& iConfig ): ini
   jetSrc            = iConfig.getParameter<edm::InputTag> ("jetSource");
   genSrc            = iConfig.getParameter<edm::InputTag> ("genParticles");
   trigTag           = iConfig.getUntrackedParameter<string> ("trigTag");
+  isData            = iConfig.getUntrackedParameter<bool>   ("isData");
+
   //algo              = iConfig.getUntrackedParameter<string> ("recoAlgo");
   
   evtSelected = new TtEvtSelector( iConfig );
@@ -59,8 +61,9 @@ TtSemiEventSolution::TtSemiEventSolution(const edm::ParameterSet& iConfig ): ini
 
   nGoodJet = -1 ;
 
-  for (int i = 0; i< 9; i++) { counter[i] = 0 ; }
-
+  for (int i = 0; i<  9; i++)  { counter[i] = 0 ; }
+  for (int i = 0; i< 45; i++) { ttPdfErr.push_back(0);  }
+  ttCount = 0;
 }
 
 
@@ -68,6 +71,10 @@ TtSemiEventSolution::~TtSemiEventSolution()
 {
 
    cout <<" hltMu= "<<counter[0] <<" Vtx = "<<counter[1] <<" 1IsoM= "<<counter[2] <<" LM= "<<counter[3] <<" Le= "<<counter[4] <<" 1J= "<<counter[5] <<" 2J= "<<counter[6] <<" 3J= "<<counter[7] <<" 4J= "<<counter[8] <<endl;
+   cout<<" hlt tt with BR correction = "<< ttCount <<endl;
+   if ( !isData ) {
+      for ( size_t i=0; i< 44; i++){   cout<<" PDF"<<i<<"  = "<< ttPdfErr[i]/ttPdfErr[44] <<endl ;   }
+   }
 
    delete evtSelected;
    delete MCMatching;
@@ -98,26 +105,56 @@ void TtSemiEventSolution::RecordSolutions( const edm::Event& iEvent, int topo, i
    pvInfo.clear();
    vetoInfo.clear();
 
-   // temperary selection for hitfit people
-   /*
-   bool hitfit = false ;
-   if ( iEvent.id().run() == 139786 && iEvent.id().event()== 30766631 )  hitfit = true; 
-   if ( iEvent.id().run() == 140124 && iEvent.id().event()== 1749068 )  hitfit = true; 
-   if ( iEvent.id().run() == 141960 && iEvent.id().event()== 36380903 )  hitfit = true; 
-   if ( iEvent.id().run() == 142137 && iEvent.id().event()== 115049658 )  hitfit = true; 
-   if ( iEvent.id().run() == 142524 && iEvent.id().event()== 119786558 )  hitfit = true; 
-   if ( iEvent.id().run() == 142528 && iEvent.id().event()== 528865367 )  hitfit = true; 
-   evtId =  iEvent.id().event() ;
-   */
-
    // 2. Event Selection
-   //bool passtrig = evtSelected->TriggerSelection( iEvent, "HLT_Mu15v1" ); 
-   bool passtrig = evtSelected->TriggerSelection( iEvent, trigTag ); 
-   //bool passtrig = true ; 
+   //bool passtrig = evtSelected->TriggerSelection( iEvent, trigTag ); 
+   bool passtrig = true ; 
 
    bool goodVtx = evtSelected->VertexSelection( iEvent, pvInfo ) ;
 
    nGoodJet = evtSelected->eventSelection( topo, isoLep, selectedJets, solvedMetP4, vetoInfo, iEvent, "patMet" );
+
+   vector<double> otherInfo ;
+   vector<double> pdfErr ;
+   if ( !isData ) {
+      Handle<std::vector<reco::GenParticle> > genParticles;
+      iEvent.getByLabel(genSrc, genParticles);
+      // 3. unclustered energy
+      LorentzVector metErr = evtSelected->Unclustered_Uncertainty( iEvent );
+      otherInfo.push_back( metErr.px() );
+      otherInfo.push_back( metErr.py() );
+      //otherInfo.push_back( 0 );
+      //otherInfo.push_back( 0 );
+      // 4. W BR correction for ttbar MC
+      double WBRCorr = 1. ;
+      if ( debug )  WBRCorr = MCMatching->WBRCorrection_Ttbar( genParticles );
+      otherInfo.push_back( WBRCorr );
+      if ( passtrig ) ttCount += WBRCorr ;
+
+      // 5. PDF uncertainty - very very slow
+      //pdfErr = evtSelected->PDF_Uncertainty( iEvent );   
+      // 6. normalize PDF variations of each uncertainty parameters for ttbar events
+      //for ( size_t k=0; k< pdfErr.size(); k++) {
+      //    ttPdfErr[k] += pdfErr[k] ;
+      //}
+      //ttPdfErr[44] += 1 ;
+      
+      // if not doing PDF uncertainty, use this part
+      for ( size_t k=0; k< 44; k++) {
+          pdfErr.push_back( 1 ) ;
+      }
+      ttPdfErr[44] = 1 ;
+   } else {
+      // no MET Error, WBR and PDF Err
+      otherInfo.push_back( 0 );
+      otherInfo.push_back( 0 );
+      otherInfo.push_back( 1 );
+
+      for ( size_t k=0; k< 44; k++) {
+          pdfErr.push_back( 1 ) ;
+      }
+      ttPdfErr[44] = 1 ;
+
+   }
 
    //cout<<" event selected w/ jet "<<selectedJets.size()<<"  w/ lepton "<< isoLep.size() <<endl;
    int nLmu = 0;
@@ -127,11 +164,11 @@ void TtSemiEventSolution::RecordSolutions( const edm::Event& iEvent, int topo, i
        if ( vetoInfo[j].pdgId == 13 ) nLmu++;
    }
 
-   //int failIdx = 0 ;
    // sync exerc
+   //int failIdx = 0 ;
    
    if ( passtrig )                                                     counter[0]++ ;
-   if ( passtrig && goodVtx  )                                         counter[1]++ ;
+   if ( passtrig && goodVtx )                                          counter[1]++ ;
    if ( passtrig && goodVtx && nGoodJet > -1 )                         counter[2]++ ;
    if ( passtrig && goodVtx && nGoodJet > -1 && nLmu == 0 )            counter[3]++ ;
    if ( passtrig && goodVtx && nGoodJet > -1 && vetoInfo.size() == 0 ) counter[4]++ ;
@@ -140,17 +177,6 @@ void TtSemiEventSolution::RecordSolutions( const edm::Event& iEvent, int topo, i
    if ( passtrig && goodVtx && nGoodJet >= 3 && vetoInfo.size() == 0 ) counter[7]++ ;
    if ( passtrig && goodVtx && nGoodJet >= 4 && vetoInfo.size() == 0 ) counter[8]++ ;
    
-   /*
-   if ( passtrig )                                                     failIdx++ ;
-   if ( passtrig && goodVtx  )                                         failIdx++ ;
-   if ( passtrig && goodVtx && nGoodJet > -1 )                         failIdx++ ;
-   if ( passtrig && goodVtx && nGoodJet > -1 && nLmu == 0 )            failIdx++ ;
-   if ( passtrig && goodVtx && nGoodJet > -1 && vetoInfo.size() == 0 ) failIdx++ ;
-   if ( passtrig && goodVtx && nGoodJet >= 1 && vetoInfo.size() == 0 ) failIdx++ ;
-   if ( passtrig && goodVtx && nGoodJet >= 2 && vetoInfo.size() == 0 ) failIdx++ ;
-   if ( passtrig && goodVtx && nGoodJet >= 3 && vetoInfo.size() == 0 ) failIdx++ ;
-   if ( passtrig && goodVtx && nGoodJet >= 4 && vetoInfo.size() == 0 ) failIdx++ ;
-   */
     
    //double isoLepPt = -1 ;
    //if ( isoLep.size() > 0 ) isoLepPt = isoLep[0].p4.Pt() ;
@@ -167,7 +193,7 @@ void TtSemiEventSolution::RecordSolutions( const edm::Event& iEvent, int topo, i
 
    if ( getEvent ) {
 
-      //cout<< iEvent.id().run() <<" : "<<iEvent.id().event()<<" : "<< iEvent.id().luminosityBlock() <<" : "<< isoLep[0].p4.Pt() <<endl;
+   //cout<< iEvent.id().run() <<" : "<<iEvent.id().event()<<" : "<< iEvent.id().luminosityBlock() <<" : "<< isoLep[0].p4.Pt() <<endl;
       // 3. Reconstruct leptonic W 
      //cout<<"    -> "<<njets<<" jets event " <<endl ;
      std::vector<iReco> lepWs;
@@ -177,7 +203,7 @@ void TtSemiEventSolution::RecordSolutions( const edm::Event& iEvent, int topo, i
          solvedMetP4.push_back( lepWs[i].q4v[1].second ) ;
      }
      // save the events without considering neutrino pz solution => events with only 1 neutrino pz( = 0 )  
-     solTree->FillB1( evtId, selectedJets, solvedMetP4, isoLep, pvInfo, vetoInfo );
+     solTree->FillB1( evtId, selectedJets, solvedMetP4, isoLep, pvInfo, vetoInfo, otherInfo, pdfErr );
 
    }
    //cout<<" ------ reco finished --------------"<<endl;

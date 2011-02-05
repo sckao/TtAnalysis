@@ -41,7 +41,7 @@ TtJet::TtJet(const edm::ParameterSet& iConfig)
   muonSrc         = iConfig.getParameter<edm::InputTag> ("muonSource");
   //caloSrc         = iConfig.getParameter<edm::InputTag> ("caloSource");
   genSrc          = iConfig.getParameter<edm::InputTag> ("genParticles"); 
-
+  isData          = iConfig.getUntrackedParameter<bool>   ("isData");
   bCut            = iConfig.getUntrackedParameter<double> ("bTagCut");
   bTagAlgo        = iConfig.getUntrackedParameter<string> ("bTagAlgo");
 
@@ -78,12 +78,12 @@ void TtJet::jetAnalysis(Handle<std::vector<pat::Jet> > patJet, HTOP1* histo1){
        // Uncorrect Information
        // uncorrected pt from reco jet 
        // raw energy deposite in ECal and HCal
+       if ( !j1->isCaloJet() ) continue;
        float  emE0 = (*j1).emEnergyInEB()  + (*j1).emEnergyInEE()  + (*j1).emEnergyInHF() ;
        float  hdE0 = (*j1).hadEnergyInHB() + (*j1).hadEnergyInHE() + (*j1).hadEnergyInHF() + (*j1).hadEnergyInHO();
        double totalE  = emE0 +hdE0 ;
        double totalEt = totalE*sin(j1->theta() ) ;
        float  emF0 = emE0 / totalE ;
-
        // pat information -> suppose to be corrected 
        double corrPt = j1->pt();
        float  emF  = (*j1).emEnergyFraction() ;
@@ -488,7 +488,7 @@ std::vector<ttCandidate> TtJet::JetSelection1( edm::Handle<std::vector<pat::Jet>
 
        if ( ( fScale * j1->pt() ) <= EtThreshold ) continue ;
        if ( fabs(j1->eta())       >= jetSetup[1] ) continue ;
-       if ( j1->jetID().fHPD      >= 0.98        ) continue ;
+       //if ( j1->jetID().fHPD      >= 0.98        ) continue ;
 
        // if using PF jet, no calo information
        double emFrac = -1 ;
@@ -517,25 +517,37 @@ std::vector<ttCandidate> TtJet::JetSelection1( edm::Handle<std::vector<pat::Jet>
           emFrac = ( chargedEM + neutralEM ) / ( chargedEM + chargedHad + neutralEM + neutralHad ) ;
           EovH = ( chargedEM + neutralEM) / ( chargedHad + neutralHad ) ;
 
+          int    NConstituents = j1->numberOfDaughters() ;
           double CEF = j1->chargedEmEnergyFraction() ;
           double NHF = j1->neutralHadronEnergyFraction() ;
           double NEF = j1->neutralEmEnergyFraction() ;
           double CHF = j1->chargedHadronEnergyFraction() ;
           int    NCH = j1->chargedMultiplicity() ;
+          if ( NConstituents <= 1 )                        badPFJet = true ;
           if ( CEF >= 0.99 || NHF >= 0.99 || NEF >= 0.99 ) badPFJet = true ;
           if ( fabs( j1->eta()) < 2.4 && CHF <= 0 )        badPFJet = true ;  
           if ( fabs( j1->eta()) < 2.4 && NCH <= 0 )        badPFJet = true ;  
        }
-       if ( emFrac <= jetSetup[3] ) continue;
+       if ( j1->isCaloJet() && emFrac <= jetSetup[3] ) continue;
        if ( badPFJet              ) continue;
-       
+
+       double jer_scale = 1.0 ;
+       if ( !isData && j1->genJet() != NULL ) {
+          const reco::GenJet* genj = j1->genJet() ;    
+          if (  genj->pt() >= 15. ) {
+             double deltaPt = (j1->pt() - genj->pt())*0.1 ;
+             jer_scale = max(0.0, ( j1->pt() + deltaPt ) / j1->pt() ) ;
+          }
+       }
+ 
+       /*
        bool fakeJet = false;
        for ( size_t i =0; i < IsoMuons.size(); i++ ) {
            double dR_mu = tools->getdR( IsoMuons[i].p4 , j1->p4() );
            if ( dR_mu < 0.1 ) fakeJet = true ;
        }
        if ( fakeJet ) continue;
-       
+       */
 
        double bDis = j1->bDiscriminator( bTagAlgo1 ) ;
        if ( bDis >= bCut ) nBJets++ ;
@@ -550,8 +562,9 @@ std::vector<ttCandidate> TtJet::JetSelection1( edm::Handle<std::vector<pat::Jet>
         ttjet.charge  = j1->charge() ;
         ttjet.nHits = j1->jetID().n90Hits ;
         ttjet.pdgId = j1->pdgId() ;
+        ttjet.err[0] = ( isData ) ? 1. : JES_Uncertainty( j1->pt(), j1->eta() ) ;
+        ttjet.err[1] = jer_scale ;
         jet_temp.push_back( ttjet );
-
    }
 
    if ( jet_temp.size() > 1 ) sort( jet_temp.begin(), jet_temp.end(), EtDecreasing );
@@ -600,12 +613,14 @@ std::vector<ttCandidate> TtJet::SoftJetSelection1( edm::Handle<std::vector<pat::
        }
        if ( emFrac < jetSetup[3] ) continue;
 
+       /*
        bool fakeJet = false;
        for ( size_t i =0; i < IsoMuons.size(); i++ ) {
            double dR_mu = tools->getdR( IsoMuons[i].p4 , j1->p4() );
            if ( dR_mu < 0.1 ) fakeJet = true ;
        }
        if ( fakeJet ) continue;
+       */ 
 
        double bDis = j1->bDiscriminator( bTagAlgo1 ) ;
        if ( bDis >= bCut ) nBJets++ ;
@@ -785,6 +800,24 @@ void TtJet::ElectronAndJet( std::vector<const reco::Candidate*> jet_temp,  const
 
    }
    if ( jet_temp.size() > 0 ) histo1->Fill_1h( dR, relPt, eleE, jetE );
+
+}
+
+double TtJet::JES_Uncertainty( double pt, double eta ) {
+
+   // fucking JEC uncertainty
+   std::string JEC_PATH("CondFormats/JetMETObjects/data/");
+   edm::FileInPath fip(JEC_PATH+"Spring10_Uncertainty_AK5PF.txt");
+   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty( fip.fullPath() );
+
+   jecUnc->setJetEta( eta );
+   jecUnc->setJetPt( pt );
+   float unc = jecUnc->getUncertainty(true);
+
+   double jes_unc = static_cast<double>( unc );
+ 
+   delete jecUnc ;
+   return jes_unc ;
 
 }
 
