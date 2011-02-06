@@ -46,7 +46,7 @@ using namespace std;
 TtMuon::TtMuon(const edm::ParameterSet& iConfig)
 {
    //now do what ever initialization is needed
-  muSetup = iConfig.getParameter<std::vector<double> >("muSetup");
+  muSetup  = iConfig.getParameter<std::vector<double> >("muSetup");
   //muonSrc = iConfig.getParameter<edm::InputTag> ("muonSource");
   tools        = new TtTools();
 
@@ -248,20 +248,21 @@ std::vector<ttCandidate> TtMuon::IsoMuonSelection1( Handle<std::vector<pat::Muon
      if ( fabs( d0 )       >= muSetup[5]  ) pass = false ;
      if ( nSiLayer         <           1  ) pass = false ;
      if ( it->numberOfMatches() <      2  ) pass = false ;
-     if ( dZ               >= 1           ) pass = false ;
+     if ( dZ               >=          1  ) pass = false ;
      if ( glbTrack->hitPattern().numberOfValidMuonHits() < 1 ) pass = false ;
 
      //double mindR = 999.;
+     /*    
      for (std::vector<pat::Jet>::const_iterator j1 = patJet->begin(); j1 != patJet->end(); j1++) {
 
-         /*
          if ( !pass ) break ;
-         if ( !j1->isCaloJet() ) continue ;
-         if ( j1->pt() < 30. || fabs(j1->eta()) > 2.4 ||  j1->emEnergyFraction() < 0.01 || j1->jetID().n90Hits <= 1 ) continue; 
-         if ( j1->jetID().fHPD >= 0.98 ) continue;
-         */
+         
+         //if ( !j1->isCaloJet() ) continue ;
+         //if ( j1->pt() < 30. || fabs(j1->eta()) > 2.4 ||  j1->emEnergyFraction() < 0.01 || j1->jetID().n90Hits <= 1 ) continue; 
+         //if ( j1->jetID().fHPD >= 0.98 ) continue;
+         
          if ( !j1->isPFJet() ) continue;
-         if ( j1->pt() < 30. || fabs(j1->eta()) > 2.4 ) continue ;
+         if ( j1->pt() < 25. || fabs(j1->eta()) > 2.4 ) continue ;
 	 int    NConstituents = j1->numberOfDaughters() ;
 	 double CEF = j1->chargedEmEnergyFraction() ;
 	 double NHF = j1->neutralHadronEnergyFraction() ;
@@ -272,12 +273,12 @@ std::vector<ttCandidate> TtMuon::IsoMuonSelection1( Handle<std::vector<pat::Muon
          if ( CEF >= 0.99 || NHF >= 0.99 || NEF >= 0.99 ) continue ;
          if ( fabs( j1->eta()) < 2.4 && CHF <= 0 )        continue ;
          if ( fabs( j1->eta()) < 2.4 && NCH <= 0 )        continue ;
+
          double dR = deltaR( it->p4(), j1->p4() ) ;
- 
          if ( dR <= 0.3 )  pass = false ;
          //if ( dR < mindR )  mindR = dR ;
      }
-
+     */
      if ( pass ) {
         ttCandidate ttMuon ;
         ttMuon.p4 = it->p4() ;
