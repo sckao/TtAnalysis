@@ -1,0 +1,42 @@
+
+Lumi = 36.1
+
+# basic selection
+MuonCuts = ( 20., 2.1, 0.1, 0.3 )
+JetCuts = (  25., 2.4,  -1,   6 )
+# systematic type : MuonPt, MuonIso, Replace
+SysType = ( Replace )
+
+# Systematic sample sets, 0 is the nominal one
+sample0 = ( tt_387_0j,  wj0+,  zj_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample1 = ( tt_387_0j,  wjMEu_387_0j,  zj_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample2 = ( tt_387_0j,  wjMEd_387_0j,  zj_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample3 = ( tt_387_0j,  wjQ2u_387_0j,  zj_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample4 = ( tt_387_0j,  wjQ2d_387_0j,  zj_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample5 = ( tt_387_0j,  wj0+,  zjMEu_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample6 = ( tt_387_0j,  wj0+,  zjMEd_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample7 = ( tt_387_0j,  wj0+,  zjQ2u_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+sample8 = ( tt_387_0j,  wj0+,  zjQ2d_387_0j, tq_387_0j, tw_387_0j, ww_387_0j, qcd0+ )
+
+wj0Chain = ( wj_387_0j1, wj_387_0j2, wj_387_0j3, wj_387_0j4, wj_387_0j5 )
+qcd0Chain = ( qcd_387_0j1, qcd_387_0j2, qcd_387_0j3, qcd_387_0j4, qcd_387_0j5, qcd_387_0j6, qcd_387_0j7, qcd_387_0j8, qcd_387_0j9 )
+
+Norm_0 = ( 0.915, 0.923, 1.594, 1.763 )
+
+Norm_1 = ( 0.973, 0.948, 1.562, 1.780 )
+Norm_2 = ( 0.969, 0.985, 1.565, 1.795 )
+Norm_3 = ( 1.001, 1.096, 1.573, 1.687 )
+Norm_4 = ( 0.717, 0.597, 1.637, 1.902 )
+
+Norm_5 = ( 0.916, 0.922, 1.602, 1.830 )
+Norm_6 = ( 0.917, 0.923, 1.592, 1.774 )
+Norm_7 = ( 0.917, 0.927, 1.589, 1.822 )
+Norm_8 = ( 0.910, 0.912, 1.584, 1.644 )
+
+
+Replace = (        1,       1,       1,       1,      2,      2,      2,      2 )
+channel = (    wjMEu,   wjMEd,   wjQ2u,   wjQ2d,  zjMEu,  zjMEd,  zjQ2u,  zjQ2d )
+xsec    = (    31314,   31314,   31314,   31314,   3048,   3048,   3048,   3048 )
+EffHLT  = (   0.2027,  0.2033,  0.2036,  0.2032, 0.2837, 0.2843, 0.2848, 0.2854 )
+nEvents = (  2102172,  550344, 1266111, 1024806, 473050, 472836, 378457, 409923 )
+

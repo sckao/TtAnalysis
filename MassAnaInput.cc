@@ -73,7 +73,7 @@ void MassAnaInput::LinkForests( TString treeName ){
   }
 
   vector<string> fNamesOther ;
-  GetParameters( "OtherSamples", &fNamesOther );
+  GetParameters( "SysSamples", &fNamesOther );
   for ( size_t i =0 ; i< fNamesOther.size(); i++ ) {
       TTree* tr = GetTree( fNamesOther[i], treeName ) ;
       forestOther.push_back( tr );
@@ -92,7 +92,7 @@ TTree* MassAnaInput::TreeMap( string fileName ){
     vector<string> fNames4J ;
     GetParameters( "4JSamples", &fNames4J );
     vector<string> fNamesOther ;
-    GetParameters( "OtherSamples", &fNamesOther );
+    GetParameters( "SysSamples", &fNamesOther );
 
 
     TTree* theTr = 0;
@@ -125,7 +125,7 @@ int MassAnaInput::TreeSize( string fileName ){
     vector<string> fNames4J ;
     GetParameters( "4JSamples", &fNames4J );
     vector<string> fNamesOther ;
-    GetParameters( "OtherSamples", &fNamesOther );
+    GetParameters( "SysSamples", &fNamesOther );
 
     int treeSize = 0;
     for ( size_t i=0; i< f0Names.size(); i++ ) {
@@ -854,20 +854,20 @@ void MassAnaInput::NormalizeComponents(  string theChannel, TH1D* tmp ){
 
 }
 
-double MassAnaInput::NormalizeComponents(  string theChannel ){
+double MassAnaInput::NormalizeComponents(  string theChannel, string cfgFile ){
 
   double lumi ;
   double Scal = 1 ;
-  GetParameters("Lumi", &lumi );
+  GetParameters("Lumi", &lumi, cfgFile );
 
   vector<double> nEvents ;
-  GetParameters( "nEvents" , &nEvents );
+  GetParameters( "nEvents" , &nEvents, cfgFile );
   vector<double> xsec;
-  GetParameters("xsec", &xsec);
+  GetParameters("xsec", &xsec, cfgFile );
   vector<double> Eff;
-  GetParameters("EffHLT", &Eff)  ;
+  GetParameters("EffHLT", &Eff, cfgFile )  ;
   vector<string>  channel;
-  GetParameters( "channel" , &channel );
+  GetParameters( "channel" , &channel, cfgFile );
 
   int idx = -1;
   for (size_t i =0; i< channel.size(); i++) {
@@ -992,6 +992,7 @@ void MassAnaInput::GetParameters(string paraName, string* thePara, string cfgFil
 
            pos = line.find( paraName );
            vpos = pos + paraName.size() + 2;
+
            if ( pos < line.npos ) {
               string str_end = line.substr(vpos-1, 1) ;
               if ( str_end == ' ' || str_end == '=') {
@@ -1030,13 +1031,14 @@ void MassAnaInput::GetParameters(string paraName, vector<double>* thePara, strin
            if ( pos < line.npos ) {
               getName  = line.substr( pos, paraName.size() );
               string arrVal = line.substr( vpos );
+              if ( arrVal[0] != '=' && arrVal[0] != ' ' ) continue;
 	      int vidx = 0;
 	      string vtemp ;
 	      //cout<< paraName <<" = ( " ;
               for (string::iterator it = arrVal.begin(); it< arrVal.end(); it++) {
                   if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') vtemp.push_back( *it );
                   if ( (*it) == ',' || (*it) == ')' ) { 
-                     vvec.push_back( atof( vtemp.c_str() ) ) ;
+                     if ( vtemp.size() > 0 ) vvec.push_back( atof( vtemp.c_str() ) ) ;
 		     //cout<< vtemp << *it;
 		     vidx++ ;
 		     vtemp.clear() ;
@@ -1065,17 +1067,18 @@ void MassAnaInput::GetParameters(string paraName, vector<string>* thePara, strin
            if ( line[0] == '#' ) continue ;
 
            pos = line.find( paraName );
-           vpos = pos + paraName.size() + 1;
+           vpos = pos + paraName.size() ;
            if ( pos < line.npos ) {
               getName  = line.substr( pos, paraName.size() );
               string arrVal = line.substr( vpos );
+              if ( arrVal[0] != '=' && arrVal[0] != ' ' ) continue;
 	      int vidx = 0;
 	      string vtemp ;
 	      //cout<< paraName <<" = ( " ;
               for (string::iterator it = arrVal.begin(); it< arrVal.end(); it++) {
                   if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') vtemp.push_back( *it );
                   if ( (*it) == ',' || (*it) == ')' ) { 
-                     vvec.push_back( vtemp ) ;
+                     if ( vtemp.size() > 0 ) vvec.push_back( vtemp ) ;
 		     //cout<< vtemp << *it;
 		     vidx++ ;
 		     vtemp.clear() ;
@@ -1103,19 +1106,20 @@ void MassAnaInput::GetParameters(string paraName, vector<int>* thePara, string c
            if ( line[0] == '#' ) continue ;
 
            pos = line.find( paraName );
-           vpos = pos + paraName.size() + 1;
+           vpos = pos + paraName.size() ;
            if ( pos < line.npos ) {
               getName  = line.substr( pos, paraName.size() );
               string arrVal = line.substr( vpos );
-	      int vidx = 0;
+              if ( arrVal[0] != '=' && arrVal[0] != ' ' ) continue;
+	      //int vidx = 0;
 	      string vtemp ;
 	      //cout<< paraName <<" = ( " ;
               for (string::iterator it = arrVal.begin(); it< arrVal.end(); it++) {
                   if ( (*it) != ',' && (*it) != ' ' && (*it) != '(' && (*it) != ')' && (*it) != '=') vtemp.push_back( *it );
                   if ( (*it) == ',' || (*it) == ')' ) { 
-                     vvec.push_back( atoi( vtemp.c_str() ) ) ;
+                     if ( vtemp.size() > 0 ) vvec.push_back( atoi( vtemp.c_str() ) ) ;
 		     //cout<< vtemp << *it;
-		     vidx++ ;
+		     //vidx++ ;
 		     vtemp.clear() ;
                   }
               }

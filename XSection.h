@@ -11,6 +11,7 @@
 #include <TCanvas.h>
 #include <TSystem.h>
 #include <TGraphAsymmErrors.h>
+#include <TGraphPainter.h>
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +59,10 @@ public:
  
 
    void BgClosureTest( int nX, int nY, bool inclX = false, bool inclY = false ) ;
+
    vector<double> CutEff( int nj = 4 );
+   void CutEff( string cfgFile, int nj = 4 );
+
    void MethodTest1( int nj = 4 ) ;
    void MethodTest2( string cfgFile, int nj ) ;
    void MethodTest3( int nj = 4 ) ;

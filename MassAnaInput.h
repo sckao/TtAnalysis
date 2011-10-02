@@ -103,7 +103,7 @@ public:
 
    void NormalizeComponents( double lumi, double nEvents, int channel, TH1D* tmp );
    void NormalizeComponents( string theChhannel, TH1D* tmp );
-   double NormalizeComponents( string theChhannel );
+   double NormalizeComponents( string theChhannel, string cfgFile = "DataCard.txt" );
    
    void GetParameters( string paraName, int* thePara, string cfgFile ="DataCard.txt" );
    void GetParameters( string paraName, double* thePara, string cfgFile ="DataCard.txt" );

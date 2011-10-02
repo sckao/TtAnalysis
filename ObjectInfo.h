@@ -11,12 +11,15 @@
 #include <TLegend.h>
 #include <TCanvas.h>
 #include <TPad.h>
+#include <TPaveText.h>
+#include <TText.h>
 #include <TGraphErrors.h>
 #include <TSystem.h>
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
 
 #include "MassAnaInput.h"
@@ -40,8 +43,11 @@ private:
    int n_Jets ;
    string plotType ;
    string Inclusive ;
+   string dataLike ;
+   int JESType ;
    bool inclu ;
    bool isWeight ;
+   int maxNJets ;
 
    double bgMtCut;
    double bgMETCut;
@@ -52,6 +58,8 @@ public:
    ~ObjectInfo();     
 
    void EvtSelector( string fileName, recoObj* histos, bool smearing = false, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0 );
+
+   void QCDSelector( string fileName, recoObj* histos, bool smearing = false, double scale = 1., bool doQCD = true, int mode = 0, int evtSplit = 0 );
 
    double MtFitter( TH1D* hs, TF1& fjb1, TCanvas* c1a = NULL, double minMt = 40., double maxMt = 120., bool doPlot = false );
 
@@ -64,7 +72,8 @@ public:
 
    void CombinedMCPlotter( vector<string>& fakeData, bool doWMtFit = false, bool doScale = false );
 
-   void MCPlotter1( vector<string>& fakeData, double norm = 1000. );
+   void MCPlotter1( vector<string>& fakeData, double norm = 1500. );
+   void JESPlotter( vector<string>& fakeData, double norm = 1500. );
 
    vector<double> BinErr( double m ) ;
 
@@ -76,13 +85,10 @@ public:
    double EvtScaling( double w_pt , string fileName ) ;
    double EvtScaling( int NJets , string fileName ) ;
 
-   void QCDSelector( string fileName, recoObj* histos, bool smearing = false, double scale = 1., bool doQCD = true, int mode = 0, int evtSplit = 0 );
    double QCDScaling( double w_pt ) ;
    double QCDScaling( int NJets, string fileName ) ;
-   void QCDBGPlotter( string DataName, vector<string>& fakeData, bool doQCD, double MtCut, double METCut, double scale = 1 );
+   void QCDBGPlotter( string DataName, vector<string>& fakeData, bool doQCD, double MtCut, double METCut, int scaleMode = 0 );
    void QCDBG2DPlotter( string DataName, vector<string>& fakeData, bool doQCD, double MtCut, double METCut, double scale = 1 );
-
-   void WScaleStudy( vector<string>& fakeData ) ;
 
    double PtRel (TLorentzVector v1, TLorentzVector v2 );
    //ClassDef(ObjectInfo, 1);

@@ -44,7 +44,7 @@ private:
    vector<double> M2M3Cut;
    double LepM2tCutL ;
    double dM3Cut ;
-   double JES ;
+   double JESv ;
 
    double sigma1;
    double sigma2;
@@ -57,6 +57,7 @@ private:
    int    n_btag;
    int    JESType;
 
+   string dataLike ;
    string Inclusive ;
    bool inclu ;
    bool normMCData ;
@@ -108,7 +109,9 @@ public:
    void ResetCuts( double m2L = -1, double m2H = -1, double m3L = -1, double m3H = -1, double lepM2tL = -1, double lepM2tH = -1, bool GetDefault = false );
 
    void SetMCNormalization( bool normMC ) ;
+   void SetJESType( int jetType_ ) ;
    void SetMuonCuts( double pt_, double eta_, double iso_ );
+   void SetJetCuts( double pt_, double eta_, int nj_ );
 
    // methods for old soltree
    double ReFitSolution( string mName, recoObj* wObj, int nJets, double scale = 1., vector<int>* evtlist = NULL, int evtSplit = 0, bool smearing = false );

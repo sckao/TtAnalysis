@@ -10,10 +10,13 @@
 #include <TLegend.h>
 #include <TCanvas.h>
 #include <TSystem.h>
+#include <TColor.h>
+#include <TPaveText.h>
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include <TGaxis.h>
 
@@ -52,17 +55,18 @@ public:
 
    void CreateFolders(); 
 
-   void HadTopFitter( string mName, TString DrawOpt = "COLZ", bool isMCMatched = false );
+   void HadTopFitter( string mName, TString DrawOpt = "COLZ", bool doScale = false, bool isMCMatched = false );
 
    void LepTopFitter( string mName, TString DrawOpt = "COLZ", bool isMCMatched = false );
 
-   void Had_SBRatio();
+   void M2M3_1DPlots( string dataName, vector<string>& mcFiles, bool doScale = false ) ;
+
+   void Had_SBRatio( vector<string>& mcFile );
    void SBCEPlotter();
+   void SBPlotter();
 
    void EnsembleTest( int randomSeed = 0 ,TString DrawOpt = "COLZ" );
    void LepTEnsembleTest( int randomSeed = 0 ,TString DrawOpt = "COLZ" );
-
-   void MixBG( TString DrawOpt = "COLZ" );
 
    void MixAll( vector<string>& flist, TString DrawOpt = "COLZ" );
 

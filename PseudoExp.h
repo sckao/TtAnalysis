@@ -28,6 +28,8 @@ private:
 
 
    MassAnaInput*    fitInput;
+   vector<double> jetCuts;
+   vector<double> muonCuts;
 
 public:
 
@@ -40,7 +42,7 @@ public:
  
    vector<int> EventShuffle( int theSize, int RandomSeed );
  
-   void PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed = 0, bool ReMET = false ) ;
+   void PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed = 0, double jes = 0, bool ReMET = false ) ;
  
    void JetEtReSort( vector<TLorentzVector>& vs );
    

@@ -3,6 +3,8 @@
 PseudoExp::PseudoExp(){
 
   fitInput = new MassAnaInput();
+  fitInput->GetParameters( "MuonCuts", &muonCuts );
+  fitInput->GetParameters( "JetCuts",  &jetCuts );
 
 }
 
@@ -100,21 +102,16 @@ void PseudoExp::JetEtReSort( vector<TLorentzVector>& vs ) {
 }
 
 
-void PseudoExp::PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed, bool ReMET  ) {
+void PseudoExp::PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed, double jes, bool ReMET ) {
 
   //cout<<" Start Smearing ~~~ "<<endl;
   TRandom3* tRan = new TRandom3();
   tRan->SetSeed( RandomSeed );  
   double rf = tRan->Uniform( -3.1415, 3.1415 ) ;
-  double bz = tRan->Uniform( -0.3, 0.3 ) ;
-  double bx = tRan->Gaus( 0., 0.1 ) ;
-  double by = tRan->Gaus( 0., 0.1 ) ;
-  if ( bx >=  0.5 ) bx =  0.5 ;
-  if ( by >=  0.5 ) by =  0.5 ;
-  if ( bx <= -0.5 ) bx = -0.5 ;
-  if ( by <= -0.5 ) by = -0.5 ;
-  TVector3 bv( bx, by, bz ) ;
-  
+  double bz = tRan->Uniform( -0.2, 0.2 ) ;
+  //double bx = tRan->Gaus( -0.1, 0.1 ) ;
+  //double by = tRan->Gaus( -0.1, 0.1 ) ;
+  TVector3 bv( 0, 0, bz ) ;
   //cout<<" bv  ("<<bx<<","<<by<<","<<bz<<")"<<"  rotate : "<< rf <<endl;
 
   //const size_t sz = vs.size() ;
@@ -128,27 +125,23 @@ void PseudoExp::PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed, bool 
       //mA = mA + vs[i] ;
       //if ( i < 3 ) m3A = m3A + vs[i] ;
       int nS = 0 ;
-      double minPt = ( vs[i].Pt() >= 30. ||  vs[i].Et() >= 30. ) ?  30. : 20. ;
+      //double minPt = ( vs[i].Pt() >= jetCuts[0]  ) ?  jetCuts[0] : 20. ;
 
       TLorentzVector vs1( vs[i].Px(), vs[i].Py(), vs[i].Pz(), vs[i].E() );
       if ( vs1.Pt() == 0 && vs1.Pz() == 0 ) continue ;
 
-      while( nS == 0 || vs1.Pt() < minPt ) {
+      while( nS == 0 || vs1.Pt() < jetCuts[0] ) {
           vs1 = TLorentzVector( vs[i].Px(), vs[i].Py(), vs[i].Pz(), vs[i].E() ) ;
-          tRan->SetSeed( i*17 + nS + RandomSeed );  
+          tRan->SetSeed( i*17 + nS + RandomSeed );  // just change the random number seed
           double sc = tRan->Rndm();
-          double scl = (sc-0.5)/10. ;
-          if ( nS == 1 ) { 
-             vs1.RotateZ( rf );
-             vs1 = vs1*( 1. +  fabs(scl) );
-          } else if ( nS >= 2 ) {
-             vs1.RotateZ( rf );
-             vs1 = vs1*( 1.1 );
-          } else {
+          double scl = ( jes == 0 ) ? (sc-0.5)/10. : tRan->Gaus( 0, jes ) ;
+          if ( nS == 0 ) { 
              vs1.RotateZ( rf );
              vs1 = vs1*( 1. +  scl );
              vs1.Boost( -bv );
-          }
+          } else  {
+             vs1.RotateZ( rf );
+          } 
           nS++ ;
       }
       vs[i] = vs1 ;
@@ -160,52 +153,41 @@ void PseudoExp::PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed, bool 
   }
 
   // smearing the muon and MET
-  double sc0 = tRan->Rndm();
-  double scl0 = (sc0-0.5)/10. ;
+  //double sc0 = tRan->Rndm();
+  //double scl0 = (sc0-0.5)/10. ;
+  double scl0 = tRan->Gaus( 0, 0.01 ) ;
   int im = vs.size() - 2 ;
   int in = vs.size() - 1 ;
   double dphi = vs[ im ].DeltaPhi( vs[ in ] ) ;
   double Mt2  = 2.* vs[im].Pt() * vs[in].Pt() *( 1- cos(dphi) );
   
-  //for (int i= static_cast<int>(vs.size()- 2) ; i < static_cast<int>(vs.size()); i++ ) {
   for (int i= im ; i < in+1 ; i++ ) {
       //cout<<" "<< i <<"*  vs :"<<vs[i].Pt()<<" / "<< vs[i].Pz()<<" M = "<< vs[i].M() <<endl;
 
-      int nS = 0 ;
       double theM = vs[i].M() ;
-      double minPt = ( i == im ) ?  15. : 0. ;
-
       TLorentzVector vs1( vs[i].Px(), vs[i].Py(), vs[i].Pz(), vs[i].E() );
       if ( vs1.Pt() == 0 && vs1.Pz() == 0 ) continue ;
 
-      while( nS == 0 || vs1.Pt() < minPt ) {
-          vs1 = TLorentzVector( vs[i].Px(), vs[i].Py(), vs[i].Pz(), vs[i].E() ) ;
-
-          if ( nS > 0 && i != in ) { 
-             tRan->SetSeed( 100 + 2*nS );  
-             sc0 = tRan->Rndm();
-             scl0 = fabs(sc0-0.5)/10. ;
-             vs1 = vs1*( 1. +  scl0 );
-             //cout<<" resmearing "<< nS <<" scale = "<< scl0 <<endl;
-          } else {
-             vs1.RotateZ( rf );
-             vs1.Boost( -bv );
-             if ( i == im ) vs1 = vs1*( 1. +  scl0 );
-             if ( i == in ) {
-                dphi = vs[ im ].DeltaPhi( vs1 ) ;
-                double new_met =  Mt2 / ( 2.*vs[ im ].Pt()*( 1- cos(dphi) ) );
-                double msc = new_met*(1.+scl0) / vs1.Pt() ;
-                //cout <<" new MET = "<< new_met <<" scale = "<< msc <<endl ;
-                double theE = msc*sqrt( vs1.Pt()*vs1.Pt() + theM*theM ) ;
-                vs1 = TLorentzVector( vs1.Px()* msc, vs1.Py()*msc, 0, theE ) ;
-             }
-          }
-          nS++ ;
+      vs1.RotateZ( rf );
+      vs1.Boost( -bv );
+      if ( i == im ) { 
+         vs1 = vs1*( 1. +  scl0 );
+         if ( vs1.Pt() < muonCuts[0] || fabs(vs1.Eta()) > muonCuts[1] ) vs1 = vs[i] ;
+      }
+      if ( i == in ) {
+         double sc = tRan->Rndm();
+         scl0 = ( jes == 0 ) ? (sc-0.5)/10. : tRan->Gaus( 0,  jes ) ;
+         dphi = vs[ im ].DeltaPhi( vs1 ) ;
+	 double new_met =  Mt2 / ( 2.*vs[ im ].Pt()*( 1- cos(dphi) ) );
+	 double msc = new_met*(1.+scl0) / vs1.Pt() ;
+	 //cout <<" new MET = "<< new_met <<" scale = "<< msc <<endl ;
+	 double theE = msc*sqrt( vs1.Pt()*vs1.Pt() + theM*theM ) ;
+	 vs1 = TLorentzVector( vs1.Px()* msc, vs1.Py()*msc, 0, theE ) ;
+         if ( vs1.Pt() < jetCuts[2] ) vs1 = vs1 * ( jetCuts[2]/vs1.Pt()  )  ;
       }
       vs[i] = vs1 ;
       npx = npx - vs[i].Px() ;
       npy = npy - vs[i].Py() ;
-
       //cout<<" -> vs :"<<vs[i].Pt()<<" / "<< vs[i].Pz() <<" M = "<< vs[i].M() <<endl;
   }
 
@@ -217,7 +199,7 @@ void PseudoExp::PhaseSmearing( vector<TLorentzVector>& vs, int RandomSeed, bool 
      double sf = tRan->Gaus( 0., s_phi ) ;
      newMET.RotateZ( sf ) ;
      // smearing the MET 
-     double s_met = 0.7*sqrt( (5.6*5.6)/(newMET.Pt()*newMET.Pt() ) +  ( 1.25*1.25/newMET.Pt() ) +  ( 0.033*0.033 ) );
+     double s_met = 0.7*sqrt( (5.6*5.6)/(newMET.Pt()*newMET.Pt() ) + ( 1.25*1.25/newMET.Pt() ) + (0.033*0.033) );
      double sE = tRan->Gaus( 0., s_met ) ;
      newMET = newMET*( 1. + sE ) ;
      vs.push_back( newMET );

@@ -9,14 +9,16 @@ HadWMassFitter::HadWMassFitter() {
   fitInput->GetParameters( "M2M3Cuts",   &M2M3Cut );
   fitInput->GetParameters( "LepM2tCutL", &LepM2tCutL );
   fitInput->GetParameters( "dM3Cut",     &dM3Cut );
-  fitInput->GetParameters( "JES",        &JES );
+  fitInput->GetParameters( "JES",        &JESv );
   fitInput->GetParameters( "JetCuts",    &jetCuts );
   fitInput->GetParameters( "MuonCuts",   &muonCuts );
-  fitInput->GetParameters( "Inclusive",  &Inclusive );
   fitInput->GetParameters( "bThreshold", &bTh );
   fitInput->GetParameters( "n_btag",     &n_btag );
   fitInput->GetParameters( "JESType",    &JESType );
+
+  fitInput->GetParameters( "Inclusive",  &Inclusive );
   inclu = ( Inclusive == "YES" ) ? true : false ;
+  fitInput->GetParameters( "DataLike",   &dataLike );
 
   normMCData = true ;
 }
@@ -369,10 +371,10 @@ vector<TLorentzVector> HadWMassFitter::GetLorentzVector( jlist Ls, double jpx[],
     TLorentzVector bjl( jpx[Ls.bl], jpy[Ls.bl], jpz[Ls.bl], jE[Ls.bl] );
 
     vector<TLorentzVector> tjets ;
-    tjets.push_back( wj1*JES ) ;
-    tjets.push_back( wj2*JES ) ;
-    tjets.push_back( bjh*JES ) ;
-    tjets.push_back( bjl*JES ) ;
+    tjets.push_back( wj1*JESv ) ;
+    tjets.push_back( wj2*JESv ) ;
+    tjets.push_back( bjh*JESv ) ;
+    tjets.push_back( bjl*JESv ) ;
     
     return tjets ;
 }
@@ -385,10 +387,10 @@ vector<TLorentzVector> HadWMassFitter::GetLorentzVector( vector<TLorentzVector>&
     TLorentzVector bjl = oblist[Ls.bl] ;
 
     vector<TLorentzVector> tjets ;
-    tjets.push_back( wj1*JES ) ;
-    tjets.push_back( wj2*JES ) ;
-    tjets.push_back( bjh*JES ) ;
-    tjets.push_back( bjl*JES ) ;
+    tjets.push_back( wj1*JESv ) ;
+    tjets.push_back( wj2*JESv ) ;
+    tjets.push_back( bjh*JESv ) ;
+    tjets.push_back( bjl*JESv ) ;
     
     return tjets ;
 }
@@ -475,6 +477,12 @@ void HadWMassFitter::ResetCuts( double m2L, double m2H, double m3L, double m3H, 
 
 void HadWMassFitter::SetMCNormalization( bool normMC ){
      normMCData = normMC ;
+     if (  normMCData ) cout<<" MC Normalized "<<endl;
+     if ( !normMCData ) cout<<" NO MC Scaling "<<endl;
+}
+
+void HadWMassFitter::SetJESType( int jetType_ ){
+     JESType = jetType_ ;
 }
 
 void HadWMassFitter::SetMuonCuts( double pt_, double eta_, double iso_ ){
@@ -482,8 +490,15 @@ void HadWMassFitter::SetMuonCuts( double pt_, double eta_, double iso_ ){
      if ( pt_  != -1 ) muonCuts[0] = pt_ ;
      if ( eta_ != -1 ) muonCuts[1] = eta_ ;
      if ( iso_ != -1 ) muonCuts[2] = iso_ ;
-     
 }
+
+void HadWMassFitter::SetJetCuts( double pt_, double eta_, int nj_ ){
+
+     if ( pt_  != -1 ) jetCuts[0] = pt_ ;
+     if ( eta_ != -1 ) jetCuts[1] = eta_ ;
+     if ( nj_  != -1 ) jetCuts[3] = nj_ ;
+}
+
 
 // For New SolTree Format, with JES/JEC, 
 // JEC : type = 1 , JES : type = 2 ;  return the efficiency
@@ -493,14 +508,18 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, int nJets,
   // get files and trees
   TTree* tr1 = fitInput->TreeMap( fileName );
 
-  bool isJES = ( JESType == 2 ) ? true : false ;
+  bool isJES = ( JESType == 1 ) ? true : false ;
+  bool isData = ( fileName.substr(0,4) == "data") ? true : false ;
+  if ( dataLike == "True" ) isData = true ;
 
   // event solution tree
   // always set bigger arrary size than what has been designed originally
-  double jpx[15], jpy[15], jpz[15], jE[15], bCut[15] ;
+  double jpx[15], jpy[15], jpz[15], jE[15], jes[15], jer[15], bCut[15] ;
   int n90[15] ;
   double mpx[2], mpy[2], mpz[2], mE[2], X2[2];
   double mIso[3], npx[3], npy[3], npz[3], nE[3] ;
+  double metErrX, metErrY ;
+  double WBRc = 1 ; 
   int evtId, nJ, nM, nN;
 
   tr1->SetBranchAddress("evtId"    ,&evtId);
@@ -527,6 +546,17 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, int nJets,
   tr1->SetBranchAddress("npz"      ,&npz);
   tr1->SetBranchAddress("nE"       ,&nE);
 
+  if ( !isData ) {
+     tr1->SetBranchAddress("jes"      ,&jes);
+     tr1->SetBranchAddress("jer"      ,&jer);
+     tr1->SetBranchAddress("metErrX", &metErrX);
+     tr1->SetBranchAddress("metErrY", &metErrY);
+     tr1->SetBranchAddress("WBRc",    &WBRc);
+  } else {
+     metErrX = 1. ;
+     metErrY = 1. ;
+     WBRc    = 1. ;
+  }
   vector<TLorentzVector> vlist0;
   vector<TLorentzVector> vlist1;
   vector<TLorentzVector> vlist2;
@@ -542,53 +572,91 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, int nJets,
   int loopEnd = ( evtlist == NULL ) ? tr1->GetEntries() : evtlist->size() ;
   //cout<<" Total Evnet of "<< fileName <<" = "<< loopEnd <<endl;
   int n2sol = 0;
+  int nSel  = 0;
+  double norm_const = 1 ;
   for ( int j= 0 ; j< loopEnd; j++ ) {
       if ( evtlist != NULL && evtlist->size() == 0 ) break;
       idx = ( evtlist == NULL ) ? j : (*evtlist)[j] ;
 
       if ( evtSplit == -1 && (j%2) == 0 ) continue ;
       if ( evtSplit ==  1 && (j%2) == 1 ) continue ;
-      if ( evtSplit >  1 && (j%evtSplit ) != 0 ) continue ;
-      if ( evtSplit < -1 && (j%evtSplit ) != 1 ) continue ;
+      if ( evtSplit  >  1 && (j%evtSplit ) != 0 ) continue ;
+      if ( evtSplit  < -1 && (j%evtSplit ) != 1 ) continue ;
 
       tr1->GetEntry(idx);
-      if ( nJ < nJets ) continue ;
+      //if ( nJ < nJets ) continue ;
       //cout<<" EventID = "<< evtId << endl;
       // muon selection
       TLorentzVector muP4( mpx[0], mpy[0], mpz[0], mE[0] );
-      if ( muP4.Pt()  < muonCuts[0] ) continue ;
-      if ( muP4.Eta() > muonCuts[1] ) continue ;
-      if ( mIso[0]    > muonCuts[2] ) continue ;
+      if ( muP4.Pt()        < muonCuts[0] ) continue ;
+      if ( fabs(muP4.Eta()) > muonCuts[1] ) continue ;
+      if ( mIso[0]          > muonCuts[2] ) continue ;
 
       // jet selection
       vector<TLorentzVector> objlist;
       int NCountedJets = 0;
+      double _jes = 1. ;
+      double metCorrVx = 0.;
+      double metCorrVy = 0.;
+      bool   badMuon = false ;
+      double jec_tot = 0 ;
       for ( int i = 0; i< nJ ; i ++) {
           TLorentzVector jn( jpx[i], jpy[i], jpz[i], jE[i] );
+          double jec_a = (0.75*0.8*2.2) / jn.Pt()   ;
+          double jec_b = ( bCut[i] > 3 ) ? 0.03 : 0. ;
+          if ( bCut[i] > 3 && jn.Pt() > 50. &&  jn.Pt() < 200. && fabs(jn.Eta()) < 2.  ) jec_b = 0.02 ;
+          jec_tot = sqrt( (jes[i]*jes[i]) + (jec_a*jec_a) + (jec_b*jec_b) ) ;
+
+          if ( !isData                 ) _jes = jer[i] ;
+          if ( JESType == 2 && !isData ) _jes = jer[i] + sqrt( (jes[i]*jes[i]) + (jec_a*jec_a) + (jec_b*jec_b) ) ; 
+          if ( JESType == 3 && !isData ) _jes = jer[i] - sqrt( (jes[i]*jes[i]) + (jec_a*jec_a) + (jec_b*jec_b) ) ; 
+          if ( JESType == 4 && !isData ) _jes = 1. ;
+          if ( JESType == 5 && !isData ) _jes = 1 + 2*( jer[i] -1 ) ;
+          if ( JESType == 8 && !isData ) _jes = 1 + jetCuts[4]*( jer[i] -1 ) ;
+
+          metCorrVx += jn.Px() ;
+          metCorrVy += jn.Py() ;
+          jn = jn*_jes;
+          metCorrVx -= jn.Px() ;
+          metCorrVy -= jn.Py() ;
+
           // sync cuts , n90 only works for calo jets
           if ( jn.Pt()          < jetCuts[0] ) continue ;
           if ( fabs( jn.Eta() ) > jetCuts[1] ) continue ;
           //if ( n90[i]           <         2  ) continue ;
+          double dRmj = muP4.DeltaR( jn );
+          if ( dRmj < muonCuts[3] ) badMuon = true ;
+          if ( badMuon ) break ;
+
           objlist.push_back( jn );
           NCountedJets++ ;
       }
+      if ( badMuon ) continue ;
       if ( NCountedJets != nJets && !inclu ) continue ;      
       if ( NCountedJets < nJets ) continue ;
-      if ( NCountedJets > 6 ) continue ;
+      if ( NCountedJets > static_cast<int>(jetCuts[3]) ) continue ;
+
+      if ( JESType == 6 ) metCorrVx +=  metErrX ;
+      if ( JESType == 6 ) metCorrVy +=  metErrY ;
+      if ( JESType == 7 ) metCorrVx -=  metErrX ;
+      if ( JESType == 7 ) metCorrVy -=  metErrY ;
+
       //cout<<" N Jets of the Event = "<< NCountedJets << endl;
 
       objlist.push_back( muP4 );
-      TLorentzVector neuP4( npx[0], npy[0], 0., sqrt( (npx[0]*npx[0]) +  (npy[0]*npy[0]) ) );
+      TLorentzVector neuP4( npx[0] , npy[0], 0., sqrt( (npx[0]*npx[0]) +  (npy[0]*npy[0]) ) );
+      if ( neuP4.Pt() < jetCuts[2] ) continue;
+      double neuPx = npx[0]+metCorrVx ;
+      double neuPy = npy[0]+metCorrVy ;
+      neuP4 = TLorentzVector( neuPx , neuPy, 0., sqrt( (neuPx*neuPx) +  (neuPy*neuPy) ) );
       objlist.push_back( neuP4 ) ;
 
+      nSel++ ;
       size_t obsz = objlist.size() ;
 
-      // selection for 2 jets samples
-      //if ( nJets == 2 && obsz != 5 ) continue ;
-      //if ( nJets == 2 && objlist[2].Pt() > 30. ) continue ;
-
-      if ( smearing ) pseudoExp->PhaseSmearing( objlist, j );
-      vector<TLorentzVector> neuP4s = NeuP4Solution( muP4, neuP4*JES ) ;
+      if ( smearing ) pseudoExp->PhaseSmearing( objlist, 0, jec_tot );
+      //if ( smearing ) pseudoExp->PhaseSmearing( objlist, 0 );
+      vector<TLorentzVector> neuP4s = NeuP4Solution( muP4, objlist[obsz-1] ) ;
       //cout<<" neu sol size = "<< neuP4s.size() <<endl;
 
       /*
@@ -647,7 +715,7 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, int nJets,
           // refit the W mass if desire
 	  Double_t para[6] = {0,0,0,0,1,1};
 	  Double_t errs[6];
-	  if ( JESType > 0 )  FitW( tjets[0] , tjets[1], para, errs, isJES );
+	  if ( JESType == 1 )  FitW( tjets[0] , tjets[1], para, errs, isJES );
           vector<TLorentzVector> newJs = newVector( tjets[0], tjets[1], tjets[2], tjets[3], para );
 
           // M2 M3 window 
@@ -665,10 +733,9 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, int nJets,
 
           for (size_t k = 0; k< neuP4s.size() ; k++) {
               // determine the weighting of each entry
-              //TLorentzVector neuP4 = ( k == 0 ) ? neuP4_0 : neuP4_1 ;
 	      Double_t wtX[2] = {0,0} ;
 	      double probWT = KinematicProb( tjets, muP4, neuP4s[k], para, wtX ); 
-	      if ( probWT == -1 && JESType > 0 ) continue ;
+	      if ( probWT == -1 && JESType == 1 ) continue ;
 
               // M3 M3 window
               TLorentzVector LM3 = muP4 + neuP4s[k] + newJs[3] ;
@@ -690,14 +757,15 @@ double HadWMassFitter::ReFitSolution( string fileName, recoObj* wObj, int nJets,
       n2sol++ ;
 
       double weighting = 1. / vlist0.size() ;
-      double norm_const = ( normMCData ) ? EvtScaling( nJets, fileName ) : 1. ;
+      norm_const = ( normMCData ) ? EvtScaling( nJets, fileName ) : 1. ;
       for (size_t i=0; i< vlist0.size(); i++) {
           wObj->gethad( vlist0[i], vlist1[i], vlist2[i] );
 	  wObj->getlep( vlist3[i], vlist4[i], vlist5[i] );
-	  wObj->Fillh( weighting, scale*norm_const );
+	  wObj->Fillh( weighting, scale*norm_const*WBRc );
       }
   }
-  double eff = ( loopEnd != 0 ) ? ( (n2sol*1.) / (loopEnd*1.) ) : -1 ;
+  double eff = ( loopEnd != 0 ) ? ( (n2sol*1.) / (nSel*1.) ) : -1 ;
+  wObj->getErr( n2sol, nSel-n2sol, scale*norm_const);
   //cout<<" Passed Event of "<< fileName <<" = "<< n2sol <<"  Eff = "<< eff <<" fk = "<<fk<<" fkk= "<< fkk  ;
   //cout<<"  gy= "<<gy <<" gyy = "<<gyy <<endl;
   return eff ;
@@ -803,15 +871,22 @@ double HadWMassFitter::EvtScaling( int NJets, string fileName ){
     fitInput->GetParameters(  "vjNorm", &vSet );
 
     double theScale = 1 ;
-    if ( fileName.substr(0,2) == "wj" || fileName.substr(0,2) == "zj" ) {
-       if ( NJets == 1 ) theScale =  vSet[0] ;
-       if ( NJets >= 2 ) theScale =  vSet[1] ;
+    if ( fileName.substr(0,2) == "wj" || fileName.substr(0,2) == "zj" || fileName.substr(0,2) == "ww" ) {
+       if ( NJets == 1 ) theScale =   vSet[0] ;
+       if ( NJets >= 2 ) theScale =   vSet[1] ;
        //if ( NJets == 3 ) theScale =  (vSet[1]*vSet[1])/vSet[0] ;
        //if ( NJets >= 4 ) theScale =  (vSet[1]*vSet[1]*vSet[1])/(vSet[0]*vSet[0]) ;
+
     }
+    if ( fileName.substr(0,2) == "tq" || fileName.substr(0,2) == "tw"  ) {
+       if ( NJets == 1 ) theScale =   vSet[0] ;
+       if ( NJets >= 2 ) theScale =   vSet[1] ;
+       //if ( NJets == 3 ) theScale =  (vSet[1]*vSet[1])/vSet[0] ;
+       //if ( NJets >= 4 ) theScale =  (vSet[1]*vSet[1]*vSet[1])/(vSet[0]*vSet[0]) ;
+    }   
     if ( fileName.substr(0,2) == "qc" ) {
-       if ( NJets == 1 ) theScale =  qSet[0] ;
-       if ( NJets >= 2 ) theScale =  qSet[1] ;
+       if ( NJets == 1 ) theScale =   qSet[0] ;
+       if ( NJets >= 2 ) theScale =   qSet[1] ;
        //if ( NJets == 3 ) theScale =  (qSet[1]*qSet[1])/qSet[0] ;
        //if ( NJets >= 4 ) theScale =  (qSet[1]*qSet[1]*qSet[1])/(qSet[0]*qSet[0]) ;
     }

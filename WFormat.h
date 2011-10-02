@@ -27,6 +27,7 @@ class recoObj {
   recoObj( string fsuffix, double iniV ){}
   virtual ~recoObj(){}
   virtual void Fillh( double weight, double scale = 1. )  = 0;
+  virtual void getErr( double nPass, double nFail, double scale = 1. ) = 0 ;
   virtual void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ) = 0 ;
   virtual void getlep( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ) = 0 ;
   virtual void getFloats( double fArr[] ) = 0;
@@ -90,7 +91,7 @@ class hadWBoson : public recoObj {
   void Fillh( double weight, double scale = 1. ) {
        hM2M3->Fill( hadM3, hadM2, weight*scale );
        hM2M3BG->Fill( lepM3, hadM2, weight*scale );
-       hM3M3->Fill( hadM3, lepM3, weight*scale );
+       if (hadM2 > 70 && hadM2 < 90 ) hM3M3->Fill( hadM3, lepM3, weight*scale );
        hEtaM2->Fill( hadM2_eta, lepM2_eta, weight*scale );
        hEtaM3->Fill( hadM3_eta, lepM3_eta, weight*scale );
        hYM2->Fill( hadM2_Y, lepM2_Y, weight*scale );
@@ -131,6 +132,7 @@ class hadWBoson : public recoObj {
 
   void getFloats( double fArr[] ) { }
   void getIntegrals( int iArr[] ) { }
+  void getErr( double np, double nf, double scale ) { }
 
   void scale( double scale ) {
        hM2M3->Scale( scale );
@@ -186,6 +188,184 @@ class hadWBoson : public recoObj {
   //ClassDef(hadWBoson, 1);
 };
 
+class hTopo : public recoObj {
+
+  double met ;
+  double Mt ;
+  double hadM2 ;
+  double hadM3 ;
+  double lepM3 ;
+
+  public:
+
+  hTopo( string fsfx = "" ){
+    TString sfx = fsfx ;
+    hMT      = new TH1D("hMT"+sfx,    " Mt          ", 15,  0, 150);
+    M2had    = new TH1D("M2had"+sfx,  " hadronic M2 ", 16,  0, 240);
+    M3had    = new TH1D("M3had"+sfx,  " hadronic M3 ", 20, 50, 350);
+    M3lep    = new TH1D("M3lep"+sfx,  " leptonic M3 ", 20, 50, 350);
+
+    hMT_1    = new TH1D("hMT_1"+sfx,    " Mt          ", 15,  0, 150);
+    M2had_1  = new TH1D("M2had_1"+sfx,  " hadronic M2 ", 12,  0, 240);
+    M3had_1  = new TH1D("M3had_1"+sfx,  " hadronic M3 ", 15, 50, 350);
+    M3lep_1  = new TH1D("M3lep_1"+sfx,  " leptonic M3 ", 15, 50, 350);
+
+    hMT_2    = new TH1D("hMT_2"+sfx,    " Mt          ", 15,  0, 150);
+    M2had_2  = new TH1D("M2had_2"+sfx,  " hadronic M2 ", 12,  0, 240);
+    M3had_2  = new TH1D("M3had_2"+sfx,  " hadronic M3 ", 15, 50, 350);
+    M3lep_2  = new TH1D("M3lep_2"+sfx,  " leptonic M3 ", 15, 50, 350);
+
+    hMT_3    = new TH1D("hMT_3"+sfx,    " Mt          ", 15,  0, 150);
+    M2had_3  = new TH1D("M2had_3"+sfx,  " hadronic M2 ", 12,  0, 240);
+    M3had_3  = new TH1D("M3had_3"+sfx,  " hadronic M3 ", 15, 50, 350);
+    M3lep_3  = new TH1D("M3lep_3"+sfx,  " leptonic M3 ", 15, 50, 350);
+
+    hMT_4    = new TH1D("hMT_4"+sfx,    " Mt          ", 15,  0, 150);
+    M2had_4  = new TH1D("M2had_4"+sfx,  " hadronic M2 ", 12,  0, 240);
+    M3had_4  = new TH1D("M3had_4"+sfx,  " hadronic M3 ", 15, 50, 350);
+    M3lep_4  = new TH1D("M3lep_4"+sfx,  " leptonic M3 ", 15, 50, 350);
+  }
+
+  virtual ~hTopo(){
+    delete hMT ;
+    delete M2had ;
+    delete M3had ;
+    delete M3lep ;
+    delete hMT_1 ;
+    delete M2had_1 ;
+    delete M3had_1 ;
+    delete M3lep_1 ;
+    delete hMT_2 ;
+    delete M2had_2 ;
+    delete M3had_2 ;
+    delete M3lep_2 ;
+    delete hMT_3 ;
+    delete M2had_3 ;
+    delete M3had_3 ;
+    delete M3lep_3 ;
+    delete hMT_4 ;
+    delete M2had_4 ;
+    delete M3had_4 ;
+    delete M3lep_4 ;
+  }
+
+  void Fillh( double weight, double scale = 1. ) {
+       M2had->Fill( hadM2, weight*scale );
+       M3had->Fill( hadM3, weight*scale );
+       M3lep->Fill( lepM3, weight*scale );
+       hMT->Fill(      Mt, weight*scale );
+       
+       if ( hadM2 <  60  )                 hMT_1->Fill(      Mt, weight*scale );
+       if ( hadM2 >=  60 && hadM2 <= 100 ) hMT_2->Fill(      Mt, weight*scale );
+       if ( hadM2 > 100  )                 hMT_3->Fill(      Mt, weight*scale );
+       if ( met   > 20   )                 hMT_4->Fill(      Mt, weight*scale );
+
+       if ( hadM3 < 140  )                 M2had_1->Fill( hadM2, weight*scale );
+       if ( hadM3 >= 140 && hadM3 <= 170 ) M2had_2->Fill( hadM2, weight*scale );
+       if ( hadM3 > 170  )                 M2had_3->Fill( hadM2, weight*scale );
+       if ( met   > 20   )                 M2had_4->Fill( hadM2, weight*scale );
+
+       if ( hadM2 <  60  )                 M3had_1->Fill( hadM3, weight*scale );
+       if ( hadM2 >=  60 && hadM2 <= 100 ) M3had_2->Fill( hadM3, weight*scale );
+       if ( hadM2 > 100  )                 M3had_3->Fill( hadM3, weight*scale );
+       if ( met   > 20   )                 M3had_4->Fill( hadM3, weight*scale );
+
+       if ( hadM3 < 140                  && hadM2 >= 65 && hadM2 <= 95 ) M3lep_1->Fill( lepM3, weight*scale );
+       if ( hadM3 >= 140 && hadM3 <= 170 && hadM2 >= 65 && hadM2 <= 95 ) M3lep_2->Fill( lepM3, weight*scale );
+       if ( hadM3 > 170                  && hadM2 >= 65 && hadM2 <= 95 ) M3lep_3->Fill( lepM3, weight*scale );
+       if ( met   > 20                   && hadM2 >= 65 && hadM2 <= 95 ) M3lep_4->Fill( lepM3, weight*scale );
+  }
+
+  void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
+       TLorentzVector vM2 = v0 + v1 ;
+       TLorentzVector vM3 = v0 + v1 + v2;
+       hadM2 = ( vM2.M() < 240 ) ? vM2.M() : 239. ;
+       hadM3 = ( vM3.M() < 350 ) ? vM3.M() : 349. ;
+  }
+  void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){
+       TLorentzVector vM2 = v4 + v5 ;
+       TLorentzVector vM3 = v3 + v4 + v5;
+       met = v5.Pt() ;
+       double dphi = v4.DeltaPhi( v5 ) ;
+       double Mt2 = 2.*v4.Pt()*v5.Pt()*( 1. - cos(dphi) );
+       Mt    = ( sqrt( Mt2 ) < 150 ) ? sqrt( Mt2 ) : 149. ;
+       lepM3 = (     vM3.M() < 350 ) ?     vM3.M() : 349. ;
+  }
+
+  void getFloats( double fArr[] ) { }
+  void getIntegrals( int iArr[] ) { }
+  void getErr( double np, double nf, double scale ) { }
+
+  void scale( double scale ) {
+       hMT->Scale( scale );
+       M2had->Scale( scale );
+       M3had->Scale( scale );
+       M3lep->Scale( scale );
+       hMT_1->Scale( scale );
+       M2had_1->Scale( scale );
+       M3had_1->Scale( scale );
+       M3lep_1->Scale( scale );
+       hMT_2->Scale( scale );
+       M2had_2->Scale( scale );
+       M3had_2->Scale( scale );
+       M3lep_2->Scale( scale );
+       hMT_3->Scale( scale );
+       M2had_3->Scale( scale );
+       M3had_3->Scale( scale );
+       M3lep_3->Scale( scale );
+       hMT_4->Scale( scale );
+       M2had_4->Scale( scale );
+       M3had_4->Scale( scale );
+       M3lep_4->Scale( scale );
+  }
+
+  void Fill1DVec( vector<TH1D*>& hList ){
+       hList.push_back(hMT);
+       hList.push_back(M2had);
+       hList.push_back(M3had);
+       hList.push_back(M3lep);
+       hList.push_back(hMT_1);
+       hList.push_back(M2had_1);
+       hList.push_back(M3had_1);
+       hList.push_back(M3lep_1);
+       hList.push_back(hMT_2);
+       hList.push_back(M2had_2);
+       hList.push_back(M3had_2);
+       hList.push_back(M3lep_2);
+       hList.push_back(hMT_3);
+       hList.push_back(M2had_3);
+       hList.push_back(M3had_3);
+       hList.push_back(M3lep_3);
+       hList.push_back(hMT_4);
+       hList.push_back(M2had_4);
+       hList.push_back(M3had_4);
+       hList.push_back(M3lep_4);
+  }
+
+  TH1D* hMT ;
+  TH1D* M2had ;
+  TH1D* M3had ;
+  TH1D* M3lep ;
+  TH1D* hMT_1 ;
+  TH1D* M2had_1 ;
+  TH1D* M3had_1 ;
+  TH1D* M3lep_1 ;
+  TH1D* hMT_2 ;
+  TH1D* M2had_2 ;
+  TH1D* M3had_2 ;
+  TH1D* M3lep_2 ;
+  TH1D* hMT_3 ;
+  TH1D* M2had_3 ;
+  TH1D* M3had_3 ;
+  TH1D* M3lep_3 ;
+  TH1D* hMT_4 ;
+  TH1D* M2had_4 ;
+  TH1D* M3had_4 ;
+  TH1D* M3lep_4 ;
+
+  //ClassDef(hTopo, 1);
+};
+
 class ACounter : public recoObj {
 
   public:
@@ -193,15 +373,12 @@ class ACounter : public recoObj {
   ACounter( double muCut = 20 ){
      hadM2M3  = 0 ;
      shadM2M3 = 0 ;
-     M3M3     = 0 ;
-     sM3M3    = 0 ;
-     NlepW_Mt = 0 ;
+     w2np     = 0 ;
+     w2nf     = 0 ;
+     wnp      = 0 ;
+     wnf      = 0 ;
+     wn       = 0 ;
 
-     lepM3 = 0 ;
-     hadM3 = 0 ;
-     hadM2 = 0 ;
-     lepW_mt = 0 ;
-     lepW_pt = 0 ;
      outV.clear();
   }
 
@@ -212,48 +389,34 @@ class ACounter : public recoObj {
   void Fillh( double weight, double scale = 1. ) {
        hadM2M3  = hadM2M3  + (weight*scale) ; 
        shadM2M3 = shadM2M3 + (weight*scale*scale) ; 
-       M3M3   = M3M3   + (weight*scale) ; 
-       sM3M3  = sM3M3  + (weight*scale*scale) ; 
-       if ( lepW_mt > 40. ) NlepW_Mt = NlepW_Mt + (weight*scale) ;
   }
 
-  void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
-       TLorentzVector vM2 = v0 + v1 ;
-       TLorentzVector vM3 = v0 + v1 + v2;
-       hadM3 = vM3.M() ;
-       hadM2 = vM2.M() ;
+  void getErr( double np, double nf, double scale = 1. ) {
+       wn  = wn + scale*( np + nf ) ;
+       wnp = wnp + scale*np ;
+       wnf = wnf + scale*nf ;
+       w2np = w2np + scale*scale*np ;
+       w2nf = w2nf + scale*scale*nf ;
   }
-  void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){
-       TLorentzVector vM3 = v3 + v4 + v5;
-       lepM3 = vM3.M() ;
 
-       TLorentzVector vM2 = v4 + v5 ;
-       double dphi = v4.DeltaPhi( v5 ) ;
-       double Mt2 = 2.*v4.Pt()*v5.Pt()*( 1. - cos(dphi) );
-       lepW_mt = sqrt( Mt2 );
-       lepW_pt = vM2.Pt() ;
-  }
+  void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){ }
+  void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){ }
 
   void getFloats( double fArr[] ) { }
   void getIntegrals( int iArr[] ) { }
 
   void scale( double scale ) {
        hadM2M3 = hadM2M3 * scale ;
-       M3M3    = M3M3 * scale;
-       NlepW_Mt = NlepW_Mt * scale ;
   }
   void Reset(){
      hadM2M3  = 0 ;
      shadM2M3 = 0 ;
-     M3M3     = 0 ;
-     sM3M3    = 0 ;
-     NlepW_Mt = 0 ;
 
-     lepM3 = 0 ;
-     hadM3 = 0 ;
-     hadM2 = 0 ;
-     lepW_mt = 0 ;
-     lepW_pt = 0 ;
+     w2np = 0 ;
+     w2nf = 0 ;
+     wnp = 0 ;
+     wnf = 0 ;
+     wn  = 0 ;
      outV.clear();
   }
 
@@ -261,24 +424,24 @@ class ACounter : public recoObj {
       outV.clear();
       outV.push_back( hadM2M3 );
       outV.push_back( shadM2M3 );
-      outV.push_back( M3M3 );
-      outV.push_back( sM3M3 );
-      outV.push_back( NlepW_Mt );
+      outV.push_back( wnp );
+      outV.push_back( w2np );
+      outV.push_back( wnf );
+      outV.push_back( w2nf );
+      outV.push_back( wn );
+      
       return outV ;
   }
 
   double hadM2M3 ;
   double shadM2M3 ;
-  double M3M3 ;
-  double sM3M3 ;
-  double NlepW_Mt ;
  
-  double hadM2 ;
-  double hadM3 ;
-  double lepM3 ;
+  double w2np ;
+  double w2nf ;
+  double wnp ;
+  double wnf ;
+  double wn ;
 
-  double lepW_mt ;
-  double lepW_pt ;
   vector<double> outV  ;
 
   //ClassDef(ACounter, 1);
@@ -341,6 +504,7 @@ class lepWBoson : public recoObj {
 
   void getFloats( double fArr[] ) { }
   void getIntegrals( int iArr[] ) { }
+  void getErr( double np, double nf, double scale ) { }
 
   void scale( double scale ) {
        hM2M3->Scale( scale );
@@ -377,6 +541,8 @@ class hObjs : public recoObj {
   double pt3 ;
   double pt4 ;
   double pt5 ;
+  double j0_eta ;
+  double j1_eta ;
   double mu_eta ;
   double mu_iso ;
   double mu_nhits ;
@@ -384,6 +550,8 @@ class hObjs : public recoObj {
   double mu_x2 ;
   double dRmj ;
   double relPt ;
+  double Htlep ;
+  double Ht ;
 
   double lepW_pt ;
   double lepW_mt ;
@@ -400,35 +568,41 @@ class hObjs : public recoObj {
 
   public:
 
-  hObjs( string fsfx = "", int nbin = 30 ){
+  hObjs( string fsfx = "", int bs = 2. ){
     TString sfx = fsfx ;
-    J0Pt    = new TH1D("J0Pt"+sfx, " J0 Pt  ", 30, 0, 150);
-    J1Pt    = new TH1D("J1Pt"+sfx, " J1 Pt  ", 30, 0, 150);
-    J2Pt    = new TH1D("J2Pt"+sfx, " J2 Pt  ", 30, 0, 150);
-    J3Pt    = new TH1D("J3Pt"+sfx, " J3 Pt  ", 30, 0, 150);
-    muPt    = new TH1D("muPt"+sfx, " muon Pt ", 30, 0, 150);
-    metH    = new TH1D("metH"+sfx, " MET     ", 30, 0, 150);
+    J0Pt    = new TH1D("J0Pt"+sfx, " J0 Pt  ", 15*bs, 0, 150);
+    J1Pt    = new TH1D("J1Pt"+sfx, " J1 Pt  ", 15*bs, 0, 150);
+    J2Pt    = new TH1D("J2Pt"+sfx, " J2 Pt  ", 15*bs, 0, 150);
+    J3Pt    = new TH1D("J3Pt"+sfx, " J3 Pt  ", 15*bs, 0, 150);
+    J0Eta   = new TH1D("J0Eta"+sfx, " Jet 0 Eta ", 25, -2.6, 2.6 );
+    J1Eta   = new TH1D("J1Eta"+sfx, " Jet 1 Eta ", 25, -2.6, 2.6 );
 
+    muPt    = new TH1D("muPt"+sfx, " muon Pt ", 15*bs, 0, 150);
+    metH    = new TH1D("metH"+sfx, " MET     ", 15*bs, 0, 150);
     muEta   = new TH1D("muEta"+sfx, " muon Eta ", 25, -2.6, 2.6 );
-    lepWPt  = new TH1D("lepWPt"+sfx, "  Pt(Mu,MET)", 20, 0, 200);
-    lepWMt  = new TH1D("lepWMt"+sfx, " Mt(Mu,MET) ",  nbin, 0, 150);
-    lepWMt1  = new TH1D("lepWMt1"+sfx, " Mt(Mu,MET)", nbin, 0, 150);
-    lepWMt2  = new TH1D("lepWMt2"+sfx, " Mt(Mu,MET)", nbin, 0, 150);
-    lepWMt3  = new TH1D("lepWMt3"+sfx, " Mt(Mu,MET)", 15, 0, 150);
+    lepWPt  = new TH1D("lepWPt"+sfx, "  Pt(Mu,MET)", 10*bs, 0, 200);
+    lepWMt  = new TH1D("lepWMt"+sfx, " Mt(Mu,MET) ",  15*bs, 0, 150);
+    lepWMt1  = new TH1D("lepWMt1"+sfx, " Mt(Mu,MET)", 15*bs, 0, 150);
+    lepWMt2  = new TH1D("lepWMt2"+sfx, " Mt(Mu,MET)", 15*bs, 0, 150);
+    lepWMt3  = new TH1D("lepWMt3"+sfx, " Mt(Mu,MET)", 15*bs, 0, 150);
     lepWMt4  = new TH1D("lepWMt4"+sfx, " Mt(Mu,MET)", 15, 0, 150);
 
-    hNJ      = new TH1D("hNJ"+sfx,     " n jets", 9, -0.5, 8.5) ;
-    hMuIso   = new TH1D("hMuIso"+sfx,  " muon RelIso ", 20, 0, 0.1) ; 
-    hMuNHits = new TH1D("hMuNHits"+sfx," muon N Hits ", 40, 0, 40 ) ; 
-    hMuD0    = new TH1D("hMuD0"+sfx,   " muon d0(Bsp)", 40, -0.02, 0.02 ) ; 
+    hNJ      = new TH1D("hNJ"+sfx,     " n jets", 7, -0.5, 6.5) ;
+    //hNJ      = new TH1D("hNJ"+sfx,     " n jets", 6, -0.5, 5.5) ;
+    hMuIso   = new TH1D("hMuIso"+sfx,  " muon RelIso ", 10*bs, 0, 0.15) ; 
+    hMuNHits = new TH1D("hMuNHits"+sfx," muon N Hits ", 20*bs, 0, 40 ) ; 
+    hMuD0    = new TH1D("hMuD0"+sfx,   " muon d0(Bsp)", 20*bs, -0.02, 0.02 ) ; 
     hMuX2    = new TH1D("hMuX2"+sfx,   " muon X2 "    , 110, 0, 11 ) ; 
     hdRmj    = new TH1D("hdRmj"+sfx,   " dR( mu, jet) "     ,  63, 0, 6.3 ) ; 
-    hRelPt   = new TH1D("hRelPt"+sfx,   " RelPt( mu, jet)"  ,  50, 0, 100 ) ; 
+    hRelPt   = new TH1D("hRelPt"+sfx,  " RelPt( mu, jet)"  ,  25*bs, 0, 100 ) ; 
+    hHtlep   = new TH1D("hHtlep"+sfx,  " Ht_lep"  ,      20*bs, 0, 600 ) ; 
+    hHt      = new TH1D("hHt"+sfx,     " Ht_tot"  ,      20*bs, 0, 600 ) ; 
 
-    hMETMt   = new TH2D("hMETMt"+sfx, " MET(X) vs lep Mt(Y) ", 30, 0, 150, nbin, 0, 150);
-    hWPtMt   = new TH2D("hWPtMt"+sfx, " Pt of W(X) vs lep Mt(Y) ", 20, 0, 200, nbin, 0, 150);
-    hWPtdPhi = new TH2D("hWPtdPhi"+sfx, " Pt of W(X) vs dPhi(mu, MET) ", 20, 0, 200, 32, 0, 3.2);
-    hMuMET   = new TH2D("hMuMET"+sfx, " Mu(X) vs MET(Y) ", nbin, 0, 120, nbin, 0, 120);
+    hMETMt   = new TH2D("hMETMt"+sfx, " MET(X) vs lep Mt(Y) ",          15*bs, 0, 150, 15*bs, 0, 150);
+    hWPtMt   = new TH2D("hWPtMt"+sfx, " Pt of W(X) vs lep Mt(Y) ",      10*bs, 0, 200, 15*bs, 0, 150);
+    hWPtdPhi = new TH2D("hWPtdPhi"+sfx, " Pt of W(X) vs dPhi(mu, MET)", 10*bs, 0, 200, 16*bs, 0, 3.2);
+    hMtdPhi  = new TH2D("hMtdPhi"+sfx, " Mt vs dPhi(mu, MET) ",         15*bs, 0, 150, 16*bs, 0, 3.2);
+    hMuMET   = new TH2D("hMuMET"+sfx, " Mu(X) vs MET(Y) ",              15*bs, 0, 120, 15*bs, 0, 120);
 
     NlepW     = 0 ;
     NlepW_all = 0 ;
@@ -440,6 +614,8 @@ class hObjs : public recoObj {
     delete J1Pt ;
     delete J2Pt ;
     delete J3Pt ;
+    delete J0Eta ;
+    delete J1Eta ;
     delete muPt ;
     delete metH ;
     delete muEta ;
@@ -456,10 +632,13 @@ class hObjs : public recoObj {
     delete hMuX2 ;
     delete hdRmj ;
     delete hRelPt ;
+    delete hHtlep;
+    delete hHt;
 
     delete hMETMt ;
     delete hWPtMt ;
     delete hWPtdPhi ;
+    delete hMtdPhi ;
     delete hMuMET ;
   }
 
@@ -468,9 +647,11 @@ class hObjs : public recoObj {
        J1Pt->Fill( pt1, weight*scale );
        J2Pt->Fill( pt2, weight*scale );
        J3Pt->Fill( pt3, weight*scale );
+       J0Eta->Fill( j0_eta, weight*scale );
+       J1Eta->Fill( j1_eta, weight*scale );
+
        muPt->Fill( pt4, weight*scale );
        metH->Fill( pt5, weight*scale );
-
        muEta->Fill( mu_eta, weight*scale );
        hNJ->Fill( njets, weight*scale );
        hMuIso->Fill( mu_iso, weight*scale );
@@ -482,11 +663,211 @@ class hObjs : public recoObj {
 
        lepWPt->Fill( lepW_pt, weight*scale );
        lepWMt->Fill( lepW_mt, weight*scale );
+       hHtlep->Fill( Htlep, weight*scale );
+       hHt->Fill( Ht, weight*scale );
 
-       hMETMt->Fill( pt5, lepW_mt, weight*scale );
-       hWPtMt->Fill( lepW_pt, lepW_mt, weight*scale );
+       hMETMt->Fill(       pt5,    lepW_mt, weight*scale );
+       hWPtMt->Fill(   lepW_pt,    lepW_mt, weight*scale );
        hWPtdPhi->Fill( lepW_pt, dPhi_MuMet, weight*scale );
-       hMuMET->Fill( pt4, pt5, weight*scale );
+       hMtdPhi->Fill(  lepW_mt, dPhi_MuMet, weight*scale );
+       hMuMET->Fill(       pt4,        pt5, weight*scale );
+
+       //if (lepW_pt <   WPtCut )                        lepWMt1->Fill( lepW_mt, weight*scale );
+       //if (lepW_pt < 2*WPtCut && lepW_pt >=   WPtCut ) lepWMt2->Fill( lepW_mt, weight*scale );
+       //if (lepW_pt < 3*WPtCut && lepW_pt >= 2*WPtCut ) lepWMt3->Fill( lepW_mt, weight*scale );
+       //if (                      lepW_pt >= 3*WPtCut ) lepWMt4->Fill( lepW_mt, weight*scale );
+
+       if ( njets == 1 ) lepWMt1->Fill( lepW_mt, weight*scale );
+       if ( njets == 2 ) lepWMt2->Fill( lepW_mt, weight*scale );
+       if ( njets == 3 ) lepWMt3->Fill( lepW_mt, weight*scale );
+       if ( njets >= 4 ) lepWMt4->Fill( lepW_mt, weight*scale );
+
+       if (lepW_pt < 3*WPtCut && lepW_mt >= 40 ) NlepW     = NlepW + (weight*scale) ;
+       if (lepW_pt < 3*WPtCut )                  NlepW_all = NlepW_all + (weight*scale) ;
+  }
+
+  void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
+       pt0 = v0.Pt() ;
+       pt1 = ( v1.Pt() != 0 ) ? v1.Pt() : -1 ;
+       pt2 = ( v2.Pt() != 0 ) ? v2.Pt() : -1 ;
+       j0_eta = ( v0.Pt() != 0 ) ? v0.Eta() : 3. ;
+       j1_eta = ( v1.Pt() != 0 ) ? v1.Eta() : 3. ;
+  }
+  void getlep( TLorentzVector v3, TLorentzVector v4, TLorentzVector v5 ){
+       TLorentzVector vM2 = v4 + v5 ;
+       //double Mt2 = (v4.Et()+v5.Et())*(v4.Et()+v5.Et()) - ( vM2.Pt()*vM2.Pt() );
+       double dphi = v4.DeltaPhi( v5 ) ;
+       double Mt2 = 2.*v4.Pt()*v5.Pt()*( 1. - cos(dphi) );
+       pt3 = v3.Pt() ;
+       pt4 = v4.Pt() ;
+       pt5 = v5.Pt() ;
+       mu_eta = v4.Eta() ;
+       lepW_mt = sqrt( Mt2 );
+       if ( lepW_mt > 150 ) lepW_mt = 149.9 ;
+       lepW_pt = vM2.Pt() ;
+       dPhi_MuMet = fabs( dphi );
+  }
+
+
+  void scale( double scale = 1. ) {
+       J0Pt->Scale( scale );
+       J1Pt->Scale( scale );
+       J2Pt->Scale( scale );
+       J3Pt->Scale( scale );
+       J0Eta->Scale( scale );
+       J1Eta->Scale( scale );
+       muPt->Scale( scale );
+       metH->Scale( scale );
+       muEta->Scale( scale );
+       lepWMt->Scale( scale );
+       lepWMt1->Scale( scale );
+       lepWMt2->Scale( scale );
+       lepWMt3->Scale( scale );
+       lepWMt4->Scale( scale );
+       lepWPt->Scale( scale );
+       hNJ->Scale(scale);
+       hMuIso->Scale(scale);
+       hMuNHits->Scale(scale);
+       hMuD0->Scale(scale);
+       hMuX2->Scale(scale);
+       hdRmj->Scale(scale);
+       hRelPt->Scale(scale);
+       hHt->Scale(scale);
+       hHtlep->Scale(scale);
+  }
+
+  void getFloats( double fArr[] ) { 
+       mu_iso   = fArr[0] ;
+       mu_d0    = fArr[1] ;
+       mu_x2    = fArr[2] ;
+       dRmj     = ( fArr[3] < 6.3 ) ? fArr[3] : 6.29 ;
+       relPt    = fArr[4] ;
+       Ht       = fArr[5] ;
+       Htlep    = fArr[6] ;
+  }
+  void getIntegrals( int iArr[] ) { 
+       njets = iArr[0] ;
+       //if ( iArr[0] > 4 ) njets = 4 ;
+       if ( iArr[0] > 6 ) njets = 6 ;
+       mu_nhits = iArr[1] ;
+  }
+  void getErr( double np, double nf, double scale ) { }
+
+  void Fill1DVec( vector<TH1D*>& hList ){
+       hList.push_back(J0Pt);
+       hList.push_back(J1Pt);
+       hList.push_back(J2Pt);
+       hList.push_back(J3Pt);
+       hList.push_back(muPt);
+       hList.push_back(metH);
+       hList.push_back(muEta);
+       hList.push_back(hNJ);
+       hList.push_back(hMuIso);
+       hList.push_back(hMuNHits);
+
+       hList.push_back(hMuD0);
+       hList.push_back(hMuX2);
+       hList.push_back(lepWPt);
+       hList.push_back(lepWMt);
+       hList.push_back(lepWMt1);
+       hList.push_back(lepWMt2);
+       hList.push_back(lepWMt3);
+       hList.push_back(lepWMt4);
+       hList.push_back(hdRmj);
+       hList.push_back(hRelPt);
+
+       hList.push_back(hHtlep);
+       hList.push_back(hHt);
+       hList.push_back(J0Eta);
+       hList.push_back(J1Eta);
+  }
+
+  void Fill2DVec( vector<TH2D*>& hList ){
+       hList.push_back( hMETMt );
+       hList.push_back( hWPtMt );
+       hList.push_back( hWPtdPhi );
+       hList.push_back( hMuMET );
+       hList.push_back( hMtdPhi );
+  }
+
+  void CounterVec( vector<double>& cList ) {
+      cList.push_back( NlepW );
+      cList.push_back( NlepW_all );
+  }
+
+  TH1D* J0Pt ;
+  TH1D* J1Pt ;
+  TH1D* J2Pt ;
+  TH1D* J3Pt ;
+  TH1D* J0Eta ;
+  TH1D* J1Eta ;
+  TH1D* muPt ;
+  TH1D* metH ;
+  TH1D* muEta ;
+  TH1D* lepWMt ;
+  TH1D* lepWPt ;
+  TH1D* hNJ ;
+  TH1D* hMuIso ;
+  TH1D* hMuNHits ;
+  TH1D* hMuD0 ;
+  TH1D* hMuX2 ;
+  TH1D* hdRmj ;
+  TH1D* hRelPt ;
+  TH1D* lepWMt1 ;
+  TH1D* lepWMt2 ;
+  TH1D* lepWMt3 ;
+  TH1D* lepWMt4 ;
+  TH1D* hHtlep ;
+  TH1D* hHt ;
+
+  TH2D* hMETMt ;  
+  TH2D* hWPtMt ;  
+  TH2D* hWPtdPhi ;  
+  TH2D* hMtdPhi ;  
+  TH2D* hMuMET ;
+
+  //ClassDef(hObjs, 1);
+};
+
+/*
+class hNorm : public recoObj {
+
+  double lepW_pt ;
+  double lepW_mt ;
+  double lepW_mt1 ;
+  double lepW_mt2 ;
+  double lepW_mt3 ;
+  double lepW_mt4 ;
+  double NlepW_all ;
+  double NlepW ;
+  double WPtCut ;
+
+  public:
+
+  hObjs( string fsfx = "", int nbin = 30 ){
+    TString sfx = fsfx ;
+
+    lepWMt   = new TH1D("lepWMt"+sfx, " Mt(Mu,MET) ",  nbin, 0, 150);
+    lepWMt1  = new TH1D("lepWMt1"+sfx, " Mt(Mu,MET)", nbin, 0, 150);
+    lepWMt2  = new TH1D("lepWMt2"+sfx, " Mt(Mu,MET)", nbin, 0, 150);
+    lepWMt3  = new TH1D("lepWMt3"+sfx, " Mt(Mu,MET)", nbin, 0, 150);
+    lepWMt4  = new TH1D("lepWMt4"+sfx, " Mt(Mu,MET)", 15, 0, 150);
+
+    NlepW     = 0 ;
+    NlepW_all = 0 ;
+    WPtCut    = 20 ;
+  }
+
+  virtual ~hObjs(){
+    delete lepWMt ;
+    delete lepWMt1 ;
+    delete lepWMt2 ;
+    delete lepWMt3 ;
+    delete lepWMt4 ;
+  }
+
+  void Fillh( double weight =  1., double scale = 1. ) {
+       lepWMt->Fill( lepW_mt, weight*scale );
 
        if (lepW_pt <   WPtCut )                        lepWMt1->Fill( lepW_mt, weight*scale );
        if (lepW_pt < 2*WPtCut && lepW_pt >=   WPtCut ) lepWMt2->Fill( lepW_mt, weight*scale );
@@ -518,105 +899,43 @@ class hObjs : public recoObj {
 
 
   void scale( double scale = 1. ) {
-       J0Pt->Scale( scale );
-       J1Pt->Scale( scale );
-       J2Pt->Scale( scale );
-       J3Pt->Scale( scale );
-       muPt->Scale( scale );
-       metH->Scale( scale );
-       muEta->Scale( scale );
        lepWMt->Scale( scale );
        lepWMt1->Scale( scale );
        lepWMt2->Scale( scale );
        lepWMt3->Scale( scale );
        lepWMt4->Scale( scale );
-       lepWPt->Scale( scale );
-       hNJ->Scale(scale);
-       hMuIso->Scale(scale);
-       hMuNHits->Scale(scale);
-       hMuD0->Scale(scale);
-       hMuX2->Scale(scale);
-       hdRmj->Scale(scale);
-       hRelPt->Scale(scale);
   }
 
   void getFloats( double fArr[] ) { 
-       mu_iso   = fArr[0] ;
-       mu_d0    = fArr[1] ;
-       mu_x2    = fArr[2] ;
-       dRmj     = fArr[3] ;
-       relPt    = fArr[4] ;
   }
   void getIntegrals( int iArr[] ) { 
        njets = iArr[0] ;
-       if ( iArr[0] > 8 ) njets = 8 ;
+       if ( iArr[0] > 6 ) njets = 6 ;
        mu_nhits = iArr[1] ;
   }
+  void getErr( double np, double nf, double scale ) { }
 
   void Fill1DVec( vector<TH1D*>& hList ){
-       hList.push_back(J0Pt);
-       hList.push_back(J1Pt);
-       hList.push_back(J2Pt);
-       hList.push_back(J3Pt);
-       hList.push_back(muPt);
-       hList.push_back(metH);
-       hList.push_back(muEta);
-       hList.push_back(hNJ);
-       hList.push_back(hMuIso);
-       hList.push_back(hMuNHits);
-
-       hList.push_back(hMuD0);
-       hList.push_back(hMuX2);
-       hList.push_back(lepWPt);
        hList.push_back(lepWMt);
        hList.push_back(lepWMt1);
        hList.push_back(lepWMt2);
        hList.push_back(lepWMt3);
        hList.push_back(lepWMt4);
-       hList.push_back(hdRmj);
-       hList.push_back(hRelPt);
   }
 
   void Fill2DVec( vector<TH2D*>& hList ){
-       hList.push_back( hMETMt );
-       hList.push_back( hWPtMt );
-       hList.push_back( hWPtdPhi );
-       hList.push_back( hMuMET );
   }
 
-  void CounterVec( vector<double>& cList ) {
-      cList.push_back( NlepW );
-      cList.push_back( NlepW_all );
-  }
 
-  TH1D* J0Pt ;
-  TH1D* J1Pt ;
-  TH1D* J2Pt ;
-  TH1D* J3Pt ;
-  TH1D* muPt ;
-  TH1D* metH ;
-  TH1D* muEta ;
   TH1D* lepWMt ;
-  TH1D* lepWPt ;
-  TH1D* hNJ ;
-  TH1D* hMuIso ;
-  TH1D* hMuNHits ;
-  TH1D* hMuD0 ;
-  TH1D* hMuX2 ;
-  TH1D* hdRmj ;
-  TH1D* hRelPt ;
   TH1D* lepWMt1 ;
   TH1D* lepWMt2 ;
   TH1D* lepWMt3 ;
   TH1D* lepWMt4 ;
 
-  TH2D* hMETMt ;  
-  TH2D* hWPtMt ;  
-  TH2D* hWPtdPhi ;  
-  TH2D* hMuMET ;
-
   //ClassDef(hObjs, 1);
 };
+*/
 
 class hLepM2 : public recoObj {
 
@@ -715,8 +1034,6 @@ class hLepM2 : public recoObj {
           nW[4] = nW[4] + (weight*scale) ;
           sW[4] = sW[4] + (weight*scale*scale) ;
        }
-
-
   }
 
   void gethad( TLorentzVector v0, TLorentzVector v1, TLorentzVector v2 ){
@@ -734,8 +1051,9 @@ class hLepM2 : public recoObj {
        sum_JPt = ( allJP4.Pt() < 200. ) ? allJP4.Pt() : 200. ;
   }
 
-  void getFloats( double fArr[] ) {} 
+  void getFloats( double fArr[] ) { } 
   void getIntegrals( int iArr[] ) { }
+  void getErr( double np, double nf, double scale ) { }
 
   void scale( double scale = 1. ) {
 
@@ -864,6 +1182,7 @@ class bgCounter : public recoObj {
 
   void getFloats( double fArr[] ) { } 
   void getIntegrals( int iArr[] ) { }
+  void getErr( double np, double nf, double scale ) { }
   void Fill1DVec( vector<TH1D*>& hList ){ }
 
   void Reset( double iniPt = 20. ){

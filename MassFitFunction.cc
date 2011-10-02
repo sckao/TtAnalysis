@@ -404,8 +404,8 @@ double MassFitFunction::ErrAovB( double A, double B, double s_A, double s_B, boo
     double sBn = ( s_B != -1 ) ? s_B : -1*sB[0];
 
     double f = A / B ;
-    double s_fp = sqrt( sAp*sAp + f*f*sBp*sBp ) / B ;
-    double s_fn = sqrt( sAn*sAn + f*f*sBn*sBn ) / B ;
+    double s_fp = sqrt( (sAp*sAp) + (f*f*sBp*sBp) ) / B ;
+    double s_fn = sqrt( (sAn*sAn) + (f*f*sBn*sBn) ) / B ;
 
     double sf = ( upward ) ? s_fp : s_fn ;
     return sf ;
